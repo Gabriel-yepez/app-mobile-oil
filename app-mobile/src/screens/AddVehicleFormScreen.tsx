@@ -1,8 +1,9 @@
 // Agregar vehículo — Paso 2/3: marca, modelo, año, color, placa, km actual
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fonts, palette, radius, T } from '../theme';
+import { Pressable, ScrollView, Text, View } from '../tw';
+import { T } from '../theme';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
@@ -33,78 +34,52 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ flex: 1, backgroundColor: T.bg3 }}>
+      <View className="flex-1 bg-bg3">
         {/* header */}
         <View
-          style={{
-            paddingTop: insets.top + 12,
-            paddingHorizontal: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+          className="flex-row items-center justify-between px-5"
+          style={{ paddingTop: insets.top + 12 }}
         >
           <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
-          <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: T.muted, letterSpacing: 1 }}>PASO 2 / 3</Text>
-          <View style={{ width: 36 }} />
+          <Text className="font-mono text-[11px] text-muted tracking-[1px]">PASO 2 / 3</Text>
+          <View className="w-9" />
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
-          <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8 }}>
-            <Text style={{ fontFamily: fonts.display, fontSize: 26, color: T.ink, letterSpacing: -0.5, lineHeight: 30 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-[140px]">
+          <View className="px-6 pb-2 pt-5">
+            <Text className="font-display text-[26px] leading-[30px] text-ink tracking-[-0.5px]">
               Datos del vehículo
             </Text>
-            <Text style={{ marginTop: 6, color: T.muted, fontFamily: fonts.sans, fontSize: 14 }}>
+            <Text className="mt-1.5 font-sans text-[14px] text-muted">
               Identifica tu {kind === 'car' ? 'carro' : 'moto'} para llevar el registro.
             </Text>
           </View>
 
-          <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
-            <Card style={{ gap: 14 }}>
+          <View className="px-5 pt-5">
+            <Card className="gap-3.5">
               <Field label="Marca">
                 <Select value={brand} placeholder="Selecciona la marca" options={brands} onChange={setBrand} />
               </Field>
               <Field label="Modelo">
                 <Input value={model} onChangeText={setModel} placeholder="Corolla XEI" />
               </Field>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
+              <View className="flex-row gap-3">
+                <View className="flex-1">
                   <Field label="Año">
                     <Input value={year} onChangeText={setYear} placeholder="2019" mono keyboardType="number-pad" maxLength={4} />
                   </Field>
                 </View>
-                <View style={{ flex: 1 }}>
+                <View className="flex-1">
                   <Field label="Color">
                     <Pressable
                       onPress={() => setColorIdx((i) => (i + 1) % COLORS.length)}
-                      style={{
-                        height: 52,
-                        borderRadius: radius.md,
-                        borderWidth: 1.5,
-                        borderColor: T.line,
-                        backgroundColor: '#fff',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 14,
-                        gap: 8,
-                      }}
+                      className="h-[52px] flex-row items-center gap-2 rounded-md border-[1.5px] border-line bg-white px-3.5"
                     >
                       <View
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 11,
-                          backgroundColor: color.hex,
-                          borderWidth: 2,
-                          borderColor: '#fff',
-                          shadowColor: '#000',
-                          shadowOpacity: 0.15,
-                          shadowRadius: 2,
-                          shadowOffset: { width: 0, height: 1 },
-                          elevation: 1,
-                        }}
+                        className="h-[22px] w-[22px] rounded-full border-2 border-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)]"
+                        style={{ backgroundColor: color.hex }}
                       />
-                      <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: T.ink }}>{color.name}</Text>
+                      <Text className="font-sans text-[14px] text-ink">{color.name}</Text>
                     </Pressable>
                   </Field>
                 </View>
@@ -119,7 +94,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   placeholder="78460"
                   mono
                   keyboardType="number-pad"
-                  right={<Text style={{ fontFamily: fonts.monoMed, fontSize: 12, color: T.muted }}>km</Text>}
+                  right={<Text className="font-mono-med text-[12px] text-muted">km</Text>}
                 />
               </Field>
             </Card>
@@ -127,16 +102,8 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
         </ScrollView>
 
         <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: Math.max(insets.bottom, 24) + 12,
-            backgroundColor: '#fff',
-          }}
+          className="absolute bottom-0 left-0 right-0 bg-white px-5 pt-4"
+          style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}
         >
           <Btn
             kind="primary"

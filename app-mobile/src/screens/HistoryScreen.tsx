@@ -1,10 +1,11 @@
 // Historial completo — resumen de inversión USD/Bs.S + lista de todos los cambios
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { fonts, palette, radius, T } from '../theme';
+import clsx from 'clsx';
+import { ScrollView, Text, View } from '../tw';
+import { palette, radius, T } from '../theme';
 import { Card, IconBtn, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm, fmtUsd } from '../utils/format';
@@ -22,27 +23,21 @@ export function HistoryScreen() {
   const vehicleOf = (id: string) => vehicles.find((v) => v.id === id);
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg3 }}>
+    <View className="flex-1 bg-bg3">
       {/* top bar */}
       <View
-        style={{
-          paddingTop: insets.top + 12,
-          paddingHorizontal: 20,
-          paddingBottom: 14,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+        className="flex-row items-center justify-between px-5 pb-3.5"
+        style={{ paddingTop: insets.top + 12 }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View className="flex-row items-center gap-3">
           {navigation.canGoBack() ? (
             <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
           ) : null}
           <View>
-            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: T.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
+            <Text className="font-sans text-[12px] text-muted tracking-[1px] uppercase">
               Historial
             </Text>
-            <Text style={{ fontFamily: fonts.display, fontSize: 26, color: T.ink, letterSpacing: -0.5 }}>
+            <Text className="font-display text-[26px] text-ink tracking-[-0.5px]">
               {changes.length} cambios
             </Text>
           </View>
@@ -50,42 +45,41 @@ export function HistoryScreen() {
         <IconBtn icon={<Icon name="search" color={T.ink} size={20} />} size={40} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="pb-[120px]" showsVerticalScrollIndicator={false}>
         {/* inversión */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
+        <View className="px-4 pb-3.5">
           <LinearGradient
             colors={[palette.primary, palette.primary2]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ borderRadius: radius.lg, padding: 16 }}
           >
-            <Text style={{ fontFamily: fonts.sansBold, fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <Text className="font-sans-bold text-[11px] text-[rgba(255,255,255,0.6)] tracking-[1.2px] uppercase">
               Inversión 2026
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-              <Text style={{ fontFamily: fonts.mono, fontSize: 32, color: '#fff', letterSpacing: -1 }}>{fmtUsd(totalUsd)}</Text>
-              <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+            <View className="mt-1.5 flex-row items-baseline gap-2">
+              <Text className="font-mono text-[32px] text-white tracking-[-1px]">{fmtUsd(totalUsd)}</Text>
+              <Text className="font-sans text-[12px] text-[rgba(255,255,255,0.7)]">
                 USD · ≈ Bs.S {fmtKm(totalUsd * BS_RATE)}
               </Text>
             </View>
 
             {/* mini bar chart */}
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 50, marginTop: 14 }}>
+            <View className="mt-3.5 h-[50px] flex-row items-end gap-1.5">
               {SPEND_BARS.map((h, i) => (
                 <View
                   key={i}
-                  style={{
-                    flex: 1,
-                    height: `${(h / maxBar) * 100}%`,
-                    backgroundColor: i === SPEND_BARS.length - 1 ? palette.accent2 : 'rgba(255,255,255,0.18)',
-                    borderRadius: 3,
-                  }}
+                  className={clsx(
+                    'flex-1 rounded-[3px]',
+                    i === SPEND_BARS.length - 1 ? 'bg-accent2' : 'bg-[rgba(255,255,255,0.18)]'
+                  )}
+                  style={{ height: `${(h / maxBar) * 100}%` }}
                 />
               ))}
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+            <View className="mt-1.5 flex-row justify-between">
               {['ENE', 'ABR', 'JUL', 'OCT', 'DIC'].map((m) => (
-                <Text key={m} style={{ fontFamily: fonts.monoMed, fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>
+                <Text key={m} className="font-mono-med text-[10px] text-[rgba(255,255,255,0.6)]">
                   {m}
                 </Text>
               ))}
@@ -94,27 +88,27 @@ export function HistoryScreen() {
         </View>
 
         {/* lista */}
-        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+        <View className="gap-2.5 px-4">
           {changes.map((h) => {
             const v = vehicleOf(h.vehicleId);
             return (
-              <Card key={h.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Card key={h.id} className="flex-row items-center gap-3">
                 <VehicleThumb kind={v?.kind ?? 'car'} color={v?.color ?? '#1F2937'} size={42} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.sansBold, fontSize: 14, color: T.ink, letterSpacing: -0.1 }}>
+                <View className="flex-1">
+                  <Text className="font-sans-bold text-[14px] text-ink tracking-[-0.1px]">
                     {v ? `${v.brand} ${v.model}` : 'Vehículo'}
                   </Text>
-                  <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: T.muted, marginTop: 1 }}>
-                    <Text style={{ fontFamily: fonts.monoMed }}>{h.date}</Text> ·{' '}
-                    <Text style={{ fontFamily: fonts.monoMed }}>{fmtKm(h.km)}</Text> km
+                  <Text className="mt-px font-sans text-[12px] text-muted">
+                    <Text className="font-mono-med">{h.date}</Text> ·{' '}
+                    <Text className="font-mono-med">{fmtKm(h.km)}</Text> km
                   </Text>
-                  <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: T.muted2, marginTop: 1 }}>
+                  <Text className="mt-px font-sans text-[12px] text-muted2">
                     {h.oil.brand} {h.oil.tag} {h.oil.viscosity}
                   </Text>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontFamily: fonts.mono, fontSize: 14, color: T.ink }}>{fmtUsd(h.costUsd)}</Text>
-                  <Text style={{ fontFamily: fonts.sans, fontSize: 10, color: T.muted2 }}>USD</Text>
+                <View className="items-end">
+                  <Text className="font-mono text-[14px] text-ink">{fmtUsd(h.costUsd)}</Text>
+                  <Text className="font-sans text-[10px] text-muted2">USD</Text>
                 </View>
               </Card>
             );

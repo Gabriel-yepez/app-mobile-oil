@@ -64,5 +64,10 @@
     --radius-md: 14px;
     --radius-lg: 20px;
     --radius-xl: 28px;
+
+    /* sombras del handoff (theme/index.ts → shadow.*) */
+    --shadow-card: 0 8px 24px rgba(10, 37, 64, 0.06);
+    --shadow-primary: 0 8px 22px rgba(37, 99, 235, 0.18);
+    --shadow-tabbar: 0 6px 20px rgba(10, 37, 64, 0.1);
   }
 }

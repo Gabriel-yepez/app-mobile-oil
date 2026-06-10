@@ -1,8 +1,10 @@
 // Registrar cambio de aceite — también es el Paso 3/3 del flujo agregar vehículo
 import React, { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fonts, palette, radius, T } from '../theme';
+import clsx from 'clsx';
+import { Pressable, ScrollView, Text, View } from '../tw';
+import { T } from '../theme';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { SHOPS_VE, VE_OILS, VISCOSITIES } from '../data/mock';
@@ -67,47 +69,42 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ flex: 1, backgroundColor: T.bg3 }}>
+      <View className="flex-1 bg-bg3">
         {/* header */}
         <View
-          style={{
-            paddingTop: insets.top + 12,
-            paddingHorizontal: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+          className="flex-row items-center justify-between px-5"
+          style={{ paddingTop: insets.top + 12 }}
         >
           <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
-          <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: T.muted, letterSpacing: 1 }}>
+          <Text className="font-mono text-[11px] text-muted tracking-[1px]">
             {draft ? 'PASO 3 / 3' : 'NUEVO CAMBIO'}
           </Text>
-          <View style={{ width: 36 }} />
+          <View className="w-9" />
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
-          <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8 }}>
-            <Text style={{ fontFamily: fonts.display, fontSize: 26, color: T.ink, letterSpacing: -0.5, lineHeight: 30 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-[140px]">
+          <View className="px-6 pb-2 pt-5">
+            <Text className="font-display text-[26px] leading-[30px] text-ink tracking-[-0.5px]">
               Registrar cambio de aceite
             </Text>
             {subtitle ? (
-              <Text style={{ marginTop: 6, color: T.muted, fontFamily: fonts.sans, fontSize: 14 }}>{subtitle}</Text>
+              <Text className="mt-1.5 font-sans text-[14px] text-muted">{subtitle}</Text>
             ) : null}
           </View>
 
-          <View style={{ paddingHorizontal: 16, paddingTop: 16, gap: 12 }}>
+          <View className="gap-3 px-4 pt-4">
             {/* Card 1 — Aceite */}
-            <Card style={{ gap: 14 }}>
+            <Card className="gap-3.5">
               <Field label="Tipo de aceite">
                 <Select value={oilName} options={oilOptions} onChange={setOilName} />
               </Field>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
+              <View className="flex-row gap-3">
+                <View className="flex-1">
                   <Field label="Viscosidad">
                     <Select value={viscosity} options={VISCOSITIES} onChange={setViscosity} />
                   </Field>
                 </View>
-                <View style={{ flex: 1 }}>
+                <View className="flex-1">
                   <Field label="Tipo">
                     <Select value={oilType} options={['Sintético', 'Semi-sintético', 'Mineral']} onChange={setOilType} />
                   </Field>
@@ -115,25 +112,21 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
               </View>
 
               {/* chips de viscosidad */}
-              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+              <View className="flex-row flex-wrap gap-1.5">
                 {VISCOSITIES.map((v) => {
                   const isActive = v === viscosity;
                   return (
                     <Pressable
                       key={v}
                       onPress={() => setViscosity(v)}
-                      style={{
-                        height: 30,
-                        paddingHorizontal: 12,
-                        borderRadius: radius.pill,
-                        backgroundColor: isActive ? palette.primary : '#fff',
-                        borderWidth: isActive ? 0 : 1,
-                        borderColor: T.line,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                      className={clsx(
+                        'h-[30px] items-center justify-center rounded-full px-3',
+                        isActive ? 'bg-primary' : 'border border-line bg-white'
+                      )}
                     >
-                      <Text style={{ fontFamily: fonts.mono, fontSize: 12, color: isActive ? '#fff' : T.muted }}>{v}</Text>
+                      <Text className={clsx('font-mono text-[12px]', isActive ? 'text-white' : 'text-muted')}>
+                        {v}
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -141,10 +134,10 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
             </Card>
 
             {/* Card 2 — Kilometraje */}
-            <Card style={{ gap: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: -4 }}>
-                <View style={{ width: 4, height: 14, borderRadius: 2, backgroundColor: palette.accent }} />
-                <Text style={{ fontFamily: fonts.sansBold, fontSize: 11, color: T.muted, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <Card className="gap-3.5">
+              <View className="-mb-1 flex-row items-center gap-2">
+                <View className="h-3.5 w-1 rounded-[2px] bg-accent" />
+                <Text className="font-sans-bold text-[11px] text-muted tracking-[1.2px] uppercase">
                   Kilometraje
                 </Text>
               </View>
@@ -154,7 +147,7 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                   onChangeText={setChangeKm}
                   mono
                   keyboardType="number-pad"
-                  right={<Text style={{ fontFamily: fonts.monoMed, fontSize: 12, color: T.muted }}>km</Text>}
+                  right={<Text className="font-mono-med text-[12px] text-muted">km</Text>}
                 />
               </Field>
               <Field label="Próximo cambio a" suffix="km">
@@ -162,55 +155,36 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                   value={String(nextKm)}
                   editable={false}
                   mono
-                  right={<Text style={{ fontFamily: fonts.monoMed, fontSize: 12, color: T.muted }}>km</Text>}
+                  right={<Text className="font-mono-med text-[12px] text-muted">km</Text>}
                 />
               </Field>
 
               {/* slider de intervalo */}
               <View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={{ fontFamily: fonts.sansSemi, fontSize: 12, color: T.muted }}>Intervalo</Text>
-                  <Text style={{ fontFamily: fonts.mono, fontSize: 13, color: T.ink }}>{fmtKm(interval)} km</Text>
+                <View className="mb-2 flex-row justify-between">
+                  <Text className="font-sans-semi text-[12px] text-muted">Intervalo</Text>
+                  <Text className="font-mono text-[13px] text-ink">{fmtKm(interval)} km</Text>
                 </View>
-                <View style={{ position: 'relative', height: 22, justifyContent: 'center' }}>
-                  <View style={{ height: 6, backgroundColor: T.bg2, borderRadius: 3 }}>
+                <View className="relative h-[22px] justify-center">
+                  <View className="h-1.5 rounded-[3px] bg-bg2">
                     <View
-                      style={{
-                        width: `${(intervalIdx / (INTERVALS.length - 1)) * 100}%`,
-                        height: '100%',
-                        backgroundColor: palette.accent,
-                        borderRadius: 3,
-                      }}
+                      className="h-full rounded-[3px] bg-accent"
+                      style={{ width: `${(intervalIdx / (INTERVALS.length - 1)) * 100}%` }}
                     />
                   </View>
                   <View
-                    style={{
-                      position: 'absolute',
-                      left: `${(intervalIdx / (INTERVALS.length - 1)) * 100}%`,
-                      marginLeft: -11,
-                      width: 22,
-                      height: 22,
-                      borderRadius: 11,
-                      backgroundColor: '#fff',
-                      borderWidth: 3,
-                      borderColor: palette.accent,
-                      shadowColor: '#000',
-                      shadowOpacity: 0.12,
-                      shadowRadius: 8,
-                      shadowOffset: { width: 0, height: 2 },
-                      elevation: 3,
-                    }}
+                    className="absolute -ml-[11px] h-[22px] w-[22px] rounded-full border-[3px] border-accent bg-white shadow-[0px_2px_8px_rgba(0,0,0,0.12)]"
+                    style={{ left: `${(intervalIdx / (INTERVALS.length - 1)) * 100}%` }}
                   />
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                <View className="mt-1.5 flex-row justify-between">
                   {INTERVALS.map((v, i) => (
                     <Pressable key={v} onPress={() => setIntervalIdx(i)} hitSlop={10}>
                       <Text
-                        style={{
-                          fontFamily: fonts.monoMed,
-                          fontSize: 10,
-                          color: i === intervalIdx ? palette.accent : T.muted2,
-                        }}
+                        className={clsx(
+                          'font-mono-med text-[10px]',
+                          i === intervalIdx ? 'text-accent' : 'text-muted2'
+                        )}
                       >
                         {fmtKm(v)}
                       </Text>
@@ -221,14 +195,14 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
             </Card>
 
             {/* Card 3 — Detalles */}
-            <Card style={{ gap: 14 }}>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
+            <Card className="gap-3.5">
+              <View className="flex-row gap-3">
+                <View className="flex-1">
                   <Field label="Fecha">
                     <Input value={date} onChangeText={setDate} mono />
                   </Field>
                 </View>
-                <View style={{ flex: 1 }}>
+                <View className="flex-1">
                   <Field label="Costo">
                     <Input
                       value={cost}
@@ -237,8 +211,8 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                       keyboardType="decimal-pad"
                       prefix="$"
                       right={
-                        <View style={{ paddingHorizontal: 6, paddingVertical: 2, backgroundColor: T.bg2, borderRadius: 4 }}>
-                          <Text style={{ fontFamily: fonts.monoMed, fontSize: 11, color: T.muted }}>USD</Text>
+                        <View className="rounded-[4px] bg-bg2 px-1.5 py-0.5">
+                          <Text className="font-mono-med text-[11px] text-muted">USD</Text>
                         </View>
                       }
                     />
@@ -253,16 +227,8 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
         </ScrollView>
 
         <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: Math.max(insets.bottom, 24) + 12,
-            backgroundColor: '#fff',
-          }}
+          className="absolute bottom-0 left-0 right-0 bg-white px-5 pt-4"
+          style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}
         >
           <Btn kind="primary" size="lg" icon={<Icon name="check" color="#fff" size={20} />} onPress={save}>
             Guardar cambio

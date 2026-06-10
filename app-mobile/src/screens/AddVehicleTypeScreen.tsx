@@ -1,9 +1,10 @@
 // Agregar vehículo — Paso 1/3: elegir Carro o Moto
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fonts, palette, radius, T } from '../theme';
+import clsx from 'clsx';
+import { Pressable, Text, View } from '../tw';
+import { palette, T } from '../theme';
 import { Btn, IconBtn } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { RootScreenProps } from '../navigation/types';
@@ -20,53 +21,39 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
   const [selected, setSelected] = useState<Kind>('car');
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View className="flex-1 bg-white">
       {/* header */}
       <View
-        style={{
-          paddingTop: insets.top + 12,
-          paddingHorizontal: 20,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+        className="flex-row items-center justify-between px-5"
+        style={{ paddingTop: insets.top + 12 }}
       >
         <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
-        <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: T.muted, letterSpacing: 1 }}>PASO 1 / 3</Text>
-        <View style={{ width: 36 }} />
+        <Text className="font-mono text-[11px] text-muted tracking-[1px]">PASO 1 / 3</Text>
+        <View className="w-9" />
       </View>
 
-      <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 }}>
-        <Text style={{ fontFamily: fonts.display, fontSize: 30, color: T.ink, letterSpacing: -0.6, lineHeight: 33 }}>
+      <View className="px-6 pb-2 pt-6">
+        <Text className="font-display text-[30px] leading-[33px] text-ink tracking-[-0.6px]">
           ¿Qué vas a registrar?
         </Text>
-        <Text style={{ marginTop: 8, color: T.muted, fontFamily: fonts.sans, fontSize: 15 }}>
+        <Text className="mt-2 font-sans text-[15px] text-muted">
           Elige el tipo de vehículo para comenzar.
         </Text>
       </View>
 
-      <View style={{ paddingHorizontal: 20, paddingVertical: 24, gap: 14 }}>
+      <View className="gap-3.5 px-5 py-6">
         {OPTIONS.map((o) => {
           const isSelected = selected === o.kind;
           return (
             <Pressable
               key={o.kind}
               onPress={() => setSelected(o.kind)}
-              style={{
-                padding: 18,
-                borderRadius: radius.lg,
-                borderWidth: isSelected ? 2 : 1.5,
-                borderColor: isSelected ? palette.accent : T.line,
-                backgroundColor: '#fff',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 16,
-                shadowColor: isSelected ? palette.accent : '#0A2540',
-                shadowOffset: { width: 0, height: isSelected ? 0 : 8 },
-                shadowOpacity: isSelected ? 0.18 : 0.06,
-                shadowRadius: isSelected ? 8 : 24,
-                elevation: isSelected ? 4 : 2,
-              }}
+              className={clsx(
+                'flex-row items-center gap-4 rounded-lg bg-white p-[18px]',
+                isSelected
+                  ? 'border-2 border-accent shadow-[0px_0px_8px_rgba(37,99,235,0.18)]'
+                  : 'border-[1.5px] border-line shadow-card'
+              )}
             >
               <LinearGradient
                 colors={o.gradient}
@@ -76,25 +63,16 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
               >
                 <Icon name={o.kind === 'car' ? 'car' : 'moto'} color="#fff" size={36} />
               </LinearGradient>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonts.display, fontSize: 20, color: T.ink, letterSpacing: -0.3 }}>{o.title}</Text>
-                <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: T.muted, marginTop: 2 }}>{o.subtitle}</Text>
+              <View className="flex-1">
+                <Text className="font-display text-[20px] text-ink tracking-[-0.3px]">{o.title}</Text>
+                <Text className="mt-0.5 font-sans text-[13px] text-muted">{o.subtitle}</Text>
               </View>
               {isSelected ? (
-                <View
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: palette.accent,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
+                <View className="h-7 w-7 items-center justify-center rounded-full bg-accent">
                   <Icon name="check" color="#fff" size={18} />
                 </View>
               ) : (
-                <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: T.line }} />
+                <View className="h-7 w-7 rounded-full border-2 border-line" />
               )}
             </Pressable>
           );
@@ -102,27 +80,17 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
       </View>
 
       {/* helper */}
-      <View
-        style={{
-          marginHorizontal: 20,
-          padding: 14,
-          borderRadius: 14,
-          backgroundColor: T.bg2,
-          flexDirection: 'row',
-          gap: 10,
-          alignItems: 'flex-start',
-        }}
-      >
-        <View style={{ marginTop: 2 }}>
+      <View className="mx-5 flex-row items-start gap-2.5 rounded-[14px] bg-bg2 p-3.5">
+        <View className="mt-0.5">
           <Icon name="shield" color={palette.accent} size={20} />
         </View>
-        <Text style={{ flex: 1, fontFamily: fonts.sans, fontSize: 13, color: T.muted, lineHeight: 19.5 }}>
+        <Text className="flex-1 font-sans text-[13px] leading-[19.5px] text-muted">
           Podrás registrar tantos vehículos como quieras. Tu información se guarda solo en tu cuenta.
         </Text>
       </View>
 
-      <View style={{ flex: 1 }} />
-      <View style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
+      <View className="flex-1" />
+      <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
         <Btn
           kind="primary"
           size="lg"

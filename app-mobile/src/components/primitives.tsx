@@ -1,20 +1,13 @@
 // Primitivas — botones, inputs, cards, pills, KPI. Migradas del handoff (src/primitives.jsx)
 import React, { ReactNode, useState } from 'react';
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputProps,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { FlatList, Modal, StyleProp, ViewStyle } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import { fonts, palette, radius, shadow, T } from '../theme';
+import clsx from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { Pressable, Text, TextInput, View } from '../tw';
+import type { TextInputProps } from 'react-native';
+import { palette, T } from '../theme';
 import { Icon } from './Icon';
 import { VehicleStatus } from '../data/mock';
 
@@ -29,48 +22,59 @@ type BtnProps = {
   kind?: BtnKind;
   size?: BtnSize;
   icon?: ReactNode;
+  className?: string;
   style?: StyleProp<ViewStyle>;
   textColor?: string;
   onPress?: () => void;
 };
 
-export function Btn({ children, kind = 'primary', size = 'md', icon, style, textColor, onPress }: BtnProps) {
-  const h = size === 'lg' ? 56 : size === 'sm' ? 36 : 48;
-  const px = size === 'lg' ? 22 : size === 'sm' ? 14 : 18;
-  const fs = size === 'lg' ? 16 : size === 'sm' ? 13 : 15;
+const btnSizeCls: Record<BtnSize, string> = {
+  lg: 'h-14 px-[22px]',
+  md: 'h-12 px-[18px]',
+  sm: 'h-9 px-3.5',
+};
 
-  const kindStyle: Record<BtnKind, { bg: string; color: string; border?: boolean; glow?: boolean }> = {
-    primary: { bg: palette.primary, color: '#fff', glow: true },
-    accent: { bg: palette.accent, color: '#fff', glow: true },
-    ghost: { bg: 'transparent', color: palette.primary, border: true },
-    soft: { bg: T.bg2, color: palette.primary },
-    danger: { bg: '#FEE2E2', color: '#B91C1C' },
-  };
-  const k = kindStyle[kind];
+const btnTextSizeCls: Record<BtnSize, string> = {
+  lg: 'text-[16px]',
+  md: 'text-[15px]',
+  sm: 'text-[13px]',
+};
 
+const btnKindCls: Record<BtnKind, string> = {
+  primary: 'bg-primary shadow-primary',
+  accent: 'bg-accent shadow-primary',
+  ghost: 'bg-transparent border-[1.5px] border-line',
+  soft: 'bg-bg2',
+  danger: 'bg-[#FEE2E2]',
+};
+
+const btnKindTextCls: Record<BtnKind, string> = {
+  primary: 'text-white',
+  accent: 'text-white',
+  ghost: 'text-primary',
+  soft: 'text-primary',
+  danger: 'text-[#B91C1C]',
+};
+
+export function Btn({ children, kind = 'primary', size = 'md', icon, className, style, textColor, onPress }: BtnProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        {
-          height: h,
-          paddingHorizontal: px,
-          borderRadius: radius.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          backgroundColor: k.bg,
-          borderWidth: k.border ? 1.5 : 0,
-          borderColor: T.line,
-          opacity: pressed ? 0.85 : 1,
-        },
-        k.glow ? shadow.primary : null,
-        style,
-      ]}
+      className={twMerge(
+        clsx(
+          'flex-row items-center justify-center gap-2 rounded-md active:opacity-85',
+          btnSizeCls[size],
+          btnKindCls[kind],
+          className
+        )
+      )}
+      style={style}
     >
       {icon}
-      <Text style={{ fontFamily: fonts.sansSemi, fontSize: fs, letterSpacing: -0.1, color: textColor ?? k.color }}>
+      <Text
+        className={clsx('font-sans-semi tracking-[-0.1px]', btnTextSizeCls[size], btnKindTextCls[kind])}
+        style={textColor ? { color: textColor } : undefined}
+      >
         {children}
       </Text>
     </Pressable>
@@ -84,26 +88,17 @@ type FieldProps = { label?: string; hint?: string; suffix?: string; children: Re
 
 export function Field({ label, hint, suffix, children }: FieldProps) {
   return (
-    <View style={{ gap: 8 }}>
+    <View className="gap-2">
       {label ? (
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-          <Text
-            numberOfLines={1}
-            style={{
-              fontFamily: fonts.sansBold,
-              fontSize: 11,
-              color: T.muted,
-              letterSpacing: 0.6,
-              textTransform: 'uppercase',
-            }}
-          >
+        <View className="flex-row items-baseline justify-between gap-2">
+          <Text numberOfLines={1} className="font-sans-bold text-[11px] text-muted tracking-[0.6px] uppercase">
             {label}
           </Text>
-          {suffix ? <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: T.muted2 }}>{suffix}</Text> : null}
+          {suffix ? <Text className="font-sans text-[11px] text-muted2">{suffix}</Text> : null}
         </View>
       ) : null}
       {children}
-      {hint ? <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: T.muted2 }}>{hint}</Text> : null}
+      {hint ? <Text className="font-sans text-[12px] text-muted2">{hint}</Text> : null}
     </View>
   );
 }
@@ -111,6 +106,8 @@ export function Field({ label, hint, suffix, children }: FieldProps) {
 // ────────────────────────────────────────────
 // Input
 // ────────────────────────────────────────────
+const inputBoxCls = 'h-[52px] flex-row items-center gap-2 rounded-md border-[1.5px] border-line bg-white px-3.5';
+
 type InputProps = {
   mono?: boolean;
   prefix?: string;
@@ -121,37 +118,24 @@ export function Input({ mono = false, prefix, right, style, ...rest }: InputProp
   const [focused, setFocused] = useState(false);
   return (
     <View
-      style={[
-        styles.inputBox,
-        focused && {
-          borderColor: palette.accent,
-          shadowColor: palette.accent,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.18,
-          shadowRadius: 3,
-          elevation: 2,
-        },
-      ]}
+      className={clsx(
+        inputBoxCls,
+        focused && 'border-accent shadow-[0px_0px_3px_rgba(37,99,235,0.18)]'
+      )}
     >
       {prefix ? (
-        <Text style={{ color: T.muted, fontFamily: mono ? fonts.monoMed : fonts.sans, fontSize: 14 }}>{prefix}</Text>
+        <Text className={clsx('text-[14px] text-muted', mono ? 'font-mono-med' : 'font-sans')}>{prefix}</Text>
       ) : null}
       <TextInput
         {...rest}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholderTextColor={T.muted2}
-        style={[
-          {
-            flex: 1,
-            fontFamily: mono ? fonts.monoMed : fonts.sans,
-            fontSize: mono ? 16 : 15,
-            color: T.ink,
-            letterSpacing: mono ? 0 : -0.1,
-            paddingVertical: 0,
-          },
-          style,
-        ]}
+        className={clsx(
+          'flex-1 py-0 text-ink',
+          mono ? 'font-mono-med text-[16px]' : 'font-sans text-[15px] tracking-[-0.1px]'
+        )}
+        style={style}
       />
       {right}
     </View>
@@ -172,23 +156,16 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Pressable style={styles.inputBox} onPress={() => setOpen(true)}>
-        <Text
-          style={{
-            flex: 1,
-            fontFamily: fonts.sans,
-            fontSize: 15,
-            color: value ? T.ink : T.muted2,
-          }}
-        >
+      <Pressable className={inputBoxCls} onPress={() => setOpen(true)}>
+        <Text className={clsx('flex-1 font-sans text-[15px]', value ? 'text-ink' : 'text-muted2')}>
           {value || placeholder}
         </Text>
         <Icon name="chevD" color={T.muted} size={20} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setOpen(false)}>
-          <View style={styles.modalSheet}>
+        <Pressable className="flex-1 justify-end bg-[rgba(10,18,38,0.4)]" onPress={() => setOpen(false)}>
+          <View className="max-h-[420px] rounded-t-xl bg-white py-3">
             <FlatList
               data={options}
               keyExtractor={(o) => o}
@@ -196,19 +173,17 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
                 const selected = item === value;
                 return (
                   <Pressable
-                    style={({ pressed }) => [styles.modalRow, pressed && { backgroundColor: T.bg2 }]}
+                    className="flex-row items-center px-6 py-[15px] active:bg-bg2"
                     onPress={() => {
                       onChange?.(item);
                       setOpen(false);
                     }}
                   >
                     <Text
-                      style={{
-                        flex: 1,
-                        fontFamily: selected ? fonts.sansBold : fonts.sans,
-                        fontSize: 15,
-                        color: selected ? palette.accent : T.ink,
-                      }}
+                      className={clsx(
+                        'flex-1 text-[15px]',
+                        selected ? 'font-sans-bold text-accent' : 'font-sans text-ink'
+                      )}
                     >
                       {item}
                     </Text>
@@ -227,48 +202,34 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
 // ────────────────────────────────────────────
 // Status pill (estilo LED)
 // ────────────────────────────────────────────
+const pillMap: Record<VehicleStatus, { bgCls: string; dotCls: string; textCls: string; label: string }> = {
+  ok: {
+    bgCls: 'bg-[#ECFDF5]',
+    dotCls: 'bg-ok shadow-[0px_0px_4px_rgba(16,185,129,0.9)]',
+    textCls: 'text-ok',
+    label: 'Al día',
+  },
+  warn: {
+    bgCls: 'bg-[#FFFBEB]',
+    dotCls: 'bg-warn shadow-[0px_0px_4px_rgba(245,158,11,0.9)]',
+    textCls: 'text-warn',
+    label: 'Próximo',
+  },
+  danger: {
+    bgCls: 'bg-[#FEF2F2]',
+    dotCls: 'bg-danger shadow-[0px_0px_4px_rgba(239,68,68,0.9)]',
+    textCls: 'text-danger',
+    label: 'Vencido',
+  },
+};
+
 export function StatusPill({ status = 'ok', label }: { status?: VehicleStatus; label?: string }) {
-  const map = {
-    ok: { c: T.ok, bg: '#ECFDF5', label: label || 'Al día' },
-    warn: { c: T.warn, bg: '#FFFBEB', label: label || 'Próximo' },
-    danger: { c: T.danger, bg: '#FEF2F2', label: label || 'Vencido' },
-  };
-  const s = map[status];
+  const s = pillMap[status];
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        height: 24,
-        paddingHorizontal: 10,
-        borderRadius: radius.pill,
-        backgroundColor: s.bg,
-      }}
-    >
-      <View
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: s.c,
-          shadowColor: s.c,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.9,
-          shadowRadius: 4,
-          elevation: 2,
-        }}
-      />
-      <Text
-        style={{
-          fontFamily: fonts.sansBold,
-          fontSize: 11,
-          color: s.c,
-          letterSpacing: 0.4,
-          textTransform: 'uppercase',
-        }}
-      >
-        {s.label}
+    <View className={clsx('h-6 flex-row items-center gap-1.5 rounded-full px-2.5', s.bgCls)}>
+      <View className={clsx('h-1.5 w-1.5 rounded-full', s.dotCls)} />
+      <Text className={clsx('font-sans-bold text-[11px] tracking-[0.4px] uppercase', s.textCls)}>
+        {label || s.label}
       </Text>
     </View>
   );
@@ -279,28 +240,10 @@ export function StatusPill({ status = 'ok', label }: { status?: VehicleStatus; l
 // ────────────────────────────────────────────
 export function SectionHead({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        marginBottom: 10,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ width: 4, height: 14, borderRadius: 2, backgroundColor: palette.accent }} />
-        <Text
-          style={{
-            fontFamily: fonts.sansBold,
-            fontSize: 11,
-            color: T.muted,
-            letterSpacing: 1.2,
-            textTransform: 'uppercase',
-          }}
-        >
-          {children}
-        </Text>
+    <View className="mb-2.5 flex-row items-center justify-between px-5">
+      <View className="flex-row items-center gap-2">
+        <View className="h-3.5 w-1 rounded-[2px] bg-accent" />
+        <Text className="font-sans-bold text-[11px] text-muted tracking-[1.2px] uppercase">{children}</Text>
       </View>
       {right}
     </View>
@@ -314,24 +257,22 @@ type CardProps = {
   children: ReactNode;
   padded?: boolean;
   dark?: boolean;
+  className?: string;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Card({ children, padded = true, dark = false, style }: CardProps) {
+export function Card({ children, padded = true, dark = false, className, style }: CardProps) {
   return (
     <View
-      style={[
-        {
-          backgroundColor: dark ? palette.primary2 : '#fff',
-          borderRadius: radius.lg,
-          borderWidth: 1,
-          borderColor: dark ? 'rgba(255,255,255,0.08)' : T.line,
-          padding: padded ? 16 : 0,
-          overflow: padded ? 'visible' : 'hidden',
-        },
-        dark ? null : shadow.card,
-        style,
-      ]}
+      className={twMerge(
+        clsx(
+          'rounded-lg border',
+          dark ? 'bg-primary2 border-[rgba(255,255,255,0.08)]' : 'bg-white border-line shadow-card',
+          padded ? 'p-4' : 'overflow-hidden',
+          className
+        )
+      )}
+      style={style}
     >
       {children}
     </View>
@@ -352,49 +293,36 @@ type KPIProps = {
 export function KPI({ icon, label, value, unit, dark = false }: KPIProps) {
   return (
     <View
-      style={{
-        flex: 1,
-        padding: 14,
-        borderRadius: radius.md,
-        backgroundColor: dark ? 'rgba(255,255,255,0.06)' : T.bg2,
-        borderWidth: 1,
-        borderColor: dark ? 'rgba(255,255,255,0.06)' : T.line2,
-        gap: 8,
-      }}
+      className={clsx(
+        'flex-1 gap-2 rounded-md border p-3.5',
+        dark ? 'bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.06)]' : 'bg-bg2 border-line2'
+      )}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View className="flex-row items-center gap-2">
         <View
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            backgroundColor: dark ? 'rgba(255,255,255,0.08)' : `${palette.accent}14`,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          className={clsx(
+            'h-7 w-7 items-center justify-center rounded-[8px]',
+            dark ? 'bg-[rgba(255,255,255,0.08)]' : 'bg-[rgba(37,99,235,0.08)]'
+          )}
         >
           {icon}
         </View>
         <Text
           numberOfLines={1}
-          style={{
-            flex: 1,
-            fontFamily: fonts.sansBold,
-            fontSize: 10,
-            letterSpacing: 0.4,
-            textTransform: 'uppercase',
-            color: dark ? 'rgba(255,255,255,0.6)' : T.muted,
-          }}
+          className={clsx(
+            'flex-1 font-sans-bold text-[10px] tracking-[0.4px] uppercase',
+            dark ? 'text-[rgba(255,255,255,0.6)]' : 'text-muted'
+          )}
         >
           {label}
         </Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-        <Text style={{ fontFamily: fonts.mono, fontSize: 24, letterSpacing: -0.5, color: dark ? '#fff' : T.ink }}>
+      <View className="flex-row items-baseline gap-1">
+        <Text className={clsx('font-mono text-[24px] tracking-[-0.5px]', dark ? 'text-white' : 'text-ink')}>
           {value}
         </Text>
         {unit ? (
-          <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: dark ? 'rgba(255,255,255,0.6)' : T.muted }}>
+          <Text className={clsx('font-sans text-[12px]', dark ? 'text-[rgba(255,255,255,0.6)]' : 'text-muted')}>
             {unit}
           </Text>
         ) : null}
@@ -408,21 +336,8 @@ export function KPI({ icon, label, value, unit, dark = false }: KPIProps) {
 // ────────────────────────────────────────────
 export function VinPlate({ children }: { children: ReactNode }) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: 22,
-        paddingHorizontal: 8,
-        borderRadius: 4,
-        backgroundColor: 'rgba(255,255,255,0.06)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
-      }}
-    >
-      <Text style={{ fontFamily: fonts.monoMed, fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: 1 }}>
-        {children}
-      </Text>
+    <View className="h-[22px] flex-row items-center rounded-[4px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-2">
+      <Text className="font-mono-med text-[11px] text-[rgba(255,255,255,0.7)] tracking-[1px]">{children}</Text>
     </View>
   );
 }
@@ -466,19 +381,16 @@ export function TechGrid({ width = 500, height = 420, light = true }: { width?: 
   const vLines = Math.ceil(width / gap);
   const hLines = Math.ceil(height / gap);
   return (
-    <Svg
-      width={width}
-      height={height}
-      style={StyleSheet.absoluteFill}
-      pointerEvents="none"
-    >
-      {Array.from({ length: vLines }).map((_, i) => (
-        <Line key={`v${i}`} x1={i * gap} y1={0} x2={i * gap} y2={height} stroke={stroke} strokeWidth={1} />
-      ))}
-      {Array.from({ length: hLines }).map((_, i) => (
-        <Line key={`h${i}`} x1={0} y1={i * gap} x2={width} y2={i * gap} stroke={stroke} strokeWidth={1} />
-      ))}
-    </Svg>
+    <View className="absolute inset-0" pointerEvents="none">
+      <Svg width={width} height={height}>
+        {Array.from({ length: vLines }).map((_, i) => (
+          <Line key={`v${i}`} x1={i * gap} y1={0} x2={i * gap} y2={height} stroke={stroke} strokeWidth={1} />
+        ))}
+        {Array.from({ length: hLines }).map((_, i) => (
+          <Line key={`h${i}`} x1={0} y1={i * gap} x2={width} y2={i * gap} stroke={stroke} strokeWidth={1} />
+        ))}
+      </Svg>
+    </View>
   );
 }
 
@@ -501,54 +413,17 @@ export function IconBtn({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        {
-          width: size,
-          height: size,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: filled ? palette.primary : dark ? 'rgba(255,255,255,0.12)' : '#fff',
-          borderWidth: dark || filled ? 0 : 1.5,
-          borderColor: T.line,
-          opacity: pressed ? 0.7 : 1,
-        },
-        filled ? shadow.primary : null,
-      ]}
+      className={clsx(
+        'items-center justify-center rounded-[12px] active:opacity-70',
+        filled
+          ? 'bg-primary shadow-primary'
+          : dark
+            ? 'bg-[rgba(255,255,255,0.12)]'
+            : 'border-[1.5px] border-line bg-white'
+      )}
+      style={{ width: size, height: size }}
     >
       {icon}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  inputBox: {
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: T.line,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 8,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(10,18,38,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingVertical: 12,
-    maxHeight: 420,
-  },
-  modalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 15,
-  },
-});

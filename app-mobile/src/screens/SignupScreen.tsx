@@ -1,8 +1,10 @@
 // Registro — nombre, cédula (prefix V-), correo, teléfono, contraseña + términos
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fonts, palette, T } from '../theme';
+import clsx from 'clsx';
+import { Pressable, ScrollView, Text, View } from '../tw';
+import { T } from '../theme';
 import { Btn, Field, IconBtn, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { RootScreenProps } from '../navigation/types';
@@ -20,24 +22,24 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#fff' }}
+        className="flex-1 bg-white"
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 24) + 12 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ paddingHorizontal: 20 }}>
+        <View className="px-5">
           <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-          <Text style={{ fontFamily: fonts.display, fontSize: 28, color: T.ink, letterSpacing: -0.6 }}>
+        <View className="px-6 pt-6">
+          <Text className="font-display text-[28px] text-ink tracking-[-0.6px]">
             Crea tu cuenta
           </Text>
-          <Text style={{ marginTop: 6, color: T.muted, fontFamily: fonts.sans, fontSize: 14 }}>
+          <Text className="mt-1.5 font-sans text-[14px] text-muted">
             Llena tus datos para registrar tus vehículos.
           </Text>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingVertical: 20, gap: 12 }}>
+        <View className="gap-3 px-6 py-5">
           <Field label="Nombre completo">
             <Input value={fullName} onChangeText={setFullName} placeholder="Luis Guerrero" />
           </Field>
@@ -64,29 +66,23 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
           </Field>
 
           {/* checkbox términos */}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 }}>
+          <View className="mt-1 flex-row items-start gap-2.5">
             <Pressable
               onPress={() => setAccepted((v) => !v)}
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                backgroundColor: accepted ? palette.primary : '#fff',
-                borderWidth: accepted ? 0 : 1.5,
-                borderColor: T.line,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              className={clsx(
+                'h-[22px] w-[22px] items-center justify-center rounded-[6px]',
+                accepted ? 'bg-primary' : 'border-[1.5px] border-line bg-white'
+              )}
             >
               {accepted ? <Icon name="check" color="#fff" size={14} /> : null}
             </Pressable>
-            <Text style={{ flex: 1, fontFamily: fonts.sans, fontSize: 12, color: T.muted, lineHeight: 18 }}>
-              Acepto los <Text style={{ color: palette.accent, fontFamily: fonts.sansSemi }}>Términos</Text> y la{' '}
-              <Text style={{ color: palette.accent, fontFamily: fonts.sansSemi }}>Política de Privacidad</Text>.
+            <Text className="flex-1 font-sans text-[12px] leading-[18px] text-muted">
+              Acepto los <Text className="font-sans-semi text-accent">Términos</Text> y la{' '}
+              <Text className="font-sans-semi text-accent">Política de Privacidad</Text>.
             </Text>
           </View>
 
-          <Btn kind="primary" size="lg" style={{ marginTop: 6 }} onPress={() => navigation.replace('Tabs')}>
+          <Btn kind="primary" size="lg" className="mt-1.5" onPress={() => navigation.replace('Tabs')}>
             Crear cuenta
           </Btn>
         </View>

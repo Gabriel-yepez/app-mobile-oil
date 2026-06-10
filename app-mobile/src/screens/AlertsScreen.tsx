@@ -1,11 +1,11 @@
 // Alertas — agrupadas por estado: crítica (vencido), warning (próximo) y resueltas
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { fonts, palette, radius, shadow, T } from '../theme';
+import { ScrollView, Text, View } from '../tw';
+import { T } from '../theme';
 import { Btn, Card, IconBtn, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm } from '../utils/format';
@@ -30,81 +30,58 @@ export function AlertsScreen() {
   const open = overdue.length + soon.length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg3 }}>
+    <View className="flex-1 bg-bg3">
       {/* top bar */}
       <View
-        style={{
-          paddingTop: insets.top + 12,
-          paddingHorizontal: 20,
-          paddingBottom: 14,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+        className="flex-row items-center justify-between px-5 pb-3.5"
+        style={{ paddingTop: insets.top + 12 }}
       >
         <View>
-          <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: T.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
+          <Text className="font-sans text-[12px] text-muted tracking-[1px] uppercase">
             Alertas
           </Text>
-          <Text style={{ fontFamily: fonts.display, fontSize: 26, color: T.ink, letterSpacing: -0.5 }}>
+          <Text className="font-display text-[26px] text-ink tracking-[-0.5px]">
             {open} abiertas
           </Text>
         </View>
         <IconBtn icon={<Icon name="settings" color={T.ink} size={20} />} size={40} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 12 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="gap-3 px-4 pb-[120px]" showsVerticalScrollIndicator={false}>
         {/* críticas: vencido */}
         {overdue.map((v) => (
           <View
             key={v.id}
-            style={[
-              {
-                borderRadius: radius.lg,
-                borderWidth: 1.5,
-                borderColor: `${T.danger}33`,
-                overflow: 'hidden',
-              },
-              shadow.card,
-            ]}
+            className="overflow-hidden rounded-lg border-[1.5px] border-[rgba(239,68,68,0.2)] shadow-card"
           >
             <LinearGradient colors={['#FEF2F2', '#ffffff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    backgroundColor: T.danger,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
+              <View className="mb-2.5 flex-row items-center gap-2.5">
+                <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-danger">
                   <Icon name="bell" color="#fff" size={20} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.sansBold, fontSize: 11, color: T.danger, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                <View className="flex-1">
+                  <Text className="font-sans-bold text-[11px] text-danger tracking-[1.2px] uppercase">
                     Cambio vencido
                   </Text>
-                  <Text style={{ fontFamily: fonts.display, fontSize: 17, color: T.ink }}>
+                  <Text className="font-display text-[17px] text-ink">
                     {v.brand} {v.model}
                   </Text>
                 </View>
               </View>
-              <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: T.muted, lineHeight: 19.5 }}>
+              <Text className="font-sans text-[13px] leading-[19.5px] text-muted">
                 Has superado el kilometraje recomendado. Excedido por{' '}
-                <Text style={{ fontFamily: fonts.mono, color: T.danger }}>+{fmtKm(Math.abs(kmLeft(v)))} km</Text>.
+                <Text className="font-mono text-danger">+{fmtKm(Math.abs(kmLeft(v)))} km</Text>.
               </Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <View className="mt-3 flex-row gap-2">
                 <Btn
                   kind="primary"
                   size="sm"
-                  style={{ flex: 1, backgroundColor: T.danger }}
+                  className="flex-1 bg-danger"
                   onPress={() => navigation.navigate('AddOil', { vehicleId: v.id })}
                 >
                   Registrar cambio
                 </Btn>
-                <Btn kind="ghost" size="sm" style={{ flex: 1 }}>
+                <Btn kind="ghost" size="sm" className="flex-1">
                   Posponer
                 </Btn>
               </View>
@@ -116,41 +93,24 @@ export function AlertsScreen() {
         {soon.map((v) => (
           <View
             key={v.id}
-            style={[
-              {
-                borderRadius: radius.lg,
-                borderWidth: 1.5,
-                borderColor: `${T.warn}33`,
-                overflow: 'hidden',
-              },
-              shadow.card,
-            ]}
+            className="overflow-hidden rounded-lg border-[1.5px] border-[rgba(245,158,11,0.2)] shadow-card"
           >
             <LinearGradient colors={['#FFFBEB', '#ffffff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    backgroundColor: T.warn,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
+              <View className="mb-2.5 flex-row items-center gap-2.5">
+                <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-warn">
                   <Icon name="gauge" color="#fff" size={20} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.sansBold, fontSize: 11, color: '#B45309', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                <View className="flex-1">
+                  <Text className="font-sans-bold text-[11px] text-[#B45309] tracking-[1.2px] uppercase">
                     Próximo cambio
                   </Text>
-                  <Text style={{ fontFamily: fonts.display, fontSize: 17, color: T.ink }}>
+                  <Text className="font-display text-[17px] text-ink">
                     {v.brand} {v.model}
                   </Text>
                 </View>
               </View>
-              <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: T.muted, lineHeight: 19.5 }}>
-                Restan <Text style={{ fontFamily: fonts.mono, color: '#B45309' }}>{fmtKm(kmLeft(v))} km</Text> para el próximo
+              <Text className="font-sans text-[13px] leading-[19.5px] text-muted">
+                Restan <Text className="font-mono text-[#B45309]">{fmtKm(kmLeft(v))} km</Text> para el próximo
                 cambio. Programa tu visita al lubricentro.
               </Text>
             </LinearGradient>
@@ -158,28 +118,19 @@ export function AlertsScreen() {
         ))}
 
         {/* resueltas */}
-        <View style={{ marginTop: 8, marginHorizontal: -16 }}>
+        <View className="-mx-4 mt-2">
           <SectionHead>Resueltas</SectionHead>
         </View>
         {RESOLVED.map((r, i) => (
-          <Card key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 10,
-                backgroundColor: '#ECFDF5',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+          <Card key={i} className="flex-row items-center gap-3">
+            <View className="h-8 w-8 items-center justify-center rounded-[10px] bg-[#ECFDF5]">
               <Icon name="check" color={T.ok} size={18} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.sansBold, fontSize: 14, color: T.ink }}>{r.v}</Text>
-              <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: T.muted, marginTop: 1 }}>{r.text}</Text>
+            <View className="flex-1">
+              <Text className="font-sans-bold text-[14px] text-ink">{r.v}</Text>
+              <Text className="mt-px font-sans text-[12px] text-muted">{r.text}</Text>
             </View>
-            <Text style={{ fontFamily: fonts.monoMed, fontSize: 11, color: T.muted2 }}>{r.date}</Text>
+            <Text className="font-mono-med text-[11px] text-muted2">{r.date}</Text>
           </Card>
         ))}
       </ScrollView>

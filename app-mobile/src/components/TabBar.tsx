@@ -1,10 +1,10 @@
 // Tab bar flotante con FAB central — 5 items: Inicio, Vehículos, +, Alertas, Perfil
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fonts, palette, radius, shadow, T } from '../theme';
+import { Pressable, Text, View } from '../tw';
+import { palette, T } from '../theme';
 import { Icon, IconName } from './Icon';
 
 const TAB_META: Record<string, { label: string; icon: IconName }> = {
@@ -28,24 +28,20 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       <Pressable
         key={routeName}
         onPress={() => navigation.navigate(routeName)}
-        style={{ flex: 1, height: 52, alignItems: 'center', justifyContent: 'center', gap: 2 }}
+        className="h-[52px] flex-1 items-center justify-center gap-0.5"
       >
         <Icon name={meta.icon} color={color} size={22} />
-        <Text style={{ fontFamily: fonts.sansSemi, fontSize: 10, letterSpacing: 0.3, color }}>{meta.label}</Text>
+        <Text className="font-sans-semi text-[10px] tracking-[0.3px]" style={{ color }}>
+          {meta.label}
+        </Text>
       </Pressable>
     );
   };
 
   return (
     <View
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        paddingBottom: Math.max(insets.bottom, 24),
-        paddingTop: 6,
-      }}
+      className="absolute bottom-0 left-0 right-0 pt-1.5"
+      style={{ paddingBottom: Math.max(insets.bottom, 24) }}
       pointerEvents="box-none"
     >
       <LinearGradient
@@ -53,42 +49,14 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         style={{ position: 'absolute', top: -10, left: 0, right: 0, bottom: 0 }}
         pointerEvents="none"
       />
-      <View
-        style={[
-          {
-            marginHorizontal: 16,
-            height: 64,
-            borderRadius: 22,
-            backgroundColor: '#fff',
-            borderWidth: 1,
-            borderColor: T.line,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-around',
-            paddingHorizontal: 6,
-          },
-          shadow.tabbar,
-        ]}
-      >
+      <View className="mx-4 h-16 flex-row items-center justify-around rounded-[22px] border border-line bg-white px-1.5 shadow-tabbar">
         {renderTab('Home')}
         {renderTab('Vehicles')}
 
         {/* FAB central → flujo agregar vehículo */}
         <Pressable
           onPress={() => navigation.navigate('AddVehicleType' as never)}
-          style={({ pressed }) => [
-            {
-              width: 52,
-              height: 52,
-              borderRadius: 18,
-              backgroundColor: palette.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: -22,
-              opacity: pressed ? 0.85 : 1,
-            },
-            shadow.primary,
-          ]}
+          className="-mt-[22px] h-[52px] w-[52px] items-center justify-center rounded-[18px] bg-primary shadow-primary active:opacity-85"
         >
           <Icon name="plus" color="#fff" size={24} />
         </Pressable>

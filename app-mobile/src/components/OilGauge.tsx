@@ -1,9 +1,10 @@
 // Medidor radial de vida del aceite — arco 270° (-225° → +45°), ticks cada 27°,
 // lectura central mono 44px + status pill. Animación 800ms ease-out al montar.
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Text, View } from 'react-native';
+import { Animated, Easing } from 'react-native';
 import Svg, { Defs, LinearGradient, Line, Path, Stop } from 'react-native-svg';
-import { fonts, palette, T } from '../theme';
+import { Text, View } from '../tw';
+import { palette, T } from '../theme';
 import { fmtKm } from '../utils/format';
 import { StatusPill } from './primitives';
 import { VehicleStatus } from '../data/mock';
@@ -113,35 +114,17 @@ export function OilGauge({ pct = 70, kmLeft = 1840, size = 220 }: Props) {
       </Svg>
 
       {/* lectura central */}
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: fonts.sansBold,
-            fontSize: 11,
-            letterSpacing: 1.5,
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.55)',
-          }}
-        >
+      <View className="absolute inset-0 items-center justify-center">
+        <Text className="font-sans-bold text-[11px] text-[rgba(255,255,255,0.55)] tracking-[1.5px] uppercase">
           Próximo cambio
         </Text>
-        <Text style={{ fontFamily: fonts.mono, fontSize: 44, color: '#fff', lineHeight: 48, marginTop: 4, letterSpacing: -1 }}>
+        <Text className="mt-1 font-mono text-[44px] leading-[48px] text-white tracking-[-1px]">
           {fmtKm(kmLeft)}
         </Text>
-        <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+        <Text className="mt-0.5 font-sans text-[13px] text-[rgba(255,255,255,0.6)]">
           km restantes
         </Text>
-        <View style={{ marginTop: 10 }}>
+        <View className="mt-2.5">
           <StatusPill status={status} label={status === 'ok' ? 'AL DÍA' : status === 'warn' ? 'PRÓXIMO' : 'VENCIDO'} />
         </View>
       </View>

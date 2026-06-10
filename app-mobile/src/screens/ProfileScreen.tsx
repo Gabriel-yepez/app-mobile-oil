@@ -1,11 +1,12 @@
 // Perfil — hero oscuro con avatar + datos personales + preferencias + cerrar sesión
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { fonts, palette, radius, T } from '../theme';
+import clsx from 'clsx';
+import { Pressable, ScrollView, Text, View } from '../tw';
+import { palette, T } from '../theme';
 import { Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore } from '../store/useStore';
@@ -42,8 +43,8 @@ export function ProfileScreen() {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg3 }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+    <View className="flex-1 bg-bg3">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-[120px]">
         {/* hero */}
         <LinearGradient
           colors={[palette.primary, palette.primary2]}
@@ -55,22 +56,14 @@ export function ProfileScreen() {
           }}
         >
           <TechGrid />
-          <View
-            style={{
-              paddingHorizontal: 20,
-              paddingBottom: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: 'rgba(255,255,255,0.7)', letterSpacing: 1, textTransform: 'uppercase' }}>
+          <View className="flex-row items-center justify-between px-5 pb-2">
+            <Text className="font-sans text-[12px] text-[rgba(255,255,255,0.7)] tracking-[1px] uppercase">
               Perfil
             </Text>
             <IconBtn dark icon={<Icon name="edit" color="#fff" size={20} />} />
           </View>
 
-          <View style={{ paddingHorizontal: 20, paddingBottom: 24, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <View className="flex-row items-center gap-3.5 px-5 pb-6 pt-2">
             <LinearGradient
               colors={[palette.accent2, palette.primary]}
               start={{ x: 0, y: 0 }}
@@ -85,36 +78,24 @@ export function ProfileScreen() {
                 borderColor: 'rgba(255,255,255,0.2)',
               }}
             >
-              <Text style={{ fontFamily: fonts.display, fontSize: 26, color: '#fff' }}>{initials}</Text>
+              <Text className="font-display text-[26px] text-white">{initials}</Text>
             </LinearGradient>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.display, fontSize: 22, color: '#fff', letterSpacing: -0.4 }}>
+            <View className="flex-1">
+              <Text className="font-display text-[22px] text-white tracking-[-0.4px]">
                 {profile.fullName}
               </Text>
-              <Text style={{ fontFamily: fonts.monoMed, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+              <Text className="mt-0.5 font-mono-med text-[12px] text-[rgba(255,255,255,0.7)]">
                 {profile.cedula}
               </Text>
-              <View
-                style={{
-                  marginTop: 6,
-                  alignSelf: 'flex-start',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: radius.pill,
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                }}
-              >
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: T.ok }} />
-                <Text style={{ fontFamily: fonts.sansSemi, fontSize: 11, color: '#fff' }}>Cuenta verificada</Text>
+              <View className="mt-1.5 flex-row items-center gap-1.5 self-start rounded-full bg-[rgba(255,255,255,0.1)] px-2 py-[3px]">
+                <View className="h-1.5 w-1.5 rounded-full bg-ok" />
+                <Text className="font-sans-semi text-[11px] text-white">Cuenta verificada</Text>
               </View>
             </View>
           </View>
 
           {/* mini stats */}
-          <View style={{ paddingHorizontal: 20, paddingBottom: 24, flexDirection: 'row', gap: 8 }}>
+          <View className="flex-row gap-2 px-5 pb-6">
             {[
               { l: 'Vehículos', v: String(vehicles.length) },
               { l: 'Cambios', v: String(changes.length) },
@@ -122,19 +103,10 @@ export function ProfileScreen() {
             ].map((s) => (
               <View
                 key={s.l}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(255,255,255,0.08)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  alignItems: 'center',
-                }}
+                className="flex-1 items-center rounded-[12px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.08)] px-3 py-2.5"
               >
-                <Text style={{ fontFamily: fonts.mono, fontSize: 18, color: '#fff' }}>{s.v}</Text>
-                <Text style={{ fontFamily: fonts.sans, fontSize: 10, color: 'rgba(255,255,255,0.65)', letterSpacing: 1, textTransform: 'uppercase' }}>
+                <Text className="font-mono text-[18px] text-white">{s.v}</Text>
+                <Text className="font-sans text-[10px] text-[rgba(255,255,255,0.65)] tracking-[1px] uppercase">
                   {s.l}
                 </Text>
               </View>
@@ -143,24 +115,20 @@ export function ProfileScreen() {
         </LinearGradient>
 
         {/* datos personales */}
-        <View style={{ paddingTop: 18 }}>
+        <View className="pt-[18px]">
           <SectionHead>Datos personales</SectionHead>
-          <View style={{ paddingHorizontal: 16 }}>
+          <View className="px-4">
             <Card>
               {personalRows.map((r, i) => (
                 <View
                   key={r.k}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    borderBottomWidth: i === personalRows.length - 1 ? 0 : 1,
-                    borderBottomColor: T.line2,
-                  }}
+                  className={clsx(
+                    'flex-row items-center justify-between py-3',
+                    i !== personalRows.length - 1 && 'border-b border-line2'
+                  )}
                 >
-                  <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: T.muted }}>{r.k}</Text>
-                  <Text style={{ fontFamily: r.mono ? fonts.monoMed : fonts.sansSemi, fontSize: 14, color: T.ink }}>
+                  <Text className="font-sans text-[13px] text-muted">{r.k}</Text>
+                  <Text className={clsx('text-[14px] text-ink', r.mono ? 'font-mono-med' : 'font-sans-semi')}>
                     {r.v}
                   </Text>
                 </View>
@@ -170,40 +138,23 @@ export function ProfileScreen() {
         </View>
 
         {/* preferencias */}
-        <View style={{ paddingTop: 18 }}>
+        <View className="pt-[18px]">
           <SectionHead>Preferencias</SectionHead>
-          <View style={{ paddingHorizontal: 16 }}>
+          <View className="px-4">
             <Card padded={false}>
               {prefRows.map((r, i) => (
                 <Pressable
                   key={r.k}
-                  style={({ pressed }) => [
-                    {
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                      paddingVertical: 14,
-                      paddingHorizontal: 16,
-                      borderBottomWidth: i === prefRows.length - 1 ? 0 : 1,
-                      borderBottomColor: T.line2,
-                    },
-                    pressed && { backgroundColor: T.bg2 },
-                  ]}
+                  className={clsx(
+                    'flex-row items-center gap-3 px-4 py-3.5 active:bg-bg2',
+                    i !== prefRows.length - 1 && 'border-b border-line2'
+                  )}
                 >
-                  <View
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 10,
-                      backgroundColor: `${palette.accent}14`,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
+                  <View className="h-8 w-8 items-center justify-center rounded-[10px] bg-[rgba(37,99,235,0.08)]">
                     <Icon name={r.icon} color={palette.accent} size={18} />
                   </View>
-                  <Text style={{ flex: 1, fontFamily: fonts.sansSemi, fontSize: 14, color: T.ink }}>{r.k}</Text>
-                  {r.v ? <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: T.muted }}>{r.v}</Text> : null}
+                  <Text className="flex-1 font-sans-semi text-[14px] text-ink">{r.k}</Text>
+                  {r.v ? <Text className="font-sans text-[13px] text-muted">{r.v}</Text> : null}
                   <Icon name="chevR" color={T.muted2} size={20} />
                 </Pressable>
               ))}
@@ -212,25 +163,15 @@ export function ProfileScreen() {
         </View>
 
         {/* cerrar sesión */}
-        <View style={{ paddingTop: 18, paddingHorizontal: 16 }}>
+        <View className="px-4 pt-[18px]">
           <Pressable
             onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
-            style={({ pressed }) => ({
-              height: 48,
-              borderRadius: radius.md,
-              borderWidth: 1.5,
-              borderColor: T.line,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              backgroundColor: pressed ? T.bg2 : 'transparent',
-            })}
+            className="h-12 flex-row items-center justify-center gap-2 rounded-md border-[1.5px] border-line bg-transparent active:bg-bg2"
           >
             <Icon name="logout" color={T.danger} size={20} />
-            <Text style={{ fontFamily: fonts.sansSemi, fontSize: 15, color: T.danger }}>Cerrar sesión</Text>
+            <Text className="font-sans-semi text-[15px] text-danger">Cerrar sesión</Text>
           </Pressable>
-          <Text style={{ textAlign: 'center', marginTop: 12, fontFamily: fonts.monoMed, fontSize: 11, color: T.muted2, letterSpacing: 0.4 }}>
+          <Text className="mt-3 text-center font-mono-med text-[11px] text-muted2 tracking-[0.4px]">
             OilTrack VE · v1.0.0
           </Text>
         </View>

@@ -1,15 +1,8 @@
 // Onboarding — 3 slides con pager horizontal, dots animados y CTA
 import React, { useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-  ViewToken,
-} from 'react-native';
+import { Animated, Dimensions, FlatList, ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, Text, View } from '../tw';
 import Svg, {
   Circle,
   Defs,
@@ -211,11 +204,11 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
+    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       {/* skip */}
-      <View style={{ paddingTop: 12, paddingRight: 20, alignItems: 'flex-end' }}>
+      <View className="items-end pr-5 pt-3">
         <Pressable onPress={() => navigation.replace('Login')} hitSlop={12}>
-          <Text style={{ fontFamily: fonts.sansSemi, fontSize: 14, color: T.muted }}>Saltar</Text>
+          <Text className="font-sans-semi text-[14px] text-muted">Saltar</Text>
         </Pressable>
       </View>
 
@@ -229,27 +222,18 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         renderItem={({ item }) => (
-          <View style={{ width: SCREEN_W, flex: 1 }}>
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+          <View className="flex-1" style={{ width: SCREEN_W }}>
+            <View className="flex-1 items-center justify-center px-5">
               {item.illustration}
             </View>
-            <View style={{ paddingHorizontal: 28, paddingBottom: 18 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.sansBold,
-                  fontSize: 11,
-                  color: palette.accent,
-                  letterSpacing: 2,
-                  textTransform: 'uppercase',
-                  marginBottom: 10,
-                }}
-              >
+            <View className="px-7 pb-[18px]">
+              <Text className="mb-2.5 font-sans-bold text-[11px] text-accent tracking-[2px] uppercase">
                 {item.eyebrow}
               </Text>
-              <Text style={{ fontFamily: fonts.display, fontSize: 30, color: T.ink, letterSpacing: -0.8, lineHeight: 33 }}>
+              <Text className="font-display text-[30px] leading-[33px] text-ink tracking-[-0.8px]">
                 {item.title}
               </Text>
-              <Text style={{ marginTop: 12, fontFamily: fonts.sans, fontSize: 15, lineHeight: 22.5, color: T.muted }}>
+              <Text className="mt-3 font-sans text-[15px] leading-[22.5px] text-muted">
                 {item.body}
               </Text>
             </View>
@@ -259,16 +243,10 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
 
       {/* dots + cta */}
       <View
-        style={{
-          paddingTop: 8,
-          paddingHorizontal: 20,
-          paddingBottom: Math.max(insets.bottom, 24) + 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+        className="flex-row items-center justify-between px-5 pt-2"
+        style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}
       >
-        <View style={{ flexDirection: 'row', gap: 6 }}>
+        <View className="flex-row gap-1.5">
           {SLIDES.map((_, i) => (
             <Dot key={i} active={i === index} />
           ))}

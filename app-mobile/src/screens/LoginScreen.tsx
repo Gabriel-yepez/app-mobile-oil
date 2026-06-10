@@ -1,8 +1,9 @@
 // Login — logo + wordmark, 2 campos, sin botones sociales (pedido del cliente)
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fonts, palette, T } from '../theme';
+import { Pressable, ScrollView, Text, View } from '../tw';
+import { T } from '../theme';
 import { BrandMark } from '../components/BrandMark';
 import { Btn, Field, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
@@ -17,30 +18,31 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#fff' }}
-        contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 28 }}
+        className="flex-1 bg-white"
+        contentContainerClassName="grow"
+        contentContainerStyle={{ paddingTop: insets.top + 28 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* logo + wordmark */}
-        <View style={{ alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View className="items-center">
+          <View className="flex-row items-center gap-2.5">
             <BrandMark size={42} />
-            <Text style={{ fontFamily: fonts.display, fontSize: 22, color: T.ink, letterSpacing: -0.4 }}>
-              OilTrack <Text style={{ color: palette.accent }}>VE</Text>
+            <Text className="font-display text-[22px] text-ink tracking-[-0.4px]">
+              OilTrack <Text className="text-accent">VE</Text>
             </Text>
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingTop: 32 }}>
-          <Text style={{ fontFamily: fonts.display, fontSize: 28, color: T.ink, letterSpacing: -0.6 }}>
+        <View className="px-6 pt-8">
+          <Text className="font-display text-[28px] text-ink tracking-[-0.6px]">
             Bienvenido de nuevo
           </Text>
-          <Text style={{ marginTop: 6, color: T.muted, fontFamily: fonts.sans, fontSize: 14 }}>
+          <Text className="mt-1.5 font-sans text-[14px] text-muted">
             Ingresa para ver tus vehículos y próximos cambios.
           </Text>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingTop: 24, gap: 14 }}>
+        <View className="gap-3.5 px-6 pt-6">
           <Field label="Correo electrónico">
             <Input
               value={email}
@@ -62,8 +64,8 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
               }
             />
           </Field>
-          <Pressable style={{ alignSelf: 'flex-end' }} hitSlop={8}>
-            <Text style={{ fontFamily: fonts.sansSemi, fontSize: 13, color: palette.accent }}>
+          <Pressable className="self-end" hitSlop={8}>
+            <Text className="font-sans-semi text-[13px] text-accent">
               ¿Olvidaste tu contraseña?
             </Text>
           </Pressable>
@@ -72,11 +74,11 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
           </Btn>
         </View>
 
-        <View style={{ flex: 1 }} />
-        <View style={{ paddingBottom: Math.max(insets.bottom, 24) + 12, alignItems: 'center' }}>
-          <Text style={{ color: T.muted, fontFamily: fonts.sans, fontSize: 14 }}>
+        <View className="flex-1" />
+        <View className="items-center" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
+          <Text className="font-sans text-[14px] text-muted">
             ¿No tienes cuenta?{' '}
-            <Text style={{ color: palette.accent, fontFamily: fonts.sansSemi }} onPress={() => navigation.navigate('Signup')}>
+            <Text className="font-sans-semi text-accent" onPress={() => navigation.navigate('Signup')}>
               Crear una
             </Text>
           </Text>
