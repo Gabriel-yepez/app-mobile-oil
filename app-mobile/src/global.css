@@ -1,0 +1,68 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+/* Familias por plataforma */
+@media android {
+  :root {
+    --font-mono: monospace;
+    --font-rounded: normal;
+    --font-serif: serif;
+    --font-sans: normal;
+  }
+}
+
+@media ios {
+  :root {
+    --font-mono: ui-monospace;
+    --font-serif: ui-serif;
+    --font-sans: system-ui;
+    --font-rounded: ui-rounded;
+  }
+}
+
+/* ────────────────────────────────────────────
+   Tokens OilTrack VE (paleta NAVY del handoff)
+   Uso: bg-primary, text-ink, border-line, font-display…
+   ──────────────────────────────────────────── */
+@layer theme {
+  @theme {
+    /* paleta */
+    --color-primary: #0a2540;
+    --color-primary2: #0f2e54;
+    --color-accent: #2563eb;
+    --color-accent2: #3b82f6;
+    --color-glow: rgba(37, 99, 235, 0.18);
+
+    /* semánticos */
+    --color-ink: #0a1226;
+    --color-ink2: #1b2440;
+    --color-muted: #5b6478;
+    --color-muted2: #8a93a8;
+    --color-line: #e4e8f1;
+    --color-line2: #eff2f8;
+    --color-bg2: #f4f6fb;
+    --color-bg3: #f8fafd;
+
+    /* status */
+    --color-ok: #10b981;
+    --color-warn: #f59e0b;
+    --color-danger: #ef4444;
+    --color-oil: #f59e0b;
+
+    /* tipografías cargadas con expo-font */
+    --font-sans: "Inter_500Medium";
+    --font-sans-semi: "Inter_600SemiBold";
+    --font-sans-bold: "Inter_700Bold";
+    --font-display: "SpaceGrotesk_700Bold";
+    --font-mono: "JetBrainsMono_700Bold";
+    --font-mono-med: "JetBrainsMono_600SemiBold";
+
+    /* radios del handoff */
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+  }
+}

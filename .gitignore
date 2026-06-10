@@ -36,6 +36,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# generated native folders (prebuild de Expo en app-mobile/)
+app-mobile/ios/
+app-mobile/android/
