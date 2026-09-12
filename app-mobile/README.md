@@ -15,7 +15,7 @@ npm run android    # emulador Android
 
 ## Stack
 
-- **Expo SDK 56** + TypeScript
+- **Expo SDK 57** + TypeScript
 - **React Navigation** — stack nativo + bottom tabs con TabBar custom (FAB central)
 - **react-native-svg** — iconos, ilustraciones, medidor radial `OilGauge`
 - **Zustand** — estado global (vehículos, cambios de aceite, perfil)
