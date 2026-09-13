@@ -22,6 +22,8 @@ npm run android    # emulador Android
 - **expo-linear-gradient** — headers oscuros y thumbnails
 - **@expo-google-fonts** — Inter (UI), Space Grotesk (títulos), JetBrains Mono (km, USD, placas, cédula)
 - **Tamagui (`@tamagui/core`)** — estilos, tokens, temas claro/oscuro y animaciones
+- **expo-notifications** — notificaciones locales: cambio próximo, vencido y recordatorio semanal
+- **expo-sqlite/kv-store + zustand/persist** — preferencias de notificación persistidas
 
 ## Tamagui y temas
 
@@ -85,10 +87,11 @@ src/
 ├── ui/             # primitivas styled de Tamagui (Box, Row, Col, Txt, Touchable…)
 ├── components/     # Icon, BrandMark, OilGauge, TabBar, primitivas (Btn, Input, Card…)
 ├── data/mock.ts    # data mock: flota, cambios, perfil, marcas/aceites VE
-├── store/          # Zustand + selectors (kmLeft, pct, status)
+├── store/          # Zustand + selectors (kmLeft, pct, status) + prefs persistidas
+├── notifications/  # plan puro + reconciliación con el SO + permisos
 ├── utils/format.ts # formatos es-VE (78.460 km, $32,00)
 ├── navigation/     # stack raíz + tabs
-└── screens/        # 12 pantallas
+└── screens/        # 13 pantallas
 ```
 
 ## Pantallas
@@ -102,10 +105,12 @@ src/
 10. **Historial** — inversión anual USD/Bs.S + lista completa
 11. **Alertas** — vencido / próximo / resueltas (derivadas del estado)
 12. **Perfil** — datos personales (cédula V-, estado VE) + preferencias
+13. **Notificaciones** — switch maestro, tipos de aviso, día y hora del recordatorio
 
 ## Pendiente (próximas iteraciones)
 
 - Integración con backend (reemplazar `src/data/mock.ts` y el store)
-- Persistencia local (MMKV / AsyncStorage) — offline-first
-- Notificaciones locales (`expo-notifications`) cuando `kmLeft < 500`
+- Persistencia local de vehículos y cambios — offline-first (hoy solo se persisten
+  las preferencias de notificación)
+- Push remoto (`getExpoPushTokenAsync` + backend) — requiere development build y EAS
 - Animaciones con `react-native-reanimated`
