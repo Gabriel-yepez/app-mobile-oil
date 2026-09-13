@@ -25,5 +25,6 @@ export {
 export { buildSchedule, nextOccurrence, REMINDER_HOUR } from './plan';
 export { reconcile, syncNotifications, type SyncResult } from './scheduler';
 export { useFirstRunPermission } from './useFirstRunPermission';
+export { useNotificationResponse } from './useNotificationResponse';
 export { useNotificationsSync } from './useNotificationsSync';
 export * from './types';

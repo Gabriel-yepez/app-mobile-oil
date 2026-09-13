@@ -6,7 +6,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { dark, light, palette } from '../theme';
 import { TabBar } from '../components/TabBar';
 import { useFirstRunPermission } from '../notifications';
-import { RootStackParamList } from './types';
+import { RootStackParamList, TabParamList } from './types';
+import { navigationRef, flushPendingRoute } from './navigationRef';
 
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -22,7 +23,7 @@ import { AddOilScreen } from '../screens/AddOilScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
 
 function Tabs() {
   useFirstRunPermission();
@@ -69,7 +70,7 @@ const navThemes = {
 
 export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
   return (
-    <NavigationContainer theme={navThemes[scheme]}>
+    <NavigationContainer theme={navThemes[scheme]} ref={navigationRef} onReady={flushPendingRoute}>
       <Stack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
