@@ -1,9 +1,10 @@
 // Home — hero fijo con el vehículo activo, y debajo los widgets que el usuario
 // eligió y ordenó. El contenido de cada widget vive en src/home/widgets/; acá
 // solo se decide el hero y se recorre el orden.
-import React, { useState } from 'react';
-import { FlatList, Modal } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { FlatList, Modal, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -30,6 +31,10 @@ export function HomeScreen() {
   const layout = useHomeLayout((s) => s.layout);
   const hydrated = useHomeLayout((s) => s.hydrated);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const triggerRef = useRef<View>(null);
+  const [pickerLayout, setPickerLayout] = useState({ top: 0, left: 0, width: 0 });
+  const [pickerStep, setPickerStep] = useState<'type' | 'vehicles'>('type');
+  const [selectedType, setSelectedType] = useState<'car' | 'moto' | null>(null);
 
   // Mientras no terminó de leerse el layout guardado no se pinta la lista: si
   // no, se ve el orden de fábrica reacomodarse solo un instante después.
@@ -104,7 +109,15 @@ export function HomeScreen() {
           </Row>
 
           <Touchable
-            onPress={() => setPickerOpen(true)}
+            ref={triggerRef as any}
+            onPress={() => {
+              triggerRef.current?.measure((x, y, w, h, px, py) => {
+                setPickerLayout({ top: py + h + 8, left: px, width: w });
+                setPickerStep('type');
+                setSelectedType(null);
+                setPickerOpen(true);
+              });
+            }}
             fade
             transition="quick"
             fd="row"
@@ -140,45 +153,131 @@ export function HomeScreen() {
 
       {/* selector de vehículo activo */}
       <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
-        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={() => setPickerOpen(false)}>
+        <Touchable f={1} bg="transparent" onPress={() => setPickerOpen(false)}>
           <Box
-            borderTopLeftRadius="$xl"
-            borderTopRightRadius="$xl"
-            bg="$surface"
-            pt="$md"
-            pb={insets.bottom + 12}
+            pos="absolute"
+            t={pickerLayout.top}
+            l={pickerLayout.left}
+            w={pickerLayout.width}
             transition="bouncy"
-            enterStyle={{ y: 40, opacity: 0 }}
+            enterStyle={{ y: -10, opacity: 0 }}
+            shadowColor="#000"
+            shadowOffset={{ width: 0, height: 10 }}
+            shadowOpacity={0.15}
+            shadowRadius={20}
+            style={{ elevation: 10 }}
           >
-            <FlatList
-              data={vehicles}
-              keyExtractor={(v) => v.id}
-              renderItem={({ item }) => (
+            <Box
+              br="$xl"
+              bw={1}
+              bc="rgba(255,255,255,0.1)"
+              overflow="hidden"
+            >
+              <BlurView intensity={60} tint="dark" style={{ backgroundColor: 'rgba(255,255,255,0.06)', paddingVertical: 12 }}>
+            {pickerStep === 'type' ? (
+              <Col>
                 <Touchable
                   fd="row"
                   ai="center"
                   gap="$md"
-                  px="$2xl"
-                  py="$md"
-                  pressStyle={{ bg: '$bg2' }}
+                  px="$md"
+                  py="$sm"
+                  br="$md"
+                  mx="$sm"
+                  pressStyle={{ bg: 'rgba(255,255,255,0.1)' }}
                   onPress={() => {
-                    setActiveVehicle(item.id);
-                    setPickerOpen(false);
+                    setSelectedType('car');
+                    setPickerStep('vehicles');
                   }}
                 >
-                  <VehicleThumb kind={item.kind} color={item.color} size={40} />
+                  <VehicleThumb kind="car" color="rgba(0,0,0,0.25)" size={40} />
                   <Col f={1}>
-                    <Txt font="bold" fos={14}>
-                      {item.brand} {item.model}
-                    </Txt>
-                    <Txt font="monoMed" fos={11} tone="muted">
-                      {item.plate} · {item.year}
-                    </Txt>
+                    <Txt font="bold" fos={14} tone="onDark">Carro</Txt>
                   </Col>
-                  {item.id === active.id ? <Icon name="check" color={c.accent} size={18} /> : null}
+                  <Icon name="chevR" color="rgba(255,255,255,0.5)" size={18} />
                 </Touchable>
-              )}
-            />
+                <Touchable
+                  fd="row"
+                  ai="center"
+                  gap="$md"
+                  px="$md"
+                  py="$sm"
+                  br="$md"
+                  mx="$sm"
+                  mt="$xs"
+                  pressStyle={{ bg: 'rgba(255,255,255,0.1)' }}
+                  onPress={() => {
+                    setSelectedType('moto');
+                    setPickerStep('vehicles');
+                  }}
+                >
+                  <VehicleThumb kind="moto" color="rgba(0,0,0,0.25)" size={40} />
+                  <Col f={1}>
+                    <Txt font="bold" fos={14} tone="onDark">Moto</Txt>
+                  </Col>
+                  <Icon name="chevR" color="rgba(255,255,255,0.5)" size={18} />
+                </Touchable>
+              </Col>
+            ) : (
+              <Col>
+                <Touchable
+                  fd="row"
+                  ai="center"
+                  gap="$sm"
+                  px="$md"
+                  py="$sm"
+                  br="$md"
+                  mx="$sm"
+                  mb="$sm"
+                  pressStyle={{ bg: 'rgba(255,255,255,0.1)' }}
+                  onPress={() => setPickerStep('type')}
+                >
+                  <Icon name="chevL" color="#FFFFFF" size={18} />
+                  <Txt font="semi" fos={13} tone="onDark">
+                    Volver
+                  </Txt>
+                </Touchable>
+                <Box h={1} bg="rgba(255,255,255,0.15)" mb="$sm" mx="$sm" />
+                <FlatList
+                  data={vehicles.filter((v) => v.kind === selectedType)}
+                  keyExtractor={(v) => v.id}
+                  renderItem={({ item }) => (
+                    <Touchable
+                      fd="row"
+                      ai="center"
+                      gap="$md"
+                      px="$md"
+                      py="$sm"
+                      br="$md"
+                      mx="$sm"
+                      pressStyle={{ bg: 'rgba(255,255,255,0.1)' }}
+                      onPress={() => {
+                        setActiveVehicle(item.id);
+                        setPickerOpen(false);
+                      }}
+                    >
+                      <VehicleThumb kind={item.kind} color={item.color} size={40} />
+                      <Col f={1}>
+                        <Txt font="bold" fos={14} tone="onDark">
+                          {item.brand} {item.model}
+                        </Txt>
+                        <Txt font="monoMed" fos={11} tone="onDarkMuted">
+                          {item.plate} · {item.year}
+                        </Txt>
+                      </Col>
+                      {item.id === active.id ? <Icon name="check" color={c.accent} size={18} /> : null}
+                    </Touchable>
+                  )}
+                  ListEmptyComponent={
+                    <Box px="$md" py="$sm" ai="center">
+                      <Txt tone="onDarkMuted" fos={13}>No hay vehículos</Txt>
+                    </Box>
+                  }
+                />
+              </Col>
+            )}
+            </BlurView>
+            </Box>
           </Box>
         </Touchable>
       </Modal>
