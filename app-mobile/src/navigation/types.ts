@@ -28,6 +28,7 @@ export type RootStackParamList = {
   AddVehicleForm: { kind: 'car' | 'moto' };
   AddOil: { vehicleId?: string; draft?: VehicleDraft };
   History: undefined;
+  Notifications: undefined;
 };
 
 export type RootScreenProps<S extends keyof RootStackParamList> = NativeStackScreenProps<

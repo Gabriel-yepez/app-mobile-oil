@@ -47,7 +47,11 @@ export function AlertsScreen() {
             {open} abiertas
           </Txt>
         </Col>
-        <IconBtn icon={<Icon name="settings" color={c.ink} size={20} />} size={40} />
+        <IconBtn
+          icon={<Icon name="settings" color={c.ink} size={20} />}
+          size={40}
+          onPress={() => navigation.navigate('Notifications')}
+        />
       </Row>
 
       <Scroll

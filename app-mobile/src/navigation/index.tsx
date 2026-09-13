@@ -21,6 +21,7 @@ import { AddVehicleTypeScreen } from '../screens/AddVehicleTypeScreen';
 import { AddVehicleFormScreen } from '../screens/AddVehicleFormScreen';
 import { AddOilScreen } from '../screens/AddOilScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -81,6 +82,7 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="AddVehicleForm" component={AddVehicleFormScreen} />
         <Stack.Screen name="AddOil" component={AddOilScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

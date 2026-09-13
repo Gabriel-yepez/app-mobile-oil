@@ -9,6 +9,7 @@ import { palette } from '../theme';
 import { Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore } from '../store/useStore';
+import { useNotifPrefs } from '../store/notifPrefs';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -35,8 +36,15 @@ export function ProfileScreen() {
     { k: 'Moneda', v: 'USD · Bs.S' },
   ];
 
-  const prefRows: { k: string; v: string; icon: IconName }[] = [
-    { k: 'Notificaciones', v: 'Activadas', icon: 'bell' },
+  const notifEnabled = useNotifPrefs((s) => s.prefs.enabled);
+
+  const prefRows: { k: string; v: string; icon: IconName; onPress?: () => void }[] = [
+    {
+      k: 'Notificaciones',
+      v: notifEnabled ? 'Activadas' : 'Desactivadas',
+      icon: 'bell',
+      onPress: () => navigation.navigate('Notifications'),
+    },
     { k: 'Unidad', v: 'Kilómetros', icon: 'gauge' },
     { k: 'Idioma', v: 'Español (VE)', icon: 'flag' },
     { k: 'Privacidad', v: '', icon: 'shield' },
@@ -152,6 +160,7 @@ export function ProfileScreen() {
               {prefRows.map((r, i) => (
                 <Touchable
                   key={r.k}
+                  onPress={r.onPress}
                   fd="row"
                   ai="center"
                   gap="$md"
