@@ -89,9 +89,11 @@ function Fila({
 
   return (
     <Animated.View style={[{ height: ROW_H }, style]}>
-      <Row f={1} ai="center" gap="$md" px="$lg">
+      <Row h={ROW_H} ai="center" gap="$md" px="$lg">
+        {/* El área táctil del asa ocupa el alto completo de la fila: agarrar un
+            icono de 22px con el dedo es incómodo. */}
         <GestureDetector gesture={pan}>
-          <Box py="$sm" pr={4}>
+          <Box h={ROW_H} w={32} ai="center" jc="center">
             <Icon name="grip" color={c.muted2} size={22} />
           </Box>
         </GestureDetector>
@@ -105,11 +107,13 @@ function Fila({
           <Txt fos={12} tone="muted" mt={1}>{def.description}</Txt>
         </Col>
 
-        <Switch
-          value={!oculto}
-          onValueChange={() => onToggle(id)}
-          trackColor={{ false: c.line, true: c.accent }}
-        />
+        <Box h={ROW_H} jc="center">
+          <Switch
+            value={!oculto}
+            onValueChange={() => onToggle(id)}
+            trackColor={{ false: c.line, true: c.accent }}
+          />
+        </Box>
       </Row>
     </Animated.View>
   );
