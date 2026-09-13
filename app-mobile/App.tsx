@@ -1,4 +1,4 @@
-// OilTrack VE — entry point: fuentes + tema del sistema + navegación
+// Ruédalo — entry point: fuentes + tema del sistema + navegación
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';

@@ -1,6 +1,6 @@
-# OilTrack VE 🛢️
+# Ruédalo 🛢️
 
-App móvil (React Native + Expo) para llevar el control del cambio de aceite de carros y motos en Venezuela. Implementación del design handoff `design_handoff_oiltrack_ve` — paleta **Navy**, fidelidad hi-fi.
+App móvil (React Native + Expo) para llevar el control del cambio de aceite de carros y motos en Venezuela. Implementación con paleta **Navy**, fidelidad hi-fi.
 
 > **Estado:** UI completa con data mock (sin backend aún). La integración con backend viene después.
 
@@ -50,7 +50,7 @@ Uso — el color sale siempre de tokens de tema, nunca de literales:
 import { Box, Txt, Touchable } from '@/ui';
 
 <Box f={1} bg="$bg" br="$lg" p="$lg">
-  <Txt font="display" fos={20}>OilTrack VE</Txt>
+  <Txt font="display" fos={20}>Ruédalo</Txt>
   <Txt tone="muted">$bg2, $line, $ink, $ok/$warn/$danger…</Txt>
   <Touchable fade sink transition="quick" bg="$primary" />
 </Box>

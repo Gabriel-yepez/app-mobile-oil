@@ -78,7 +78,7 @@ export function MenuScreen() {
       <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
         <Col>
           <Txt fos={12} tone="muted" ls={1} caps>
-            OilTrack VE
+            Ruédalo
           </Txt>
           <Txt font="display" fos={26} ls={-0.5}>
             Menú
@@ -116,7 +116,7 @@ export function MenuScreen() {
             <Txt font="semi" fos={15} tone="danger">Cerrar sesión</Txt>
           </Touchable>
           <Txt font="monoMed" fos={11} tone="muted2" ls={0.4} ta="center" mt="$md">
-            OilTrack VE · v1.0.0
+            Ruédalo · v1.0.0
           </Txt>
         </Box>
       </Scroll>

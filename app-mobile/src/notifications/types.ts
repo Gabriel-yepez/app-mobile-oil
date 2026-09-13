@@ -3,7 +3,7 @@
 
 /** Prefijo de todo identificador programado por la app. La reconciliación
  *  ignora cualquier notificación que no lo lleve. */
-export const NOTIF_PREFIX = 'oiltrack:';
+export const NOTIF_PREFIX = 'ruedalo:';
 
 export type NotifKind = 'warn' | 'overdue' | 'checkin';
 

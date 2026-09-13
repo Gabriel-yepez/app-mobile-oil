@@ -32,7 +32,7 @@ export const useHomeLayout = create<HomeLayoutStore>()(
       reset: () => set({ layout: DEFAULT_LAYOUT }),
     }),
     {
-      name: 'oiltrack:home-layout',
+      name: 'ruedalo:home-layout',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ layout: s.layout }),
       // `reconcile` es lo que hace que un widget agregado en una versión futura

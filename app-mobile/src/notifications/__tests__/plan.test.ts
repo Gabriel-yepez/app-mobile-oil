@@ -48,7 +48,7 @@ describe('buildSchedule — avisos de umbral', () => {
   it('planifica "warn" justo en el umbral (500 km)', () => {
     const out = run([vehicle({ nextChange: 80_100 })]); // kmLeft = 500
     const warn = out.find((n) => n.kind === 'warn');
-    expect(warn?.id).toBe('oiltrack:oil-warn:v1');
+    expect(warn?.id).toBe('ruedalo:oil-warn:v1');
     expect(warn?.body).toContain('500 km');
   });
 
@@ -59,7 +59,7 @@ describe('buildSchedule — avisos de umbral', () => {
 
   it('planifica "overdue" con 0 km restantes', () => {
     const out = run([vehicle({ nextChange: 79_600 })]); // kmLeft = 0
-    expect(out.find((n) => n.kind === 'overdue')?.id).toBe('oiltrack:oil-overdue:v1');
+    expect(out.find((n) => n.kind === 'overdue')?.id).toBe('ruedalo:oil-overdue:v1');
   });
 
   it('planifica "overdue" y reporta los km pasados cuando es negativo', () => {
@@ -100,7 +100,7 @@ describe('buildSchedule — recordatorio semanal', () => {
   it('planifica el check-in con el día y hora de las preferencias', () => {
     const out = run([], prefs({ checkinWeekday: 3, checkinHour: 20, checkinMinute: 30 }));
     const checkin = out.find((n) => n.kind === 'checkin');
-    expect(checkin?.id).toBe('oiltrack:checkin-weekly');
+    expect(checkin?.id).toBe('ruedalo:checkin-weekly');
     expect(checkin?.data).toEqual({ screen: 'Alerts' });
     expect(checkin?.trigger).toEqual({ type: 'weekly', weekday: 3, hour: 20, minute: 30 });
   });

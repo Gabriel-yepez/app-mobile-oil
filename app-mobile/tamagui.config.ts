@@ -1,4 +1,4 @@
-// Configuración de Tamagui — OilTrack VE
+// Configuración de Tamagui — Ruédalo
 //
 // Deliberadamente NO usamos @tamagui/config: sus temas por defecto pesan ~5.4MB
 // en el bundle y no aportan nada, porque la app tiene su propia paleta del

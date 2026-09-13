@@ -1,5 +1,5 @@
-// Design tokens — OilTrack VE (paleta NAVY del handoff)
-// Fuente: design_handoff_oiltrack_ve/README.md → Design Tokens
+// Design tokens — Ruédalo (paleta NAVY del handoff)
+// Fuente: design handoff → Design Tokens
 //
 // Cada color semántico existe en dos variantes (claro/oscuro). Los componentes
 // NUNCA leen estos objetos directamente: consumen los tokens de tema de Tamagui

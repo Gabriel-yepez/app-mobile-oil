@@ -168,7 +168,7 @@ const SLIDES: Slide[] = [
   {
     key: 'a',
     illustration: <IllustrationCar />,
-    eyebrow: 'Bienvenido a OilTrack VE',
+    eyebrow: 'Bienvenido a Ruédalo',
     title: 'Tus vehículos, organizados como un mecánico de confianza.',
     body: 'Registra carros y motos. Marca, modelo, año y kilometraje — todo en un solo lugar.',
   },

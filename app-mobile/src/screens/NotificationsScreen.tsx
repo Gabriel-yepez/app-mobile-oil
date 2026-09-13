@@ -99,7 +99,7 @@ export function NotificationsScreen() {
                   </Txt>
                 </Row>
                 <Txt fos={13} tone="muted">
-                  Tu teléfono tiene bloqueadas las notificaciones de OilTrack VE. Actívalas desde
+                  Tu teléfono tiene bloqueadas las notificaciones de Ruédalo. Actívalas desde
                   los ajustes para volver a recibir avisos.
                 </Txt>
                 <Btn size="sm" onPress={openSystemSettings}>

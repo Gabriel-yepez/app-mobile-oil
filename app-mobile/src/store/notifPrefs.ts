@@ -26,7 +26,7 @@ export const useNotifPrefs = create<NotifPrefsStore>()(
         set((s) => ({ prefs: { ...s.prefs, permissionAskedAt: Date.now() } })),
     }),
     {
-      name: 'oiltrack:notif-prefs',
+      name: 'ruedalo:notif-prefs',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ prefs: s.prefs }),
       // Sin este merge, añadir una preferencia nueva en el futuro la dejaría

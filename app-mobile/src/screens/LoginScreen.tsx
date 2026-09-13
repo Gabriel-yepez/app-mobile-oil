@@ -26,7 +26,7 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
           <Row gap={10} transition="bouncy" enterStyle={{ opacity: 0, y: -8 }}>
             <BrandMark size={42} />
             <Txt font="display" fos={22} ls={-0.4}>
-              OilTrack <Txt font="display" fos={22} tone="accent">VE</Txt>
+              Ruédalo
             </Txt>
           </Row>
         </Box>
