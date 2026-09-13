@@ -9,6 +9,8 @@ import { GaugeWidget } from './widgets/GaugeWidget';
 import { TechReadoutWidget } from './widgets/TechReadoutWidget';
 import { KpisWidget } from './widgets/KpisWidget';
 import { RecentHistoryWidget } from './widgets/RecentHistoryWidget';
+import { QuickActionsWidget } from './widgets/QuickActionsWidget';
+import { OpenAlertsWidget } from './widgets/OpenAlertsWidget';
 
 export type WidgetDef = {
   /** Nombre en la pantalla de personalización. */
@@ -42,7 +44,7 @@ export const HOME_WIDGETS: Record<WidgetId, WidgetDef> = {
     label: 'Accesos rápidos',
     description: 'Registrar cambio, agregar vehículo, historial',
     icon: 'plus',
-    render: () => null,
+    render: () => <QuickActionsWidget />,
   },
   recentHistory: {
     label: 'Historial reciente',
@@ -54,6 +56,6 @@ export const HOME_WIDGETS: Record<WidgetId, WidgetDef> = {
     label: 'Alertas abiertas',
     description: 'Vehículos que necesitan atención',
     icon: 'bell',
-    render: () => null,
+    render: () => <OpenAlertsWidget />,
   },
 };
