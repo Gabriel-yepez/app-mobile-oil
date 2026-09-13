@@ -1,9 +1,11 @@
 // Detalle del vehículo — hero oscuro + card de aceite + timeline de historial
-import React from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
-import { Btn, Card, IconBtn, SectionHead, StatusPill, TechGrid, VehicleThumb, VinPlate } from '../components/primitives';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { Box, Col, Row, Txt, useAppColors } from '../ui';
+import { Btn, Card, IconBtn, SectionHead, StatusPill, VehicleThumb, VinPlate } from '../components/primitives';
+import { HeroSurface, useHeroTopColor } from '../components/HeroSurface';
+import { StickyHeader, estimarHeaderH } from '../components/StickyHeader';
 import { Icon } from '../components/Icon';
 import { fmtKm, fmtUsd } from '../utils/format';
 import { kmLeft, oilPct, useStore, vehicleStatus } from '../store/useStore';
@@ -11,9 +13,15 @@ import { RootScreenProps } from '../navigation/types';
 
 export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'VehicleDetail'>) {
   const insets = useSafeAreaInsets();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const [headerH, setHeaderH] = useState(estimarHeaderH(insets.top));
   const c = useAppColors();
+  const heroTop = useHeroTopColor();
   const vehicle = useStore((s) => s.vehicles.find((v) => v.id === route.params.vehicleId));
-  const changes = useStore((s) => s.changes.filter((ch) => ch.vehicleId === route.params.vehicleId));
+  const changes = useStore((s) => s.changes).filter((ch) => ch.vehicleId === route.params.vehicleId);
   const profile = useStore((s) => s.profile);
 
   if (!vehicle) return null;
@@ -22,12 +30,30 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
 
   return (
     <Box f={1} bg="$bg3">
-      <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* hero */}
-        <LinearGradient
-          colors={[c.primary, c.primary2]}
+      {/* El header va ENCIMA del scroll —no arriba de él— para que el cristal
+          tenga algo que desenfocar cuando el contenido pasa por debajo. */}
+      <StickyHeader
+        scrollY={scrollY}
+        onBack={() => navigation.goBack()}
+        actionIcon="edit"
+        onAction={() => navigation.navigate('EditVehicle', { vehicleId: vehicle.id })}
+        onHeight={setHeaderH}
+      />
+
+      <Animated.ScrollView
+        style={{ flex: 1, backgroundColor: c.bg3 }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        {/* Fondo absoluto para cubrir el overscroll superior */}
+        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={heroTop} />
+        {/* El header no pinta nada propio: deja ver este degradado, así que no
+            hay dos azules que puedan desalinearse. */}
+        <HeroSurface
           style={{
-            paddingTop: insets.top + 12,
+            paddingTop: headerH,
             paddingHorizontal: 20,
             paddingBottom: 24,
             borderBottomLeftRadius: 28,
@@ -35,11 +61,6 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
             overflow: 'hidden',
           }}
         >
-          <TechGrid />
-          <Row mb="$xl" jc="space-between">
-            <IconBtn onDark icon={<Icon name="chevL" color="#fff" size={20} />} onPress={() => navigation.goBack()} />
-            <IconBtn onDark icon={<Icon name="edit" color="#fff" size={20} />} />
-          </Row>
 
           <Row gap={14}>
             <VehicleThumb kind={vehicle.kind} color={vehicle.color} size={68} />
@@ -82,7 +103,7 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
               </Col>
             ))}
           </Row>
-        </LinearGradient>
+        </HeroSurface>
 
         {/* oil card */}
         <Box px="$lg" pt={18}>
@@ -162,7 +183,7 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
             ))}
           </Box>
         </Box>
-      </Scroll>
+      </Animated.ScrollView>
     </Box>
   );
 }

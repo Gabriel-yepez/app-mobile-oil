@@ -1,6 +1,6 @@
-# OilTrack VE 🛢️
+# Ruédalo 🛢️
 
-App móvil (React Native + Expo) para llevar el control del cambio de aceite de carros y motos en Venezuela. Implementación del design handoff `design_handoff_oiltrack_ve` — paleta **Navy**, fidelidad hi-fi.
+App móvil (React Native + Expo) para llevar el control del cambio de aceite de carros y motos en Venezuela. Implementación con paleta **Navy**, fidelidad hi-fi.
 
 > **Estado:** UI completa con data mock (sin backend aún). La integración con backend viene después.
 
@@ -16,12 +16,15 @@ npm run android    # emulador Android
 ## Stack
 
 - **Expo SDK 57** + TypeScript
-- **React Navigation** — stack nativo + bottom tabs con TabBar custom (FAB central)
+- **React Navigation** — stack nativo + bottom tabs con TabBar custom (Inicio, Vehículos, Menú)
 - **react-native-svg** — iconos, ilustraciones, medidor radial `OilGauge`
+- **react-native-gesture-handler** + **Reanimated** — arrastre para ordenar los widgets del inicio
 - **Zustand** — estado global (vehículos, cambios de aceite, perfil)
 - **expo-linear-gradient** — headers oscuros y thumbnails
 - **@expo-google-fonts** — Inter (UI), Space Grotesk (títulos), JetBrains Mono (km, USD, placas, cédula)
 - **Tamagui (`@tamagui/core`)** — estilos, tokens, temas claro/oscuro y animaciones
+- **expo-notifications** — notificaciones locales: cambio próximo, vencido y recordatorio semanal
+- **expo-sqlite/kv-store + zustand/persist** — preferencias de notificación persistidas
 
 ## Tamagui y temas
 
@@ -47,7 +50,7 @@ Uso — el color sale siempre de tokens de tema, nunca de literales:
 import { Box, Txt, Touchable } from '@/ui';
 
 <Box f={1} bg="$bg" br="$lg" p="$lg">
-  <Txt font="display" fos={20}>OilTrack VE</Txt>
+  <Txt font="display" fos={20}>Ruédalo</Txt>
   <Txt tone="muted">$bg2, $line, $ink, $ok/$warn/$danger…</Txt>
   <Touchable fade sink transition="quick" bg="$primary" />
 </Box>
@@ -66,7 +69,7 @@ estar alineadas o no funciona:
 
 Ojo con `$primary` vs `$solid`: en claro son el mismo navy, pero `$primary` es
 además el color del hero (oscuro en ambos temas), mientras que `$solid` es el
-relleno de los controles sólidos — botón primario, chips activos, FAB, checkbox —
+relleno de los controles sólidos — botón primario, chips activos, checkbox —
 y en oscuro pasa al azul acento. Si un control sólido usa `$primary`, en oscuro
 queda navy sobre navy y desaparece.
 
@@ -85,16 +88,17 @@ src/
 ├── ui/             # primitivas styled de Tamagui (Box, Row, Col, Txt, Touchable…)
 ├── components/     # Icon, BrandMark, OilGauge, TabBar, primitivas (Btn, Input, Card…)
 ├── data/mock.ts    # data mock: flota, cambios, perfil, marcas/aceites VE
-├── store/          # Zustand + selectors (kmLeft, pct, status)
+├── store/          # Zustand + selectors (kmLeft, pct, status) + prefs persistidas
+├── notifications/  # plan puro + reconciliación con el SO + permisos
 ├── utils/format.ts # formatos es-VE (78.460 km, $32,00)
 ├── navigation/     # stack raíz + tabs
-└── screens/        # 12 pantallas
+└── screens/        # 13 pantallas
 ```
 
 ## Pantallas
 
 1. **Onboarding** (3 slides con pager) → 2. **Login** → 3. **Signup**
-4. **Home** — tablero con OilGauge radial animado, KPIs, historial reciente
+4. **Home** — hero con el vehículo activo + widgets que el usuario ordena y oculta
 5. **Garaje** — lista multi-vehículo con filtros y progreso
 6–7. **Agregar vehículo** — tipo (carro/moto) → datos → aceite (3 pasos)
 8. **Detalle del vehículo** — hero oscuro + card de aceite + timeline
@@ -102,10 +106,14 @@ src/
 10. **Historial** — inversión anual USD/Bs.S + lista completa
 11. **Alertas** — vencido / próximo / resueltas (derivadas del estado)
 12. **Perfil** — datos personales (cédula V-, estado VE) + preferencias
+13. **Notificaciones** — switch maestro, tipos de aviso, día y hora del recordatorio
+14. **Menú** — índice de todo lo que dejó de ser un tab
+15. **Personalizar inicio** — orden y visibilidad de los widgets, arrastrando
 
 ## Pendiente (próximas iteraciones)
 
 - Integración con backend (reemplazar `src/data/mock.ts` y el store)
-- Persistencia local (MMKV / AsyncStorage) — offline-first
-- Notificaciones locales (`expo-notifications`) cuando `kmLeft < 500`
+- Persistencia local de vehículos y cambios — offline-first (hoy solo se persisten
+  las preferencias de notificación)
+- Push remoto (`getExpoPushTokenAsync` + backend) — requiere development build y EAS
 - Animaciones con `react-native-reanimated`

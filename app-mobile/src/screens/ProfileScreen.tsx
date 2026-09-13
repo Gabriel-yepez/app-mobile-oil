@@ -1,42 +1,50 @@
-// Perfil — hero oscuro con avatar + datos personales + preferencias + cerrar sesión
-import React from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Perfil — hero oscuro con avatar + datos personales + preferencias.
+// Cerrar sesión y Notificaciones viven en el Menú desde que el perfil dejó de
+// ser un destino raíz del tab bar.
+import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
-import { palette } from '../theme';
-import { Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { Box, Col, Row, Touchable, Txt, useAppColors } from '../ui';
+import { Avatar, Card, IconBtn, SectionHead } from '../components/primitives';
+import { PlanHeader, UsoLista } from '../components/subscription';
+import { HeroSurface, useHeroTopColor } from '../components/HeroSurface';
+import { StickyHeader, estimarHeaderH } from '../components/StickyHeader';
 import { Icon, IconName } from '../components/Icon';
-import { useStore } from '../store/useStore';
+import { useStore, usePlan, usePlanUsage } from '../store/useStore';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const [headerH, setHeaderH] = useState(estimarHeaderH(insets.top));
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
+  const heroTop = useHeroTopColor();
   const profile = useStore((s) => s.profile);
   const vehicles = useStore((s) => s.vehicles);
   const changes = useStore((s) => s.changes);
-
-  const initials = profile.fullName
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('');
+  const subscription = useStore((s) => s.subscription);
+  const plan = usePlan();
+  const uso = usePlanUsage();
 
   const personalRows = [
+    { k: 'Cédula', v: profile.cedula, mono: true },
     { k: 'Correo', v: profile.email },
     { k: 'Teléfono', v: profile.phone, mono: true },
     { k: 'Estado', v: profile.state },
     { k: 'Ciudad', v: profile.city },
-    { k: 'Moneda', v: 'USD · Bs.S' },
   ];
 
+  // Notificaciones y Cerrar sesión se mudaron al Menú: el perfil dejó de ser un
+  // destino raíz, así que es el menú el lugar donde se los busca.
   const prefRows: { k: string; v: string; icon: IconName }[] = [
-    { k: 'Notificaciones', v: 'Activadas', icon: 'bell' },
     { k: 'Unidad', v: 'Kilómetros', icon: 'gauge' },
     { k: 'Idioma', v: 'Español (VE)', icon: 'flag' },
     { k: 'Privacidad', v: '', icon: 'shield' },
@@ -44,42 +52,38 @@ export function ProfileScreen() {
 
   return (
     <Box f={1} bg="$bg3">
-      <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* hero */}
-        <LinearGradient
-          colors={[c.primary, c.primary2]}
+      {/* El header va ENCIMA del scroll —no arriba de él— para que el cristal
+          tenga algo que desenfocar cuando el contenido pasa por debajo. */}
+      <StickyHeader
+        scrollY={scrollY}
+        onBack={() => navigation.goBack()}
+        actionIcon="edit"
+        onAction={() => navigation.navigate('EditProfile')}
+        onHeight={setHeaderH}
+      />
+
+      <Animated.ScrollView
+        style={{ flex: 1, backgroundColor: c.bg3 }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        {/* Fondo absoluto para cubrir el overscroll superior */}
+        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={heroTop} />
+        {/* El header no pinta nada propio: deja ver este degradado, así que no
+            hay dos azules que puedan desalinearse. */}
+        <HeroSurface
           style={{
-            paddingTop: insets.top + 12,
+            paddingTop: headerH,
             borderBottomLeftRadius: 28,
             borderBottomRightRadius: 28,
             overflow: 'hidden',
           }}
         >
-          <TechGrid />
-          <Row jc="space-between" px="$xl" pb="$sm">
-            <Txt fos={12} tone="onDarkSoft" ls={1} caps>
-              Perfil
-            </Txt>
-            <IconBtn onDark icon={<Icon name="edit" color="#fff" size={20} />} />
-          </Row>
 
           <Row gap={14} px="$xl" pb="$2xl" pt="$sm">
-            <LinearGradient
-              colors={[palette.accent2, palette.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 3,
-                borderColor: 'rgba(255,255,255,0.2)',
-              }}
-            >
-              <Txt font="display" fos={26} tone="onDark">{initials}</Txt>
-            </LinearGradient>
+            <Avatar name={profile.fullName} size={72} ring={3} />
             <Col f={1}>
               <Txt font="display" fos={22} tone="onDark" ls={-0.4}>
                 {profile.fullName}
@@ -119,7 +123,26 @@ export function ProfileScreen() {
               </Col>
             ))}
           </Row>
-        </LinearGradient>
+        </HeroSurface>
+
+        {/* suscripción — resumen tocable; el detalle vive en su propia pantalla */}
+        <Box pt={18}>
+          <SectionHead>Suscripción</SectionHead>
+          <Box px="$lg">
+            <Touchable fade sink transition="quick" onPress={() => navigation.navigate('Subscription')}>
+              <Card>
+                <PlanHeader plan={plan} subscription={subscription} />
+                <Box mt="$lg">
+                  <UsoLista items={uso} />
+                </Box>
+                <Row ai="center" jc="center" gap={4} mt="$lg">
+                  <Txt font="semi" fos={13} tone="accent">Ver detalle del plan</Txt>
+                  <Icon name="chevR" color={c.accent} size={16} />
+                </Row>
+              </Card>
+            </Touchable>
+          </Box>
+        </Box>
 
         {/* datos personales */}
         <Box pt={18}>
@@ -150,14 +173,12 @@ export function ProfileScreen() {
           <Box px="$lg">
             <Card padded={false}>
               {prefRows.map((r, i) => (
-                <Touchable
+                <Row
                   key={r.k}
-                  fd="row"
                   ai="center"
                   gap="$md"
                   px="$lg"
                   py={14}
-                  pressStyle={{ bg: '$bg2' }}
                   borderBottomWidth={i !== prefRows.length - 1 ? 1 : 0}
                   borderBottomColor="$line2"
                 >
@@ -166,37 +187,18 @@ export function ProfileScreen() {
                   </Box>
                   <Txt f={1} font="semi" fos={14}>{r.k}</Txt>
                   {r.v ? <Txt fos={13} tone="muted">{r.v}</Txt> : null}
-                  <Icon name="chevR" color={c.muted2} size={20} />
-                </Touchable>
+                </Row>
               ))}
             </Card>
           </Box>
         </Box>
 
-        {/* cerrar sesión */}
         <Box px="$lg" pt={18}>
-          <Touchable
-            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
-            transition="quick"
-            h={48}
-            fd="row"
-            ai="center"
-            jc="center"
-            gap="$sm"
-            br="$md"
-            bw={1.5}
-            bc="$line"
-            bg="transparent"
-            pressStyle={{ bg: '$bg2' }}
-          >
-            <Icon name="logout" color={c.danger} size={20} />
-            <Txt font="semi" fos={15} tone="danger">Cerrar sesión</Txt>
-          </Touchable>
           <Txt font="monoMed" fos={11} tone="muted2" ls={0.4} ta="center" mt="$md">
-            OilTrack VE · v1.0.0
+            Ruédalo · v1.0.0
           </Txt>
         </Box>
-      </Scroll>
+      </Animated.ScrollView>
     </Box>
   );
 }

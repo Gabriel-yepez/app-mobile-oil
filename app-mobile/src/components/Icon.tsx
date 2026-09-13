@@ -13,6 +13,7 @@ import Bell from 'lucide-react-native/icons/bell';
 import Calendar from 'lucide-react-native/icons/calendar';
 import Car from 'lucide-react-native/icons/car';
 import Check from 'lucide-react-native/icons/check';
+import CircleQuestionMark from 'lucide-react-native/icons/circle-question-mark';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
@@ -21,15 +22,20 @@ import Eye from 'lucide-react-native/icons/eye';
 import EyeOff from 'lucide-react-native/icons/eye-off';
 import Flag from 'lucide-react-native/icons/flag';
 import Gauge from 'lucide-react-native/icons/gauge';
+import GripVertical from 'lucide-react-native/icons/grip-vertical';
 import House from 'lucide-react-native/icons/house';
 import LogOut from 'lucide-react-native/icons/log-out';
+import Mail from 'lucide-react-native/icons/mail';
+import Menu from 'lucide-react-native/icons/menu';
 import Motorbike from 'lucide-react-native/icons/motorbike';
 import Plus from 'lucide-react-native/icons/plus';
 import RotateCcwClock from 'lucide-react-native/icons/rotate-ccw-clock';
 import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
 import Shield from 'lucide-react-native/icons/shield';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Sparkles from 'lucide-react-native/icons/sparkles';
+import SunMoon from 'lucide-react-native/icons/sun-moon';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import Trash from 'lucide-react-native/icons/trash';
 import User from 'lucide-react-native/icons/user';
@@ -63,7 +69,13 @@ export type IconName =
   | 'flag'
   | 'shield'
   | 'logout'
-  | 'spark';
+  | 'spark'
+  | 'mail'
+  | 'menu'
+  | 'sliders'
+  | 'grip'
+  | 'help'
+  | 'theme';
 
 export const ICONS: Record<IconName, LucideIcon> = {
   car: Car,
@@ -93,6 +105,12 @@ export const ICONS: Record<IconName, LucideIcon> = {
   shield: Shield,
   logout: LogOut,
   spark: Sparkles,
+  mail: Mail,
+  menu: Menu,
+  sliders: SlidersHorizontal,
+  grip: GripVertical,
+  help: CircleQuestionMark,
+  theme: SunMoon,
 };
 
 // Grosores del handoff: la mayoría a 1.75, los iconos "de acción" un poco más.

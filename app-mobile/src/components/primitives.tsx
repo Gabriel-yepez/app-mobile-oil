@@ -5,10 +5,11 @@
 // que viven sobre el hero navy, que es oscuro en AMBOS temas.
 // (Antes este prop se llamaba `dark`, lo que se confundía con el modo oscuro.)
 import React, { ReactNode, useState } from 'react';
-import { FlatList, Modal, StyleProp, TextInputProps, ViewStyle } from 'react-native';
-import Svg, { Line } from 'react-native-svg';
+import { FlatList, Modal, ScrollView, StyleProp, TextInputProps, ViewStyle } from 'react-native';
+
 import { LinearGradient } from 'expo-linear-gradient';
-import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
+import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useColorScheme, useShadows } from '../ui';
+import { palette } from '../theme';
 import { Icon } from './Icon';
 import { VehicleStatus } from '../data/mock';
 
@@ -29,12 +30,16 @@ type BtnProps = {
   kind?: BtnKind;
   size?: BtnSize;
   icon?: ReactNode;
+  /** Igual que `icon`, pero después del texto: flechas de avance, chevrons. */
+  iconRight?: ReactNode;
+  /** Apagado y sin respuesta: falta algo por llenar. */
+  disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   textColor?: string;
   onPress?: () => void;
 };
 
-export function Btn({ children, kind = 'primary', size = 'md', icon, style, textColor, onPress }: BtnProps) {
+export function Btn({ children, kind = 'primary', size = 'md', icon, iconRight, disabled = false, style, textColor, onPress }: BtnProps) {
   const c = useAppColors();
   const sh = useShadows();
   const s = btnSize[size];
@@ -56,9 +61,11 @@ export function Btn({ children, kind = 'primary', size = 'md', icon, style, text
 
   return (
     <Touchable
-      onPress={onPress}
-      fade
-      sink
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      opacity={disabled ? 0.45 : 1}
+      fade={!disabled}
+      sink={!disabled}
       transition="quick"
       fd="row"
       ai="center"
@@ -73,6 +80,7 @@ export function Btn({ children, kind = 'primary', size = 'md', icon, style, text
       <Txt font="semi" fos={s.fontSize} ls={-0.1} col={textColor ?? ink[kind]}>
         {children}
       </Txt>
+      {iconRight}
     </Touchable>
   );
 }
@@ -80,9 +88,16 @@ export function Btn({ children, kind = 'primary', size = 'md', icon, style, text
 // ────────────────────────────────────────────
 // Field (label + hint)
 // ────────────────────────────────────────────
-type FieldProps = { label?: string; hint?: string; suffix?: string; children: ReactNode };
+type FieldProps = {
+  label?: string;
+  hint?: string;
+  /** Reemplaza al `hint` mientras el campo esté mal: mismo sitio, tono peligro. */
+  error?: string;
+  suffix?: string;
+  children: ReactNode;
+};
 
-export function Field({ label, hint, suffix, children }: FieldProps) {
+export function Field({ label, hint, error, suffix, children }: FieldProps) {
   return (
     <Col gap="$sm">
       {label ? (
@@ -94,7 +109,11 @@ export function Field({ label, hint, suffix, children }: FieldProps) {
         </Row>
       ) : null}
       {children}
-      {hint ? <Txt fos={12} tone="muted2">{hint}</Txt> : null}
+      {error ? (
+        <Txt font="semi" fos={12} tone="danger">{error}</Txt>
+      ) : hint ? (
+        <Txt fos={12} tone="muted2">{hint}</Txt>
+      ) : null}
     </Col>
   );
 }
@@ -106,11 +125,14 @@ type InputProps = {
   mono?: boolean;
   prefix?: string;
   right?: ReactNode;
+  /** Pinta el borde en rojo. El mensaje lo pone el `error` del Field. */
+  invalid?: boolean;
 } & TextInputProps;
 
-export function Input({ mono = false, prefix, right, style, ...rest }: InputProps) {
+export function Input({ mono = false, prefix, right, invalid = false, style, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
   const c = useAppColors();
+  const esquema = useColorScheme();
 
   return (
     <Row
@@ -120,7 +142,7 @@ export function Input({ mono = false, prefix, right, style, ...rest }: InputProp
       bw={1.5}
       px={14}
       bg="$surface"
-      bc={focused ? '$accent' : '$line'}
+      bc={invalid ? '$danger' : focused ? '$accent' : '$line'}
       transition="quick"
     >
       {prefix ? (
@@ -128,7 +150,12 @@ export function Input({ mono = false, prefix, right, style, ...rest }: InputProp
           {prefix}
         </Txt>
       ) : null}
+      {/* El override de apariencia de la ventana ya debería arrastrar al
+          teclado, pero iOS no siempre lo respeta con el valor 'default'.
+          Decirlo explícito no cuesta nada y lo deja fuera de duda. Va antes
+          de `...rest` para que una pantalla pueda pisarlo si lo necesita. */}
       <NativeInput
+        keyboardAppearance={esquema}
         {...rest}
         onFocus={(e) => {
           setFocused(true);
@@ -150,6 +177,131 @@ export function Input({ mono = false, prefix, right, style, ...rest }: InputProp
       />
       {right}
     </Row>
+  );
+}
+
+// ────────────────────────────────────────────
+// Checkbox
+// ────────────────────────────────────────────
+// Con `label` toda la fila es el área táctil, que es lo cómodo para un
+// "Recordarme". Sin `label` solo se pinta la casilla: es lo que necesita el
+// bloque de términos, donde el texto lleva enlaces propios que deben poder
+// tocarse sin marcar la casilla.
+type CheckboxProps = {
+  checked: boolean;
+  onToggle: () => void;
+  label?: string;
+  size?: number;
+};
+
+export function Checkbox({ checked, onToggle, label, size = 22 }: CheckboxProps) {
+  const c = useAppColors();
+
+  const box = (
+    <Box
+      transition="quick"
+      h={size}
+      w={size}
+      ai="center"
+      jc="center"
+      br={6}
+      bg={checked ? '$solid' : '$surface'}
+      bw={checked ? 0 : 1.5}
+      bc="$line"
+    >
+      {checked ? <Icon name="check" color={c.solidInk} size={Math.round(size * 0.64)} /> : null}
+    </Box>
+  );
+
+  if (!label) {
+    return (
+      <Touchable onPress={onToggle} hitSlop={8}>
+        {box}
+      </Touchable>
+    );
+  }
+
+  return (
+    <Touchable onPress={onToggle} fd="row" ai="center" gap={10} hitSlop={8}>
+      {box}
+      <Txt font="semi" fos={13} tone="ink2">
+        {label}
+      </Txt>
+    </Touchable>
+  );
+}
+
+// ────────────────────────────────────────────
+// CodeInput — código de un solo uso, una casilla por dígito
+// ────────────────────────────────────────────
+// Las casillas son SOLO pintura: debajo hay un único TextInput invisible que
+// las cubre por completo. Seis inputs de verdad (uno por casilla) obligarían a
+// mover el foco a mano en cada tecla y romperían pegar el código de un tirón y
+// el autorrelleno del sistema, que llegan como una sola cadena de 6 caracteres.
+type CodeInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  length?: number;
+  autoFocus?: boolean;
+};
+
+export function CodeInput({ value, onChange, length = 6, autoFocus = false }: CodeInputProps) {
+  const esquema = useColorScheme();
+  const [focused, setFocused] = useState(false);
+  const digits = value.split('');
+
+  return (
+    <Box>
+      <Row gap={8}>
+        {Array.from({ length }).map((_, i) => {
+          const char = digits[i];
+          // La casilla activa es donde caerá el próximo dígito; con el código
+          // completo se queda marcada la última, que es la que se va a borrar.
+          const active = focused && (value.length === length ? i === length - 1 : i === value.length);
+          return (
+            <Box
+              key={i}
+              f={1}
+              h={58}
+              ai="center"
+              jc="center"
+              br="$md"
+              bw={1.5}
+              transition="quick"
+              bg={char ? '$bg2' : '$surface'}
+              bc={active ? '$accent' : '$line'}
+            >
+              <Txt font="mono" fos={22} ls={0} tone="ink">
+                {char ?? ''}
+              </Txt>
+            </Box>
+          );
+        })}
+      </Row>
+
+      <NativeInput
+        pos="absolute"
+        t={0}
+        l={0}
+        r={0}
+        b={0}
+        opacity={0}
+        keyboardAppearance={esquema}
+        value={value}
+        // El teclado numérico de iOS no impide pegar texto, así que el filtro
+        // no es decorativo: sin él, pegar "Código: 123456" rompe las casillas.
+        onChangeText={(t) => onChange(t.replace(/\D/g, '').slice(0, length))}
+        keyboardType="number-pad"
+        // Autorrelleno del código: `oneTimeCode` en iOS, `sms-otp` en Android.
+        textContentType="oneTimeCode"
+        autoComplete="sms-otp"
+        maxLength={length}
+        caretHidden
+        autoFocus={autoFocus}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+    </Box>
   );
 }
 
@@ -270,14 +422,83 @@ export function StatusPill({ status = 'ok', label }: { status?: VehicleStatus; l
 export function SectionHead({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <Row mb={10} jc="space-between" px="$xl">
-      <Row gap="$sm">
-        <Box h={14} w={4} br={2} bg="$accent" />
-        <Txt font="bold" fos={11} tone="muted" ls={1.2} caps>
-          {children}
-        </Txt>
-      </Row>
+      <Txt font="bold" fos={11} tone="muted" ls={1.2} caps>
+        {children}
+      </Txt>
       {right}
     </Row>
+  );
+}
+
+// ────────────────────────────────────────────
+// FilterChips
+// ────────────────────────────────────────────
+// Fila de chips con contador. La usan el Garaje y el Historial: el patrón ya
+// estaba escrito a mano en el Garaje, y copiarlo al Historial habría dejado dos
+// versiones que se despegan a la primera corrección de estilo.
+//
+// Genérico en el id para que cada pantalla filtre con su propia unión de
+// literales y no con `string`: así un chip mal escrito no compila.
+export type FilterChip<T extends string> = { id: T; label: string; n: number };
+
+export function FilterChips<T extends string>({
+  chips,
+  value,
+  onChange,
+  scrollable = false,
+  px = 0,
+}: {
+  chips: FilterChip<T>[];
+  value: T;
+  onChange: (id: T) => void;
+  /** Para listas que crecen con los datos: sin esto, a partir de cuatro o cinco
+   *  chips los últimos quedan fuera de la pantalla y no hay forma de llegar. */
+  scrollable?: boolean;
+  /** Sangría horizontal. Va acá y no en un contenedor de afuera porque con
+   *  scroll tiene que ser padding del contenido: en el contenedor recortaría
+   *  los chips de los extremos al desplazarse. */
+  px?: number;
+}) {
+  const fila = (
+    <Row gap="$sm" px={px}>
+      {chips.map((chip) => {
+        const isActive = value === chip.id;
+        return (
+          <Touchable
+            key={chip.id}
+            onPress={() => onChange(chip.id)}
+            fade
+            transition="quick"
+            fd="row"
+            ai="center"
+            h={34}
+            gap={6}
+            br="$pill"
+            px={14}
+            bg={isActive ? '$solid' : '$surface'}
+            bw={isActive ? 0 : 1}
+            bc="$line"
+          >
+            <Txt font="semi" fos={13} tone={isActive ? 'onSolid' : 'ink'}>
+              {chip.label}
+            </Txt>
+            <Box br={6} px={6} py={1} bg={isActive ? 'rgba(255,255,255,0.18)' : '$bg2'}>
+              <Txt font="monoMed" fos={10} tone={isActive ? 'onSolid' : 'muted'}>
+                {chip.n}
+              </Txt>
+            </Box>
+          </Touchable>
+        );
+      })}
+    </Row>
+  );
+
+  if (!scrollable) return fila;
+
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {fila}
+    </ScrollView>
   );
 }
 
@@ -330,8 +551,8 @@ export function KPI({ icon, label, value, unit, onDark = false }: KPIProps) {
       br="$md"
       bw={1}
       p={14}
-      bg={onDark ? 'rgba(255,255,255,0.06)' : '$bg2'}
-      bc={onDark ? 'rgba(255,255,255,0.06)' : '$line2'}
+      bg={onDark ? 'rgba(255,255,255,0.06)' : '$surface'}
+      bc={onDark ? 'rgba(255,255,255,0.06)' : '$line'}
     >
       <Row gap="$sm">
         <Box h={28} w={28} ai="center" jc="center" br={8} bg={onDark ? 'rgba(255,255,255,0.08)' : '$accentSoft'}>
@@ -399,24 +620,61 @@ export function VehicleThumb({
 }
 
 // ────────────────────────────────────────────
-// Grid técnico (overlay para headers oscuros)
+// Avatar con iniciales (gradiente de marca)
 // ────────────────────────────────────────────
-export function TechGrid({ width = 500, height = 420, light = true }: { width?: number; height?: number; light?: boolean }) {
-  const gap = 24;
-  const stroke = light ? 'rgba(255,255,255,0.04)' : 'rgba(10,37,64,0.04)';
-  const vLines = Math.ceil(width / gap);
-  const hLines = Math.ceil(height / gap);
+/** "Gabriel Yepez Pérez" → "GY". Ignora espacios sobrantes y nombres vacíos. */
+export function initialsOf(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+// El gradiente sale de `palette` y no de los tokens de tema porque el avatar
+// vive sobre el hero navy, que es oscuro en claro y en oscuro: así se ve igual
+// en ambos. `ring` es el aro blanco que lo despega del fondo.
+export function Avatar({
+  name,
+  size = 44,
+  ring = 2,
+  onPress,
+}: {
+  name: string;
+  size?: number;
+  ring?: number;
+  onPress?: () => void;
+}) {
+  const circle = (
+    <LinearGradient
+      colors={[palette.accent2, palette.primary]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: ring,
+        borderColor: 'rgba(255,255,255,0.2)',
+      }}
+    >
+      <Txt font="display" fos={Math.round(size * 0.36)} tone="onDark">
+        {initialsOf(name)}
+      </Txt>
+    </LinearGradient>
+  );
+
+  if (!onPress) return circle;
+
   return (
-    <Box pos="absolute" t={0} l={0} r={0} b={0} pointerEvents="none">
-      <Svg width={width} height={height}>
-        {Array.from({ length: vLines }).map((_, i) => (
-          <Line key={`v${i}`} x1={i * gap} y1={0} x2={i * gap} y2={height} stroke={stroke} strokeWidth={1} />
-        ))}
-        {Array.from({ length: hLines }).map((_, i) => (
-          <Line key={`h${i}`} x1={0} y1={i * gap} x2={width} y2={i * gap} stroke={stroke} strokeWidth={1} />
-        ))}
-      </Svg>
-    </Box>
+    <Touchable onPress={onPress} fade="strong" sink transition="quick" br={size / 2} hitSlop={8}>
+      {circle}
+    </Touchable>
   );
 }
 

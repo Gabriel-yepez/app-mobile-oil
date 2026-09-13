@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
+import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
 import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
 import { RootScreenProps } from '../navigation/types';
@@ -35,12 +36,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Box f={1} bg="$bg3">
-        {/* header */}
-        <Row jc="space-between" px="$xl" pt={insets.top + 12}>
-          <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
-          <Txt font="mono" fos={11} tone="muted" ls={1}>PASO 2 / 3</Txt>
-          <Box w={36} />
-        </Row>
+        <StepHeader step={2} total={3} onBack={() => navigation.goBack()} />
 
         <Scroll bg="$bg3" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
           <Col px="$2xl" pb="$sm" pt="$xl">
