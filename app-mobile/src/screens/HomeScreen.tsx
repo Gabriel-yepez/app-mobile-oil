@@ -1,4 +1,6 @@
-// Home — header oscuro con gauge radial, tech readout, KPIs e historial reciente
+// Home — hero fijo con el vehículo activo, y debajo los widgets que el usuario
+// eligió y ordenó. El contenido de cada widget vive en src/home/widgets/; acá
+// solo se decide el hero y se recorre el orden.
 import React, { useState } from 'react';
 import { FlatList, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,11 +8,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
-import { Card, KPI, SectionHead, TechGrid, VehicleThumb } from '../components/primitives';
-import { OilGauge } from '../components/OilGauge';
+import { Avatar, TechGrid, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
-import { fmtKm, fmtUsd } from '../utils/format';
-import { kmLeft, oilPct, useActiveVehicle, useOpenAlerts, useStore } from '../store/useStore';
+import { useActiveVehicle, useOpenAlerts, useStore } from '../store/useStore';
+import { useHomeLayout } from '../store/homeLayout';
+import { visibleWidgets } from '../home/layout';
+import { HOME_WIDGETS } from '../home/registry';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -20,31 +23,30 @@ export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
   const vehicles = useStore((s) => s.vehicles);
-  const changes = useStore((s) => s.changes);
   const profile = useStore((s) => s.profile);
   const setActiveVehicle = useStore((s) => s.setActiveVehicle);
   const active = useActiveVehicle();
   const openAlerts = useOpenAlerts();
+  const layout = useHomeLayout((s) => s.layout);
+  const hydrated = useHomeLayout((s) => s.hydrated);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const pct = oilPct(active);
-  const firstName = profile.fullName.split(' ')[0];
-  const recent = changes.slice(0, 3);
-  const vehicleName = (id: string) => {
-    const v = vehicles.find((x) => x.id === id);
-    return v ? `${v.brand} ${v.model.split(' ')[0]}` : '';
-  };
+  // Mientras no terminó de leerse el layout guardado no se pinta la lista: si
+  // no, se ve el orden de fábrica reacomodarse solo un instante después.
+  const widgets = hydrated ? visibleWidgets(layout) : [];
 
   return (
     <Box f={1} bg="$bg3">
       <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Panel oscuro tipo tablero */}
+        {/* Hero fijo: no es un widget. Es el ancla del vehículo activo del que
+            dependen gauge, techReadout y quickActions — si se pudiera ocultar,
+            esos widgets mostrarían datos de un vehículo imposible de cambiar. */}
         <LinearGradient
           colors={[c.primary, c.primary2]}
           style={{
             paddingTop: insets.top + 12,
             paddingHorizontal: 20,
-            paddingBottom: 28,
+            paddingBottom: 20,
             borderBottomLeftRadius: 32,
             borderBottomRightRadius: 32,
             overflow: 'hidden',
@@ -52,40 +54,56 @@ export function HomeScreen() {
         >
           <TechGrid />
 
-          {/* greeting */}
-          <Row mb="$lg" jc="space-between">
-            <Col>
-              <Txt fos={12} col="rgba(255,255,255,0.65)" ls={1} caps>
-                Hola, {firstName}
-              </Txt>
-              <Txt font="display" fos={22} tone="onDark" ls={-0.4} mt={2}>
-                Tu tablero del día
-              </Txt>
-            </Col>
-            <Touchable
-              onPress={() => navigation.navigate('Tabs' as never)}
-              fade
-              transition="quick"
-              h={40}
-              w={40}
-              ai="center"
-              jc="center"
-              br={12}
-              bg="rgba(255,255,255,0.1)"
-            >
-              <Icon name="bell" color="#fff" size={20} />
-              {openAlerts > 0 ? (
-                <Box pos="absolute" r={8} t={8} h={8} w={8} br="$pill" bg="$warn" />
-              ) : null}
-            </Touchable>
+          <Row mb="$lg" jc="space-between" ai="center">
+            <Row f={1} ai="center" gap={12}>
+              <Avatar
+                name={profile.fullName}
+                size={44}
+                onPress={() => navigation.navigate('Profile')}
+              />
+              <Col f={1}>
+                <Txt font="display" fos={22} tone="onDark" ls={-0.4}>
+                  Tu tablero del día
+                </Txt>
+              </Col>
+            </Row>
+            <Row gap={8}>
+              <Touchable
+                onPress={() => navigation.navigate('CustomizeHome')}
+                fade
+                transition="quick"
+                h={40}
+                w={40}
+                ai="center"
+                jc="center"
+                br={12}
+                bg="rgba(255,255,255,0.1)"
+              >
+                <Icon name="sliders" color="#fff" size={20} />
+              </Touchable>
+              <Touchable
+                onPress={() => navigation.navigate('Alerts')}
+                fade
+                transition="quick"
+                h={40}
+                w={40}
+                ai="center"
+                jc="center"
+                br={12}
+                bg="rgba(255,255,255,0.1)"
+              >
+                <Icon name="bell" color="#fff" size={20} />
+                {openAlerts > 0 ? (
+                  <Box pos="absolute" r={8} t={8} h={8} w={8} br="$pill" bg="$warn" />
+                ) : null}
+              </Touchable>
+            </Row>
           </Row>
 
-          {/* pill del vehículo activo */}
           <Touchable
             onPress={() => setPickerOpen(true)}
             fade
             transition="quick"
-            mb="$lg"
             fd="row"
             ai="center"
             gap={10}
@@ -107,74 +125,14 @@ export function HomeScreen() {
             </Col>
             <Icon name="chevD" color="rgba(255,255,255,0.7)" size={20} />
           </Touchable>
-
-          {/* gauge */}
-          <Touchable
-            fade
-            mb="$sm"
-            mt={4}
-            ai="center"
-            onPress={() => navigation.navigate('AddOil', { vehicleId: active.id })}
-          >
-            <OilGauge pct={pct} kmLeft={kmLeft(active)} size={220} />
-          </Touchable>
-
-          {/* tech readout */}
-          <Row mt={4} br={14} bw={1} bc="rgba(255,255,255,0.08)" bg="rgba(0,0,0,0.18)" px={14} py="$md" ai="stretch">
-            {[
-              { l: 'Odómetro', v: fmtKm(active.km), u: 'km' },
-              { l: 'Próximo', v: fmtKm(active.nextChange), u: 'km' },
-              { l: 'Aceite', v: active.oil.viscosity, u: active.oil.brand },
-            ].map((r) => (
-              <Col key={r.l} f={1} ai="center">
-                <Txt font="bold" fos={9} col="rgba(255,255,255,0.55)" ls={1.2} caps>
-                  {r.l}
-                </Txt>
-                <Txt font="mono" fos={16} tone="onDark" mt={2}>{r.v}</Txt>
-                <Txt fos={10} col="rgba(255,255,255,0.55)">{r.u}</Txt>
-              </Col>
-            ))}
-          </Row>
         </LinearGradient>
 
-        {/* KPI row */}
-        <Row gap={10} px="$lg" pt="$lg" ai="stretch">
-          <KPI icon={<Icon name="car" color={c.accent} size={18} />} label="Vehículos" value={vehicles.length} unit="activos" />
-          <KPI icon={<Icon name="calendar" color={c.accent} size={18} />} label="Últ. cambio" value={active.daysSince} unit="días" />
-          <KPI icon={<Icon name="bell" color={c.warn} size={18} />} label="Alertas" value={openAlerts} unit="abiertas" />
-        </Row>
-
-        {/* Historial reciente */}
-        <Box pt="$xl">
-          <SectionHead
-            right={
-              <Touchable onPress={() => navigation.navigate('History')} hitSlop={8} fade>
-                <Txt font="semi" fos={12} tone="accent">Ver todo</Txt>
-              </Touchable>
-            }
-          >
-            Historial reciente
-          </SectionHead>
-          <Col gap={10} px="$lg">
-            {recent.map((h) => (
-              <Card key={h.id} fd="row" ai="center" gap="$md">
-                <Box h={36} w={36} ai="center" jc="center" br={10} bg="$accentSoft">
-                  <Icon name="drop" color={c.accent} size={18} />
-                </Box>
-                <Col f={1}>
-                  <Txt font="bold" fos={14}>{vehicleName(h.vehicleId)}</Txt>
-                  <Txt fos={12} tone="muted" mt={1}>
-                    {h.date} · <Txt font="monoMed" fos={12} tone="muted">{fmtKm(h.km)}</Txt> km · {h.oil.brand} {h.oil.viscosity}
-                  </Txt>
-                </Col>
-                <Col ai="flex-end">
-                  <Txt font="mono" fos={14}>{fmtUsd(h.costUsd)}</Txt>
-                  <Txt fos={10} tone="muted2">USD</Txt>
-                </Col>
-              </Card>
-            ))}
-          </Col>
-        </Box>
+        {/* Widgets, en el orden que eligió el usuario. */}
+        <Col gap={18} pt="$lg">
+          {widgets.map((id) => (
+            <Box key={id}>{HOME_WIDGETS[id].render()}</Box>
+          ))}
+        </Col>
       </Scroll>
 
       {/* selector de vehículo activo */}
