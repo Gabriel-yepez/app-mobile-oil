@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { dark, light, palette } from '../theme';
 import { TabBar } from '../components/TabBar';
+import { useFirstRunPermission } from '../notifications';
 import { RootStackParamList } from './types';
 
 import { OnboardingScreen } from '../screens/OnboardingScreen';
@@ -24,6 +25,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
 function Tabs() {
+  useFirstRunPermission();
+
   return (
     <Tab.Navigator
       tabBar={(props) => <TabBar {...props} />}
