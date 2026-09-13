@@ -2,10 +2,12 @@ import {
   DEFAULT_HIDDEN,
   DEFAULT_LAYOUT,
   HomeLayout,
+  PINNED_WIDGETS,
   WIDGET_ORDER,
   WidgetId,
   moveWidget,
   reconcile,
+  reorderables,
   toggleWidget,
   visibleWidgets,
 } from '../layout';
@@ -13,6 +15,8 @@ import {
 const layout = (order: string[], hidden: string[] = []): HomeLayout =>
   ({ order, hidden } as HomeLayout);
 
+// `to` habla en índices del grupo "Mostrados" (lo que devuelve `reorderables`),
+// que es la única lista que la pantalla deja arrastrar.
 describe('moveWidget', () => {
   it('mueve un widget hacia abajo', () => {
     const r = moveWidget(layout(['a', 'b', 'c']), 'a' as WidgetId, 2);
@@ -38,6 +42,36 @@ describe('moveWidget', () => {
   it('no altera los ocultos', () => {
     const r = moveWidget(layout(['a', 'b', 'c'], ['b']), 'a' as WidgetId, 2);
     expect(r.hidden).toEqual(['b']);
+  });
+
+  it('un widget oculto no se mueve: no está en la lista que se arrastra', () => {
+    const l = layout(['a', 'b', 'c'], ['b']);
+    expect(moveWidget(l, 'b' as WidgetId, 0)).toBe(l);
+  });
+
+  // El caso que justifica mover contra un ancla y no contra un índice absoluto.
+  it('los ocultos se quedan en su lugar cuando se reordenan los mostrados', () => {
+    const r = moveWidget(layout(['a', 'oculto', 'b', 'c'], ['oculto']), 'c' as WidgetId, 0);
+    expect(r.order).toEqual(['c', 'a', 'oculto', 'b']);
+    expect(reorderables(r, [] as unknown as WidgetId[])).toEqual(['c', 'a', 'b']);
+  });
+
+  it('un widget que vuelve de los ocultos reaparece entre los mismos vecinos', () => {
+    const l = layout(['a', 'oculto', 'b'], ['oculto']);
+    const r = moveWidget(l, 'b' as WidgetId, 0);
+    expect(r.order).toEqual(['b', 'a', 'oculto']);
+    expect(toggleWidget(r, 'oculto' as WidgetId, []).order).toEqual(['b', 'a', 'oculto']);
+  });
+});
+
+describe('reorderables', () => {
+  it('deja fuera a los fijos y a los ocultos', () => {
+    const l = layout(['a', 'b', 'c', 'd'], ['c']);
+    expect(reorderables(l, ['a'] as unknown as WidgetId[])).toEqual(['b', 'd']);
+  });
+
+  it('en el layout de fábrica es solo el historial reciente', () => {
+    expect(reorderables(DEFAULT_LAYOUT)).toEqual(['recentHistory']);
   });
 });
 
@@ -117,7 +151,75 @@ describe('reconcile', () => {
     expect(DEFAULT_LAYOUT.order).toEqual(WIDGET_ORDER);
     expect(DEFAULT_HIDDEN).toEqual(['openAlerts']);
     expect(visibleWidgets(DEFAULT_LAYOUT)).toEqual([
-      'gauge', 'techReadout', 'kpis', 'quickActions', 'recentHistory',
+      'gauge', 'techReadout', 'quickActions', 'kpis', 'recentHistory',
+    ]);
+  });
+});
+
+// El bloque fijo son los cuatro widgets del núcleo: siempre arriba, en este
+// orden, siempre visibles. Lo que sigue es el contrato que lo sostiene.
+describe('bloque fijo', () => {
+  const fijos = ['a', 'b'] as unknown as WidgetId[];
+
+  it('el default arranca con los cuatro fijos en el orden pedido', () => {
+    expect(PINNED_WIDGETS).toEqual(['gauge', 'techReadout', 'quickActions', 'kpis']);
+    expect(WIDGET_ORDER.slice(0, 4)).toEqual(PINNED_WIDGETS);
+  });
+
+  it('ninguno de los fijos nace oculto', () => {
+    for (const id of PINNED_WIDGETS) expect(DEFAULT_HIDDEN).not.toContain(id);
+  });
+
+  it('un widget fijo no se puede mover', () => {
+    const l = layout(['a', 'b', 'c', 'd']);
+    expect(moveWidget(l, 'a' as WidgetId, 1, fijos)).toBe(l);
+    expect(moveWidget(l, 'b' as WidgetId, 0, fijos)).toBe(l);
+  });
+
+  it('un widget libre no puede meterse dentro del bloque fijo', () => {
+    const r = moveWidget(layout(['a', 'b', 'c', 'd']), 'd' as WidgetId, 0, fijos);
+    expect(r.order).toEqual(['a', 'b', 'd', 'c']);
+  });
+
+  it('los libres se siguen reordenando entre ellos', () => {
+    const r = moveWidget(layout(['a', 'b', 'c', 'd']), 'c' as WidgetId, 1, fijos);
+    expect(r.order).toEqual(['a', 'b', 'd', 'c']);
+  });
+
+  it('un widget fijo no se puede apagar', () => {
+    const l = layout(['a', 'b', 'c']);
+    expect(toggleWidget(l, 'a' as WidgetId, fijos)).toBe(l);
+  });
+
+  it('reconcile reescribe el orden de los fijos aunque el guardado diga otra cosa', () => {
+    const r = reconcile(
+      { order: ['c', 'b', 'a'], hidden: [] },
+      ['a', 'b', 'c'] as unknown as WidgetId[],
+      [] as unknown as WidgetId[],
+      fijos
+    );
+    expect(r.order).toEqual(['a', 'b', 'c']);
+  });
+
+  it('reconcile prende un fijo que había quedado oculto en el guardado', () => {
+    const r = reconcile(
+      { order: ['a', 'b', 'c'], hidden: ['a', 'c'] },
+      ['a', 'b', 'c'] as unknown as WidgetId[],
+      [] as unknown as WidgetId[],
+      fijos
+    );
+    expect(r.hidden).toEqual(['c']);
+  });
+
+  it('un layout guardado con el orden viejo se normaliza al bloque fijo actual', () => {
+    const viejo = { order: ['gauge', 'techReadout', 'kpis', 'quickActions', 'recentHistory', 'openAlerts'], hidden: ['openAlerts'] };
+    expect(reconcile(viejo).order).toEqual(WIDGET_ORDER);
+  });
+
+  it('conserva el orden que el usuario le dio a los libres', () => {
+    const guardado = { order: ['kpis', 'openAlerts', 'gauge', 'recentHistory', 'techReadout', 'quickActions'], hidden: [] };
+    expect(reconcile(guardado).order).toEqual([
+      'gauge', 'techReadout', 'quickActions', 'kpis', 'openAlerts', 'recentHistory',
     ]);
   });
 });

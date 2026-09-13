@@ -27,6 +27,7 @@ export const light = {
   bg2: '#F4F6FB',
   bg3: '#F8FAFD',
   surface: '#FFFFFF',
+  surfaceDim: 'rgba(0, 0, 0, 0.04)',
 
   // texto
   ink: '#0A1226',
@@ -98,6 +99,7 @@ export const dark: typeof light = {
   bg2: '#111A2E',
   bg3: '#070C18',
   surface: '#0E1526',
+  surfaceDim: 'rgba(0, 0, 0, 0.25)',
 
   // texto
   ink: '#F2F5FB',

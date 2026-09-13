@@ -48,11 +48,11 @@ export function QuickActionsWidget() {
           br="$md"
           bw={1}
           bc="$line"
-          bg="$surface"
+          bg="$surfaceDim"
           px="$sm"
           py={14}
         >
-          <Col h={36} w={36} ai="center" jc="center" br={10} bg="$accentSoft">
+          <Col h={36} w={36} ai="center" jc="center" br={10} bg="transparent">
             <Icon name={a.icon} color={c.accent} size={18} />
           </Col>
           <Txt font="semi" fos={11} ta="center" tone="ink2">

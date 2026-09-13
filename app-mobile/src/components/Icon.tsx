@@ -24,6 +24,7 @@ import Gauge from 'lucide-react-native/icons/gauge';
 import GripVertical from 'lucide-react-native/icons/grip-vertical';
 import House from 'lucide-react-native/icons/house';
 import LogOut from 'lucide-react-native/icons/log-out';
+import Mail from 'lucide-react-native/icons/mail';
 import Menu from 'lucide-react-native/icons/menu';
 import Motorbike from 'lucide-react-native/icons/motorbike';
 import Plus from 'lucide-react-native/icons/plus';
@@ -67,6 +68,7 @@ export type IconName =
   | 'shield'
   | 'logout'
   | 'spark'
+  | 'mail'
   | 'menu'
   | 'sliders'
   | 'grip';
@@ -99,6 +101,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   shield: Shield,
   logout: LogOut,
   spark: Sparkles,
+  mail: Mail,
   menu: Menu,
   sliders: SlidersHorizontal,
   grip: GripVertical,

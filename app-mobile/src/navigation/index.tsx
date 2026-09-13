@@ -13,6 +13,7 @@ import { navigationRef, flushPendingRoute } from './navigationRef';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SignupScreen } from '../screens/SignupScreen';
+import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { VehiclesScreen } from '../screens/VehiclesScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
@@ -85,6 +86,7 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="Tabs" component={Tabs} />
         <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
         <Stack.Screen name="AddVehicleType" component={AddVehicleTypeScreen} />
@@ -94,7 +96,7 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Alerts" component={AlertsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="CustomizeHome" component={CustomizeHomeScreen} />
+        <Stack.Screen name="CustomizeHome" component={CustomizeHomeScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -149,9 +149,9 @@ export function VehiclesScreen() {
           jc="center"
           gap={10}
           br="$lg"
-          bw={1.5}
-          borderStyle="dashed"
+          bw={1}
           bc="$line"
+          bg="$surfaceDim"
         >
           <Icon name="plus" color={c.accent} size={18} />
           <Txt font="semi" fos={14} tone="accent">Agregar vehículo</Txt>

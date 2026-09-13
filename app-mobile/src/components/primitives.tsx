@@ -30,12 +30,16 @@ type BtnProps = {
   kind?: BtnKind;
   size?: BtnSize;
   icon?: ReactNode;
+  /** Igual que `icon`, pero después del texto: flechas de avance, chevrons. */
+  iconRight?: ReactNode;
+  /** Apagado y sin respuesta: falta algo por llenar. */
+  disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   textColor?: string;
   onPress?: () => void;
 };
 
-export function Btn({ children, kind = 'primary', size = 'md', icon, style, textColor, onPress }: BtnProps) {
+export function Btn({ children, kind = 'primary', size = 'md', icon, iconRight, disabled = false, style, textColor, onPress }: BtnProps) {
   const c = useAppColors();
   const sh = useShadows();
   const s = btnSize[size];
@@ -57,9 +61,11 @@ export function Btn({ children, kind = 'primary', size = 'md', icon, style, text
 
   return (
     <Touchable
-      onPress={onPress}
-      fade
-      sink
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      opacity={disabled ? 0.45 : 1}
+      fade={!disabled}
+      sink={!disabled}
       transition="quick"
       fd="row"
       ai="center"
@@ -74,6 +80,7 @@ export function Btn({ children, kind = 'primary', size = 'md', icon, style, text
       <Txt font="semi" fos={s.fontSize} ls={-0.1} col={textColor ?? ink[kind]}>
         {children}
       </Txt>
+      {iconRight}
     </Touchable>
   );
 }
@@ -81,9 +88,16 @@ export function Btn({ children, kind = 'primary', size = 'md', icon, style, text
 // ────────────────────────────────────────────
 // Field (label + hint)
 // ────────────────────────────────────────────
-type FieldProps = { label?: string; hint?: string; suffix?: string; children: ReactNode };
+type FieldProps = {
+  label?: string;
+  hint?: string;
+  /** Reemplaza al `hint` mientras el campo esté mal: mismo sitio, tono peligro. */
+  error?: string;
+  suffix?: string;
+  children: ReactNode;
+};
 
-export function Field({ label, hint, suffix, children }: FieldProps) {
+export function Field({ label, hint, error, suffix, children }: FieldProps) {
   return (
     <Col gap="$sm">
       {label ? (
@@ -95,7 +109,11 @@ export function Field({ label, hint, suffix, children }: FieldProps) {
         </Row>
       ) : null}
       {children}
-      {hint ? <Txt fos={12} tone="muted2">{hint}</Txt> : null}
+      {error ? (
+        <Txt font="semi" fos={12} tone="danger">{error}</Txt>
+      ) : hint ? (
+        <Txt fos={12} tone="muted2">{hint}</Txt>
+      ) : null}
     </Col>
   );
 }
@@ -107,9 +125,11 @@ type InputProps = {
   mono?: boolean;
   prefix?: string;
   right?: ReactNode;
+  /** Pinta el borde en rojo. El mensaje lo pone el `error` del Field. */
+  invalid?: boolean;
 } & TextInputProps;
 
-export function Input({ mono = false, prefix, right, style, ...rest }: InputProps) {
+export function Input({ mono = false, prefix, right, invalid = false, style, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
   const c = useAppColors();
 
@@ -121,7 +141,7 @@ export function Input({ mono = false, prefix, right, style, ...rest }: InputProp
       bw={1.5}
       px={14}
       bg="$surface"
-      bc={focused ? '$accent' : '$line'}
+      bc={invalid ? '$danger' : focused ? '$accent' : '$line'}
       transition="quick"
     >
       {prefix ? (
@@ -151,6 +171,129 @@ export function Input({ mono = false, prefix, right, style, ...rest }: InputProp
       />
       {right}
     </Row>
+  );
+}
+
+// ────────────────────────────────────────────
+// Checkbox
+// ────────────────────────────────────────────
+// Con `label` toda la fila es el área táctil, que es lo cómodo para un
+// "Recordarme". Sin `label` solo se pinta la casilla: es lo que necesita el
+// bloque de términos, donde el texto lleva enlaces propios que deben poder
+// tocarse sin marcar la casilla.
+type CheckboxProps = {
+  checked: boolean;
+  onToggle: () => void;
+  label?: string;
+  size?: number;
+};
+
+export function Checkbox({ checked, onToggle, label, size = 22 }: CheckboxProps) {
+  const c = useAppColors();
+
+  const box = (
+    <Box
+      transition="quick"
+      h={size}
+      w={size}
+      ai="center"
+      jc="center"
+      br={6}
+      bg={checked ? '$solid' : '$surface'}
+      bw={checked ? 0 : 1.5}
+      bc="$line"
+    >
+      {checked ? <Icon name="check" color={c.solidInk} size={Math.round(size * 0.64)} /> : null}
+    </Box>
+  );
+
+  if (!label) {
+    return (
+      <Touchable onPress={onToggle} hitSlop={8}>
+        {box}
+      </Touchable>
+    );
+  }
+
+  return (
+    <Touchable onPress={onToggle} fd="row" ai="center" gap={10} hitSlop={8}>
+      {box}
+      <Txt font="semi" fos={13} tone="ink2">
+        {label}
+      </Txt>
+    </Touchable>
+  );
+}
+
+// ────────────────────────────────────────────
+// CodeInput — código de un solo uso, una casilla por dígito
+// ────────────────────────────────────────────
+// Las casillas son SOLO pintura: debajo hay un único TextInput invisible que
+// las cubre por completo. Seis inputs de verdad (uno por casilla) obligarían a
+// mover el foco a mano en cada tecla y romperían pegar el código de un tirón y
+// el autorrelleno del sistema, que llegan como una sola cadena de 6 caracteres.
+type CodeInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  length?: number;
+  autoFocus?: boolean;
+};
+
+export function CodeInput({ value, onChange, length = 6, autoFocus = false }: CodeInputProps) {
+  const [focused, setFocused] = useState(false);
+  const digits = value.split('');
+
+  return (
+    <Box>
+      <Row gap={8}>
+        {Array.from({ length }).map((_, i) => {
+          const char = digits[i];
+          // La casilla activa es donde caerá el próximo dígito; con el código
+          // completo se queda marcada la última, que es la que se va a borrar.
+          const active = focused && (value.length === length ? i === length - 1 : i === value.length);
+          return (
+            <Box
+              key={i}
+              f={1}
+              h={58}
+              ai="center"
+              jc="center"
+              br="$md"
+              bw={1.5}
+              transition="quick"
+              bg={char ? '$bg2' : '$surface'}
+              bc={active ? '$accent' : '$line'}
+            >
+              <Txt font="mono" fos={22} ls={0} tone="ink">
+                {char ?? ''}
+              </Txt>
+            </Box>
+          );
+        })}
+      </Row>
+
+      <NativeInput
+        pos="absolute"
+        t={0}
+        l={0}
+        r={0}
+        b={0}
+        opacity={0}
+        value={value}
+        // El teclado numérico de iOS no impide pegar texto, así que el filtro
+        // no es decorativo: sin él, pegar "Código: 123456" rompe las casillas.
+        onChangeText={(t) => onChange(t.replace(/\D/g, '').slice(0, length))}
+        keyboardType="number-pad"
+        // Autorrelleno del código: `oneTimeCode` en iOS, `sms-otp` en Android.
+        textContentType="oneTimeCode"
+        autoComplete="sms-otp"
+        maxLength={length}
+        caretHidden
+        autoFocus={autoFocus}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+    </Box>
   );
 }
 
@@ -331,8 +474,8 @@ export function KPI({ icon, label, value, unit, onDark = false }: KPIProps) {
       br="$md"
       bw={1}
       p={14}
-      bg={onDark ? 'rgba(255,255,255,0.06)' : '$bg2'}
-      bc={onDark ? 'rgba(255,255,255,0.06)' : '$line2'}
+      bg={onDark ? 'rgba(255,255,255,0.06)' : '$surface'}
+      bc={onDark ? 'rgba(255,255,255,0.06)' : '$line'}
     >
       <Row gap="$sm">
         <Box h={28} w={28} ai="center" jc="center" br={8} bg={onDark ? 'rgba(255,255,255,0.08)' : '$accentSoft'}>

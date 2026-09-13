@@ -21,6 +21,8 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Login: undefined;
   Signup: undefined;
+  /** `email` viene del login: lo que el usuario ya había escrito. */
+  ForgotPassword: { email?: string } | undefined;
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
   VehicleDetail: { vehicleId: string };
   AddVehicleType: undefined;
