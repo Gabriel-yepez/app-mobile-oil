@@ -1,0 +1,44 @@
+# Dependencias
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Código nativo generado por prebuild (CNG).
+# Este proyecto describe lo nativo desde app.json, así que android/ e ios/ son
+# artefactos reproducibles, no fuente. Si algún día hace falta editarlos a mano
+# ("bare workflow"), hay que sacarlos de acá y commitearlos.
+/android
+/ios
+.kotlin/
+
+# Credenciales de firma — nunca al repo
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# IDEs
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+
+# Entorno local
+.env*.local

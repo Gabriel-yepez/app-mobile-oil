@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { dark, light, palette } from '../theme';
 import { TabBar } from '../components/TabBar';
+import { GlassBackdrop, GlassBlurTarget } from '../components/GlassSurface';
 import { useFirstRunPermission } from '../notifications';
 import { RootStackParamList, TabParamList } from './types';
 import { navigationRef, flushPendingRoute } from './navigationRef';
@@ -29,16 +30,23 @@ const Tab = createBottomTabNavigator<TabParamList>();
 function Tabs() {
   useFirstRunPermission();
 
+  // El cristal del tab bar necesita, en Android, que le señalen qué desenfocar.
+  // `screenLayout` envuelve cada escena: es deliberado que el target sea la
+  // pantalla y no el navegador entero — si el target contuviera al tab bar, el
+  // árbol de render se cicla y hwui revienta la pila. Ver GlassSurface.tsx.
   return (
-    <Tab.Navigator
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Vehicles" component={VehiclesScreen} />
-      <Tab.Screen name="Alerts" component={AlertsScreen} />
-      <Tab.Screen name="Me" component={ProfileScreen} />
-    </Tab.Navigator>
+    <GlassBackdrop>
+      <Tab.Navigator
+        tabBar={(props) => <TabBar {...props} />}
+        screenLayout={({ children }) => <GlassBlurTarget>{children}</GlassBlurTarget>}
+        screenOptions={{ headerShown: false }}
+      >
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Vehicles" component={VehiclesScreen} />
+        <Tab.Screen name="Alerts" component={AlertsScreen} />
+        <Tab.Screen name="Me" component={ProfileScreen} />
+      </Tab.Navigator>
+    </GlassBackdrop>
   );
 }
 

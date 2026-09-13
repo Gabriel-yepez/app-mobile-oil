@@ -150,7 +150,7 @@ export { View as TamaguiView, Text as TamaguiText, styled };
 // Para esos, este hook devuelve la paleta ya resuelta según el esquema del
 // sistema. Misma fuente de verdad que los temas de Tamagui: src/theme.
 import { useColorScheme } from 'react-native';
-import { dark as darkColors, light as lightColors, shadows, type AppTheme } from '../theme';
+import { blur, dark as darkColors, light as lightColors, shadows, type AppTheme } from '../theme';
 
 export function useAppColors(): AppTheme {
   return useColorScheme() === 'dark' ? darkColors : lightColors;
@@ -159,6 +159,11 @@ export function useAppColors(): AppTheme {
 /** Sombras del handoff, atenuadas en oscuro. */
 export function useShadows() {
   return useColorScheme() === 'dark' ? shadows.dark : shadows.light;
+}
+
+/** Material de desenfoque del cristal, según el esquema. */
+export function useBlur() {
+  return useColorScheme() === 'dark' ? blur.dark : blur.light;
 }
 
 /** true cuando el sistema está en oscuro. */

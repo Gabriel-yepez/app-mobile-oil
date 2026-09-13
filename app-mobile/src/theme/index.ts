@@ -5,6 +5,8 @@
 // NUNCA leen estos objetos directamente: consumen los tokens de tema de Tamagui
 // ($bg, $ink, $line…), que se resuelven según el esquema del sistema.
 
+import { Platform } from 'react-native';
+
 // ────────────────────────────────────────────
 // Marca — no cambia entre temas
 // ────────────────────────────────────────────
@@ -65,6 +67,22 @@ export const light = {
   // acento translúcido (chips de icono)
   accentSoft: 'rgba(37, 99, 235, 0.08)',
 
+  // ── Cristal (tab bar y superficies translúcidas) ──────────────────────
+  // El velo translúcido no está aquí: lo pone el material del sistema de
+  // expo-blur, ya calibrado. Estos tres son las capas decorativas que van
+  // ENCIMA del desenfoque, que es lo que hace que lea como vidrio biselado y
+  // no como un plástico translúcido.
+  //
+  // Borde de luz del canto superior.
+  glassBorder: 'rgba(255, 255, 255, 0.85)',
+  // Canto exterior, apenas visible: separa la pill del fondo desenfocado.
+  glassEdge: 'rgba(10, 37, 64, 0.10)',
+  // Brillo especular que cae de arriba hacia abajo.
+  glassSheen: 'rgba(255, 255, 255, 0.5)',
+  // Lente del item activo. No usa `accentSoft` porque ese está calibrado para
+  // chips sobre superficie opaca: sobre cristal se lava y no se ve nada.
+  glassLens: 'rgba(37, 99, 235, 0.16)',
+
   // scrim de modales
   scrim: 'rgba(10, 18, 38, 0.4)',
 };
@@ -118,6 +136,14 @@ export const dark: typeof light = {
   // acento translúcido
   accentSoft: 'rgba(59, 130, 246, 0.16)',
 
+  // ── Cristal ──
+  // Mucho más tenues: sobre navy, un reflejo blanco al 85% no lee como luz,
+  // lee como un borde blanco pintado.
+  glassBorder: 'rgba(255, 255, 255, 0.16)',
+  glassEdge: 'rgba(255, 255, 255, 0.08)',
+  glassSheen: 'rgba(255, 255, 255, 0.10)',
+  glassLens: 'rgba(96, 165, 250, 0.20)',
+
   // scrim
   scrim: 'rgba(3, 7, 18, 0.6)',
 };
@@ -145,6 +171,30 @@ export const spacing = {
 
 // Sombras: en oscuro se apagan casi por completo (una sombra negra sobre fondo
 // oscuro no se ve; la separación la dan los bordes).
+// Desenfoque del cristal. No son colores sino parámetros del material nativo
+// (en iOS, un UIBlurEffect del sistema; en Android, expo-blur emula el mismo
+// material), así que viven fuera de las paletas.
+export const blur = {
+  light: {
+    // El tint se comporta distinto en cada plataforma: en iOS nombra un
+    // UIBlurEffect real del sistema, mientras que en Android expo-blur lo
+    // *emula* con un velo de color plano. Y su tabla traduce el material fino a
+    // un gris 199 al 55%, que contra esta paleta blanca y azul se ve sucio. El
+    // chrome es blanco puro y es el que pega.
+    tint: Platform.OS === 'android' ? 'systemChromeMaterialLight' : 'systemThinMaterialLight',
+    intensity: 70,
+  },
+  dark: {
+    // En oscuro el criterio se invierte, así que acá no se replica el cambio:
+    // el chrome oscuro es negro puro, y sobre un fondo tan profundo como bg3
+    // (#070C18) la barra quedaría MÁS oscura que la pantalla — un agujero, no
+    // un cristal. El gris del material fino aclara apenas, que es lo que lee
+    // como superficie elevada.
+    tint: 'systemThinMaterialDark',
+    intensity: 60,
+  },
+} as const;
+
 export const shadows = {
   light: {
     card: { shadowColor: '#0A2540', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 3 },
