@@ -69,8 +69,11 @@ describe('visibleWidgets', () => {
 });
 
 describe('reconcile', () => {
-  const known = ['a', 'b', 'c'] as WidgetId[];
-  const defHidden = ['c'] as WidgetId[];
+  // Ids sintéticos: reconcile es genérica sobre el registro que le pasen, y
+  // así los casos de "widget nuevo" y "widget eliminado" no dependen del
+  // catálogo real, que va a seguir cambiando.
+  const known = ['a', 'b', 'c'] as unknown as WidgetId[];
+  const defHidden = ['c'] as unknown as WidgetId[];
 
   it('sin nada guardado devuelve el layout por defecto', () => {
     expect(reconcile(undefined)).toEqual(DEFAULT_LAYOUT);

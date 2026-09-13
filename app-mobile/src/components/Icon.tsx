@@ -21,14 +21,17 @@ import Eye from 'lucide-react-native/icons/eye';
 import EyeOff from 'lucide-react-native/icons/eye-off';
 import Flag from 'lucide-react-native/icons/flag';
 import Gauge from 'lucide-react-native/icons/gauge';
+import GripVertical from 'lucide-react-native/icons/grip-vertical';
 import House from 'lucide-react-native/icons/house';
 import LogOut from 'lucide-react-native/icons/log-out';
+import Menu from 'lucide-react-native/icons/menu';
 import Motorbike from 'lucide-react-native/icons/motorbike';
 import Plus from 'lucide-react-native/icons/plus';
 import RotateCcwClock from 'lucide-react-native/icons/rotate-ccw-clock';
 import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
 import Shield from 'lucide-react-native/icons/shield';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import Trash from 'lucide-react-native/icons/trash';
@@ -63,7 +66,10 @@ export type IconName =
   | 'flag'
   | 'shield'
   | 'logout'
-  | 'spark';
+  | 'spark'
+  | 'menu'
+  | 'sliders'
+  | 'grip';
 
 export const ICONS: Record<IconName, LucideIcon> = {
   car: Car,
@@ -93,6 +99,9 @@ export const ICONS: Record<IconName, LucideIcon> = {
   shield: Shield,
   logout: LogOut,
   spark: Sparkles,
+  menu: Menu,
+  sliders: SlidersHorizontal,
+  grip: GripVertical,
 };
 
 // Grosores del handoff: la mayoría a 1.75, los iconos "de acción" un poco más.
