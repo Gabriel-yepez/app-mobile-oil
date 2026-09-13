@@ -2,6 +2,7 @@
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider, Theme } from '@tamagui/core';
 import { useFonts, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
@@ -34,13 +35,17 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <TamaguiProvider config={config} defaultTheme={scheme}>
-      <Theme name={scheme}>
-        <SafeAreaProvider>
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          <AppNavigator scheme={scheme} />
-        </SafeAreaProvider>
-      </Theme>
-    </TamaguiProvider>
+    // Raíz de gestos: por fuera de todo. Si falta, los gestos de
+    // react-native-gesture-handler simplemente no disparan, sin error.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <TamaguiProvider config={config} defaultTheme={scheme}>
+        <Theme name={scheme}>
+          <SafeAreaProvider>
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <AppNavigator scheme={scheme} />
+          </SafeAreaProvider>
+        </Theme>
+      </TamaguiProvider>
+    </GestureHandlerRootView>
   );
 }
