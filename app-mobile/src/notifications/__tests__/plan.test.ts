@@ -95,3 +95,78 @@ describe('buildSchedule — avisos de umbral', () => {
     expect(cerca.find((n) => n.kind === 'warn')?.body).toContain('400 km');
   });
 });
+
+describe('buildSchedule — recordatorio semanal', () => {
+  it('planifica el check-in con el día y hora de las preferencias', () => {
+    const out = run([], prefs({ checkinWeekday: 3, checkinHour: 20, checkinMinute: 30 }));
+    const checkin = out.find((n) => n.kind === 'checkin');
+    expect(checkin?.id).toBe('oiltrack:checkin-weekly');
+    expect(checkin?.data).toEqual({ screen: 'Alerts' });
+    expect(checkin?.trigger).toEqual({ type: 'weekly', weekday: 3, hour: 20, minute: 30 });
+  });
+
+  it('planifica el check-in aunque no haya ningún vehículo en riesgo', () => {
+    const out = run([vehicle({ nextChange: 90_000 })]);
+    expect(out).toHaveLength(1);
+    expect(out[0].kind).toBe('checkin');
+  });
+});
+
+describe('buildSchedule — compuertas', () => {
+  it('devuelve plan vacío sin permiso', () => {
+    const out = buildSchedule({
+      vehicles: [vehicle()],
+      prefs: prefs(),
+      permissionGranted: false,
+      now: new Date('2026-09-12T07:00:00'),
+    });
+    expect(out).toEqual([]);
+  });
+
+  it('devuelve plan vacío con el switch maestro apagado', () => {
+    expect(run([vehicle()], prefs({ enabled: false }))).toEqual([]);
+  });
+
+  it('warnEnabled: false quita solo los avisos de próximo', () => {
+    const out = run([vehicle()], prefs({ warnEnabled: false }));
+    expect(out.find((n) => n.kind === 'warn')).toBeUndefined();
+    expect(out.find((n) => n.kind === 'checkin')).toBeDefined();
+  });
+
+  it('overdueEnabled: false quita solo los avisos de vencido', () => {
+    const out = run([vehicle({ nextChange: 79_000 })], prefs({ overdueEnabled: false }));
+    expect(out.find((n) => n.kind === 'overdue')).toBeUndefined();
+    expect(out.find((n) => n.kind === 'checkin')).toBeDefined();
+  });
+
+  it('un vencido con overdueEnabled: false no cae en warn', () => {
+    const out = run([vehicle({ nextChange: 79_000 })], prefs({ overdueEnabled: false }));
+    expect(out.find((n) => n.kind === 'warn')).toBeUndefined();
+  });
+
+  it('checkinEnabled: false quita solo el recordatorio', () => {
+    const out = run([vehicle()], prefs({ checkinEnabled: false }));
+    expect(out.find((n) => n.kind === 'checkin')).toBeUndefined();
+    expect(out.find((n) => n.kind === 'warn')).toBeDefined();
+  });
+
+  it('respeta un umbral personalizado', () => {
+    const out = run([vehicle()], prefs({ warnThresholdKm: 300 })); // kmLeft = 400
+    expect(out.find((n) => n.kind === 'warn')).toBeUndefined();
+  });
+});
+
+describe('buildSchedule — firma', () => {
+  it('cambia la firma cuando cambia el kilometraje', () => {
+    const a = run([vehicle()]).find((n) => n.kind === 'warn');
+    const b = run([vehicle({ km: 79_800 })]).find((n) => n.kind === 'warn');
+    expect(a?.id).toBe(b?.id);
+    expect(a?.sig).not.toBe(b?.sig);
+  });
+
+  it('mantiene la firma cuando nada cambia', () => {
+    const a = run([vehicle()]).find((n) => n.kind === 'warn');
+    const b = run([vehicle()]).find((n) => n.kind === 'warn');
+    expect(a?.sig).toBe(b?.sig);
+  });
+});

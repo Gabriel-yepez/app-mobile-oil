@@ -78,5 +78,25 @@ export function buildSchedule(input: {
     }
   }
 
+  if (prefs.checkinEnabled) {
+    const weekly: PlannedTrigger = {
+      type: 'weekly',
+      weekday: prefs.checkinWeekday,
+      hour: prefs.checkinHour,
+      minute: prefs.checkinMinute,
+    };
+    const title = '¿Actualizaste el kilometraje?';
+    const body = 'Registra los km de tus vehículos para no perder un cambio.';
+    out.push({
+      id: `${NOTIF_PREFIX}checkin-weekly`,
+      kind: 'checkin',
+      title,
+      body,
+      sig: sigOf(title, body, weekly),
+      data: { screen: 'Alerts' },
+      trigger: weekly,
+    });
+  }
+
   return out;
 }
