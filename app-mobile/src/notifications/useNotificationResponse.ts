@@ -1,5 +1,5 @@
 // Qué pasa al tocar una notificación: navegar al vehículo del aviso, o a la
-// pestaña de Alertas si es el recordatorio semanal.
+// pantalla de Alertas si es el recordatorio semanal.
 import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -12,7 +12,7 @@ function navigate(data: NotifRouteData): void {
       navigationRef.navigate('VehicleDetail', { vehicleId: data.vehicleId });
       return;
     }
-    navigationRef.navigate('Tabs', { screen: 'Alerts' });
+    navigationRef.navigate('Alerts');
   });
 }
 

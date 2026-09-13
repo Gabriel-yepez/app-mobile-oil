@@ -1,32 +1,20 @@
-// Perfil — hero oscuro con avatar + datos personales + preferencias + cerrar sesión
+// Perfil — hero oscuro con avatar + datos personales + preferencias.
+// Cerrar sesión y Notificaciones viven en el Menú desde que el perfil dejó de
+// ser un destino raíz del tab bar.
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
-import { palette } from '../theme';
-import { Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
+import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
+import { Avatar, Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore } from '../store/useStore';
-import { useNotifPrefs } from '../store/notifPrefs';
-import { RootStackParamList } from '../navigation/types';
-
-type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<Nav>();
   const c = useAppColors();
   const profile = useStore((s) => s.profile);
   const vehicles = useStore((s) => s.vehicles);
   const changes = useStore((s) => s.changes);
-
-  const initials = profile.fullName
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('');
 
   const personalRows = [
     { k: 'Correo', v: profile.email },
@@ -36,15 +24,9 @@ export function ProfileScreen() {
     { k: 'Moneda', v: 'USD · Bs.S' },
   ];
 
-  const notifEnabled = useNotifPrefs((s) => s.prefs.enabled);
-
-  const prefRows: { k: string; v: string; icon: IconName; onPress?: () => void }[] = [
-    {
-      k: 'Notificaciones',
-      v: notifEnabled ? 'Activadas' : 'Desactivadas',
-      icon: 'bell',
-      onPress: () => navigation.navigate('Notifications'),
-    },
+  // Notificaciones y Cerrar sesión se mudaron al Menú: el perfil dejó de ser un
+  // destino raíz, así que es el menú el lugar donde se los busca.
+  const prefRows: { k: string; v: string; icon: IconName }[] = [
     { k: 'Unidad', v: 'Kilómetros', icon: 'gauge' },
     { k: 'Idioma', v: 'Español (VE)', icon: 'flag' },
     { k: 'Privacidad', v: '', icon: 'shield' },
@@ -72,22 +54,7 @@ export function ProfileScreen() {
           </Row>
 
           <Row gap={14} px="$xl" pb="$2xl" pt="$sm">
-            <LinearGradient
-              colors={[palette.accent2, palette.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 3,
-                borderColor: 'rgba(255,255,255,0.2)',
-              }}
-            >
-              <Txt font="display" fos={26} tone="onDark">{initials}</Txt>
-            </LinearGradient>
+            <Avatar name={profile.fullName} size={72} ring={3} />
             <Col f={1}>
               <Txt font="display" fos={22} tone="onDark" ls={-0.4}>
                 {profile.fullName}
@@ -158,15 +125,12 @@ export function ProfileScreen() {
           <Box px="$lg">
             <Card padded={false}>
               {prefRows.map((r, i) => (
-                <Touchable
+                <Row
                   key={r.k}
-                  onPress={r.onPress}
-                  fd="row"
                   ai="center"
                   gap="$md"
                   px="$lg"
                   py={14}
-                  pressStyle={{ bg: '$bg2' }}
                   borderBottomWidth={i !== prefRows.length - 1 ? 1 : 0}
                   borderBottomColor="$line2"
                 >
@@ -175,32 +139,13 @@ export function ProfileScreen() {
                   </Box>
                   <Txt f={1} font="semi" fos={14}>{r.k}</Txt>
                   {r.v ? <Txt fos={13} tone="muted">{r.v}</Txt> : null}
-                  <Icon name="chevR" color={c.muted2} size={20} />
-                </Touchable>
+                </Row>
               ))}
             </Card>
           </Box>
         </Box>
 
-        {/* cerrar sesión */}
         <Box px="$lg" pt={18}>
-          <Touchable
-            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
-            transition="quick"
-            h={48}
-            fd="row"
-            ai="center"
-            jc="center"
-            gap="$sm"
-            br="$md"
-            bw={1.5}
-            bc="$line"
-            bg="transparent"
-            pressStyle={{ bg: '$bg2' }}
-          >
-            <Icon name="logout" color={c.danger} size={20} />
-            <Txt font="semi" fos={15} tone="danger">Cerrar sesión</Txt>
-          </Touchable>
           <Txt font="monoMed" fos={11} tone="muted2" ls={0.4} ta="center" mt="$md">
             OilTrack VE · v1.0.0
           </Txt>

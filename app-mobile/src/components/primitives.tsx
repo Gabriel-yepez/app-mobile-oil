@@ -9,6 +9,7 @@ import { FlatList, Modal, StyleProp, TextInputProps, ViewStyle } from 'react-nat
 import Svg, { Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
+import { palette } from '../theme';
 import { Icon } from './Icon';
 import { VehicleStatus } from '../data/mock';
 
@@ -395,6 +396,65 @@ export function VehicleThumb({
     >
       <Icon name={kind === 'moto' ? 'moto' : 'car'} color="rgba(255,255,255,0.95)" size={size * 0.55} />
     </LinearGradient>
+  );
+}
+
+// ────────────────────────────────────────────
+// Avatar con iniciales (gradiente de marca)
+// ────────────────────────────────────────────
+/** "Gabriel Yepez Pérez" → "GY". Ignora espacios sobrantes y nombres vacíos. */
+export function initialsOf(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+// El gradiente sale de `palette` y no de los tokens de tema porque el avatar
+// vive sobre el hero navy, que es oscuro en claro y en oscuro: así se ve igual
+// en ambos. `ring` es el aro blanco que lo despega del fondo.
+export function Avatar({
+  name,
+  size = 44,
+  ring = 2,
+  onPress,
+}: {
+  name: string;
+  size?: number;
+  ring?: number;
+  onPress?: () => void;
+}) {
+  const circle = (
+    <LinearGradient
+      colors={[palette.accent2, palette.primary]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: ring,
+        borderColor: 'rgba(255,255,255,0.2)',
+      }}
+    >
+      <Txt font="display" fos={Math.round(size * 0.36)} tone="onDark">
+        {initialsOf(name)}
+      </Txt>
+    </LinearGradient>
+  );
+
+  if (!onPress) return circle;
+
+  return (
+    <Touchable onPress={onPress} fade="strong" sink transition="quick" br={size / 2} hitSlop={8}>
+      {circle}
+    </Touchable>
   );
 }
 

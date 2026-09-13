@@ -14,8 +14,7 @@ export type VehicleDraft = {
 export type TabParamList = {
   Home: undefined;
   Vehicles: undefined;
-  Alerts: undefined;
-  Me: undefined;
+  Menu: undefined;
 };
 
 export type RootStackParamList = {
@@ -29,6 +28,11 @@ export type RootStackParamList = {
   AddOil: { vehicleId?: string; draft?: VehicleDraft };
   History: undefined;
   Notifications: undefined;
+  // Alerts y Profile eran tabs; con la barra en tres destinos viven en el
+  // stack y se llega a ellos desde el Menú o desde el hero del inicio.
+  Alerts: undefined;
+  Profile: undefined;
+  CustomizeHome: undefined;
 };
 
 export type RootScreenProps<S extends keyof RootStackParamList> = NativeStackScreenProps<

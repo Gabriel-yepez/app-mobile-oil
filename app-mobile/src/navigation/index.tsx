@@ -17,12 +17,14 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { VehiclesScreen } from '../screens/VehiclesScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { MenuScreen } from '../screens/MenuScreen';
 import { VehicleDetailScreen } from '../screens/VehicleDetailScreen';
 import { AddVehicleTypeScreen } from '../screens/AddVehicleTypeScreen';
 import { AddVehicleFormScreen } from '../screens/AddVehicleFormScreen';
 import { AddOilScreen } from '../screens/AddOilScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { CustomizeHomeScreen } from '../screens/CustomizeHomeScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -43,8 +45,7 @@ function Tabs() {
       >
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Vehicles" component={VehiclesScreen} />
-        <Tab.Screen name="Alerts" component={AlertsScreen} />
-        <Tab.Screen name="Me" component={ProfileScreen} />
+        <Tab.Screen name="Menu" component={MenuScreen} />
       </Tab.Navigator>
     </GlassBackdrop>
   );
@@ -91,6 +92,9 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="AddOil" component={AddOilScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="Alerts" component={AlertsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="CustomizeHome" component={CustomizeHomeScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
