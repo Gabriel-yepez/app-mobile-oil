@@ -5,7 +5,7 @@
 // que viven sobre el hero navy, que es oscuro en AMBOS temas.
 // (Antes este prop se llamaba `dark`, lo que se confundía con el modo oscuro.)
 import React, { ReactNode, useState } from 'react';
-import { FlatList, Modal, StyleProp, TextInputProps, ViewStyle } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleProp, TextInputProps, ViewStyle } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
@@ -419,6 +419,78 @@ export function SectionHead({ children, right }: { children: ReactNode; right?: 
       </Txt>
       {right}
     </Row>
+  );
+}
+
+// ────────────────────────────────────────────
+// FilterChips
+// ────────────────────────────────────────────
+// Fila de chips con contador. La usan el Garaje y el Historial: el patrón ya
+// estaba escrito a mano en el Garaje, y copiarlo al Historial habría dejado dos
+// versiones que se despegan a la primera corrección de estilo.
+//
+// Genérico en el id para que cada pantalla filtre con su propia unión de
+// literales y no con `string`: así un chip mal escrito no compila.
+export type FilterChip<T extends string> = { id: T; label: string; n: number };
+
+export function FilterChips<T extends string>({
+  chips,
+  value,
+  onChange,
+  scrollable = false,
+  px = 0,
+}: {
+  chips: FilterChip<T>[];
+  value: T;
+  onChange: (id: T) => void;
+  /** Para listas que crecen con los datos: sin esto, a partir de cuatro o cinco
+   *  chips los últimos quedan fuera de la pantalla y no hay forma de llegar. */
+  scrollable?: boolean;
+  /** Sangría horizontal. Va acá y no en un contenedor de afuera porque con
+   *  scroll tiene que ser padding del contenido: en el contenedor recortaría
+   *  los chips de los extremos al desplazarse. */
+  px?: number;
+}) {
+  const fila = (
+    <Row gap="$sm" px={px}>
+      {chips.map((chip) => {
+        const isActive = value === chip.id;
+        return (
+          <Touchable
+            key={chip.id}
+            onPress={() => onChange(chip.id)}
+            fade
+            transition="quick"
+            fd="row"
+            ai="center"
+            h={34}
+            gap={6}
+            br="$pill"
+            px={14}
+            bg={isActive ? '$solid' : '$surface'}
+            bw={isActive ? 0 : 1}
+            bc="$line"
+          >
+            <Txt font="semi" fos={13} tone={isActive ? 'onSolid' : 'ink'}>
+              {chip.label}
+            </Txt>
+            <Box br={6} px={6} py={1} bg={isActive ? 'rgba(255,255,255,0.18)' : '$bg2'}>
+              <Txt font="monoMed" fos={10} tone={isActive ? 'onSolid' : 'muted'}>
+                {chip.n}
+              </Txt>
+            </Box>
+          </Touchable>
+        );
+      })}
+    </Row>
+  );
+
+  if (!scrollable) return fila;
+
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {fila}
+    </ScrollView>
   );
 }
 

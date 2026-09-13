@@ -1,15 +1,22 @@
 // Historial completo — resumen de inversión USD/Bs.S + lista de todos los cambios
-import React from 'react';
+import React, { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
 import { radius } from '../theme';
-import { Card, IconBtn, VehicleThumb } from '../components/primitives';
+import { Card, FilterChip, FilterChips, IconBtn, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm, fmtUsd } from '../utils/format';
 import { BS_RATE, SPEND_BARS } from '../data/mock';
 import { useStore } from '../store/useStore';
+
+// El filtro tiene DOS niveles y no una sola fila larga de chips: con un chip
+// por vehículo, una flota de seis ya no entra en pantalla. Primero se elige el
+// tipo (Todos / Carros / Motos) y, si se eligió uno, aparece debajo la lista de
+// vehículos de ESE tipo para afinar. Así la segunda fila nunca es más larga que
+// los vehículos de una categoría.
+type Kind = 'all' | 'car' | 'moto';
 
 export function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -17,10 +24,57 @@ export function HistoryScreen() {
   const c = useAppColors();
   const changes = useStore((s) => s.changes);
   const vehicles = useStore((s) => s.vehicles);
+  const [kind, setKind] = useState<Kind>('all');
+  const [elegido, setElegido] = useState<string>('all');
 
-  const totalUsd = changes.reduce((sum, ch) => sum + ch.costUsd, 0);
-  const maxBar = Math.max(...SPEND_BARS);
   const vehicleOf = (id: string) => vehicles.find((v) => v.id === id);
+
+  // Un cambio no tiene tipo propio: lo hereda del vehículo al que pertenece.
+  const kindOf = (vehicleId: string) => vehicleOf(vehicleId)?.kind;
+
+  const delTipo = kind === 'all' ? [] : vehicles.filter((v) => v.kind === kind);
+
+  // El vehículo elegido puede haber dejado de valer: se borró, o se cambió el
+  // tipo de arriba. En vez de dejar la lista vacía sin explicación, se cae a
+  // "todos los de este tipo".
+  const vid = delTipo.some((v) => v.id === elegido) ? elegido : 'all';
+
+  const coincide = (vehicleId: string) => {
+    if (kind === 'all') return true;
+    if (vid !== 'all') return vehicleId === vid;
+    return kindOf(vehicleId) === kind;
+  };
+
+  const cuenta = (predicado: (vehicleId: string) => boolean) =>
+    changes.filter((ch) => predicado(ch.vehicleId)).length;
+
+  const filtered = changes.filter((ch) => coincide(ch.vehicleId));
+
+  const chipsTipo: FilterChip<Kind>[] = [
+    { id: 'all', label: 'Todos', n: changes.length },
+    { id: 'car', label: 'Carros', n: cuenta((id) => kindOf(id) === 'car') },
+    { id: 'moto', label: 'Motos', n: cuenta((id) => kindOf(id) === 'moto') },
+  ];
+
+  const chipsVehiculo: FilterChip<string>[] = [
+    { id: 'all', label: kind === 'moto' ? 'Todas' : 'Todos', n: cuenta((id) => kindOf(id) === kind) },
+    ...delTipo.map((v) => ({
+      id: v.id,
+      label: `${v.brand} ${v.model}`,
+      n: cuenta((id) => id === v.id),
+    })),
+  ];
+
+  const elegirTipo = (k: Kind) => {
+    setKind(k);
+    // Cambiar de tipo limpia el vehículo: el de antes es de la otra categoría.
+    setElegido('all');
+  };
+
+  // El total sigue al filtro: un "invertido" que incluye carros encima de una
+  // lista de solo motos no se entiende.
+  const totalUsd = filtered.reduce((sum, ch) => sum + ch.costUsd, 0);
+  const maxBar = Math.max(...SPEND_BARS);
 
   return (
     <Box f={1} bg="$bg3">
@@ -35,11 +89,10 @@ export function HistoryScreen() {
               Historial
             </Txt>
             <Txt font="display" fos={26} ls={-0.5}>
-              {changes.length} cambios
+              {filtered.length} {filtered.length === 1 ? 'cambio' : 'cambios'}
             </Txt>
           </Col>
         </Row>
-        <IconBtn icon={<Icon name="search" color={c.ink} size={20} />} size={40} />
       </Row>
 
       <Scroll bg="$bg3" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
@@ -85,9 +138,35 @@ export function HistoryScreen() {
           </LinearGradient>
         </Box>
 
+        {/* Filtros: debajo del hero y encima de la lista, que es lo que
+            gobiernan. Arriba del hero quedaban lejos de su efecto. */}
+        <Col gap="$sm" pb={14}>
+          <FilterChips chips={chipsTipo} value={kind} onChange={elegirTipo} px={20} />
+
+          {/* La segunda fila solo existe cuando hay un tipo elegido y más de un
+              vehículo de ese tipo: con uno solo, afinar no filtra nada. */}
+          {delTipo.length > 1 ? (
+            <FilterChips
+              chips={chipsVehiculo}
+              value={vid}
+              onChange={setElegido}
+              scrollable
+              px={20}
+            />
+          ) : null}
+        </Col>
+
         {/* lista */}
         <Col gap={10} px="$lg">
-          {changes.map((h) => {
+          {/* Con filtro puesto la lista puede quedar vacía: sin esto se ve una
+              pantalla en blanco y parece que algo se rompió. */}
+          {filtered.length === 0 ? (
+            <Txt fos={13} tone="muted2" ta="center" py="$2xl">
+              Todavía no hay cambios registrados con este filtro.
+            </Txt>
+          ) : null}
+
+          {filtered.map((h) => {
             const v = vehicleOf(h.vehicleId);
             return (
               <Card key={h.id} fd="row" ai="center" gap="$md">

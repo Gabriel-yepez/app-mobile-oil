@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
-import { Card, IconBtn, StatusPill, VehicleThumb } from '../components/primitives';
+import { Card, FilterChip, FilterChips, IconBtn, StatusPill, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm } from '../utils/format';
 import { kmLeft, oilPct, useStore, vehicleStatus } from '../store/useStore';
@@ -24,7 +24,7 @@ export function VehiclesScreen() {
   const motos = vehicles.filter((v) => v.kind === 'moto').length;
   const filtered = filter === 'all' ? vehicles : vehicles.filter((v) => v.kind === filter);
 
-  const chips: { id: Filter; label: string; n: number }[] = [
+  const chips: FilterChip<Filter>[] = [
     { id: 'all', label: 'Todos', n: vehicles.length },
     { id: 'car', label: 'Carros', n: cars },
     { id: 'moto', label: 'Motos', n: motos },
@@ -47,38 +47,9 @@ export function VehiclesScreen() {
         />
       </Row>
 
-      {/* filter chips */}
-      <Row mb="$lg" gap="$sm" px="$xl">
-        {chips.map((chip) => {
-          const isActive = filter === chip.id;
-          return (
-            <Touchable
-              key={chip.id}
-              onPress={() => setFilter(chip.id)}
-              fade
-              transition="quick"
-              fd="row"
-              ai="center"
-              h={34}
-              gap={6}
-              br="$pill"
-              px={14}
-              bg={isActive ? '$solid' : '$surface'}
-              bw={isActive ? 0 : 1}
-              bc="$line"
-            >
-              <Txt font="semi" fos={13} tone={isActive ? 'onSolid' : 'ink'}>
-                {chip.label}
-              </Txt>
-              <Box br={6} px={6} py={1} bg={isActive ? 'rgba(255,255,255,0.18)' : '$bg2'}>
-                <Txt font="monoMed" fos={10} tone={isActive ? 'onSolid' : 'muted'}>
-                  {chip.n}
-                </Txt>
-              </Box>
-            </Touchable>
-          );
-        })}
-      </Row>
+      <Box mb="$lg" px="$xl">
+        <FilterChips chips={chips} value={filter} onChange={setFilter} />
+      </Box>
 
       <Scroll
         bg="$bg3"
