@@ -78,7 +78,8 @@ drag que se puede escribir bien a la primera.
 ```
 src/home/
 ├── registry.tsx          # HOME_WIDGETS: Record<WidgetId, WidgetDef>
-├── layout.ts             # moveWidget, toggleWidget, reconcile — PURAS, sin React
+├── layout.ts             # WidgetId, moveWidget, toggleWidget, reconcile — PURAS, sin React
+├── DarkWidgetSurface.tsx # envoltorio navy para los widgets que nacieron en el hero
 └── widgets/
     ├── GaugeWidget.tsx
     ├── TechReadoutWidget.tsx
@@ -97,12 +98,16 @@ reordenamiento y la migración sin montar un solo componente.
 
 ### Modelo de datos
 
+`WidgetId` vive en `layout.ts` y no en el registro: así el test de la lógica de
+orden no arrastra componentes de React Native al importarlo.
+
 ```ts
-// src/home/registry.tsx
+// src/home/layout.ts
 export type WidgetId =
   | 'gauge' | 'techReadout' | 'kpis'
   | 'quickActions' | 'recentHistory' | 'openAlerts';
 
+// src/home/registry.tsx
 export type WidgetDef = {
   label: string;          // "Nivel de aceite"
   description: string;    // línea de ayuda en Personalizar inicio
@@ -135,8 +140,28 @@ mostrar un widget lo devuelva a su lugar en vez de mandarlo al final.
 | `recentHistory` | Últimos 3 cambios | extraído de HomeScreen | sí |
 | `openAlerts` | Alertas abiertas, lista corta | **nuevo** | no |
 
-Los cuatro extraídos se mueven **tal cual**, sin rediseño: el objetivo de esta
-etapa es hacerlos movibles, no cambiarlos.
+### Widgets oscuros
+
+`gauge` y `techReadout` hoy se dibujan **encima del hero navy**: `OilGauge`
+cablea `rgba(255,255,255,...)` en los arcos y `tone="onDark"` en la lectura
+central, y el readout usa bordes blancos translúcidos sobre `rgba(0,0,0,0.18)`.
+Fuera del navy son ilegibles, así que "moverlos sin tocarlos" no es posible.
+
+Se resuelve dándoles **su propia superficie oscura**: un `DarkWidgetSurface` que
+envuelve al widget en el mismo `LinearGradient` navy del hero, redondeado y con
+el `TechGrid` encima. El widget queda idéntico a hoy por dentro, pero deja de
+depender de en qué parte de la pantalla cayó.
+
+La alternativa era adaptar `OilGauge` y el readout al tema claro. Se descarta:
+obliga a rediseñar un componente afinado (arcos, ticks, animación) para ganar
+consistencia de fondo, cuando envolver no cambia una sola línea de su interior.
+
+La consecuencia visual —y es un cambio real frente a hoy— es que el inicio pasa
+de un bloque navy único a cards navy y cards claras alternadas, según el orden
+que elija el usuario.
+
+Los otros dos extraídos, `kpis` y `recentHistory`, sí se mueven tal cual: ya
+estaban sobre fondo claro.
 
 `quickActions` existe porque al sacar el FAB, "registrar un cambio de aceite" se
 queda sin atajo desde el inicio. El orden por defecto reproduce el Home actual
