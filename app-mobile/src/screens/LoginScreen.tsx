@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pressable, ScrollView, Text, View } from '../tw';
-import { T } from '../theme';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { BrandMark } from '../components/BrandMark';
 import { Btn, Field, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
@@ -11,38 +10,37 @@ import { RootScreenProps } from '../navigation/types';
 
 export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
   const insets = useSafeAreaInsets();
+  const c = useAppColors();
   const [email, setEmail] = useState('luis.guerrero@gmail.com');
   const [password, setPassword] = useState('contraseña1');
   const [showPass, setShowPass] = useState(false);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        className="flex-1 bg-white"
-        contentContainerClassName="grow"
-        contentContainerStyle={{ paddingTop: insets.top + 28 }}
+      <Scroll
+        contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 28 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* logo + wordmark */}
-        <View className="items-center">
-          <View className="flex-row items-center gap-2.5">
+        <Box ai="center">
+          <Row gap={10} transition="bouncy" enterStyle={{ opacity: 0, y: -8 }}>
             <BrandMark size={42} />
-            <Text className="font-display text-[22px] text-ink tracking-[-0.4px]">
-              OilTrack <Text className="text-accent">VE</Text>
-            </Text>
-          </View>
-        </View>
+            <Txt font="display" fos={22} ls={-0.4}>
+              OilTrack <Txt font="display" fos={22} tone="accent">VE</Txt>
+            </Txt>
+          </Row>
+        </Box>
 
-        <View className="px-6 pt-8">
-          <Text className="font-display text-[28px] text-ink tracking-[-0.6px]">
+        <Col px="$2xl" pt="$3xl">
+          <Txt font="display" fos={28} ls={-0.6}>
             Bienvenido de nuevo
-          </Text>
-          <Text className="mt-1.5 font-sans text-[14px] text-muted">
+          </Txt>
+          <Txt fos={14} tone="muted" mt={6}>
             Ingresa para ver tus vehículos y próximos cambios.
-          </Text>
-        </View>
+          </Txt>
+        </Col>
 
-        <View className="gap-3.5 px-6 pt-6">
+        <Col gap={14} px="$2xl" pt="$2xl">
           <Field label="Correo electrónico">
             <Input
               value={email}
@@ -58,32 +56,32 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
               onChangeText={setPassword}
               secureTextEntry={!showPass}
               right={
-                <Pressable onPress={() => setShowPass((v) => !v)} hitSlop={8}>
-                  <Icon name={showPass ? 'eyeOff' : 'eye'} color={T.muted} size={20} />
-                </Pressable>
+                <Touchable onPress={() => setShowPass((v) => !v)} hitSlop={8} fade>
+                  <Icon name={showPass ? 'eyeOff' : 'eye'} color={c.muted} size={20} />
+                </Touchable>
               }
             />
           </Field>
-          <Pressable className="self-end" hitSlop={8}>
-            <Text className="font-sans-semi text-[13px] text-accent">
+          <Touchable als="flex-end" hitSlop={8} fade>
+            <Txt font="semi" fos={13} tone="accent">
               ¿Olvidaste tu contraseña?
-            </Text>
-          </Pressable>
+            </Txt>
+          </Touchable>
           <Btn kind="primary" size="lg" onPress={() => navigation.replace('Tabs')}>
             Iniciar sesión
           </Btn>
-        </View>
+        </Col>
 
-        <View className="flex-1" />
-        <View className="items-center" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
-          <Text className="font-sans text-[14px] text-muted">
+        <Box f={1} />
+        <Box ai="center" pb={Math.max(insets.bottom, 24) + 12}>
+          <Txt fos={14} tone="muted">
             ¿No tienes cuenta?{' '}
-            <Text className="font-sans-semi text-accent" onPress={() => navigation.navigate('Signup')}>
+            <Txt font="semi" fos={14} tone="accent" onPress={() => navigation.navigate('Signup')}>
               Crear una
-            </Text>
-          </Text>
-        </View>
-      </ScrollView>
+            </Txt>
+          </Txt>
+        </Box>
+      </Scroll>
     </KeyboardAvoidingView>
   );
 }

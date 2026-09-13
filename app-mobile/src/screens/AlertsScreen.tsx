@@ -4,8 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ScrollView, Text, View } from '../tw';
-import { T } from '../theme';
+import { Box, Col, Row, Scroll, Txt, useAppColors, useIsDark, useShadows } from '../ui';
 import { Btn, Card, IconBtn, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm } from '../utils/format';
@@ -23,117 +22,137 @@ const RESOLVED = [
 export function AlertsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const c = useAppColors();
+  const sh = useShadows();
+  const isDark = useIsDark();
   const vehicles = useStore((s) => s.vehicles);
 
   const overdue = vehicles.filter((v) => vehicleStatus(v) === 'danger');
   const soon = vehicles.filter((v) => vehicleStatus(v) === 'warn');
   const open = overdue.length + soon.length;
 
-  return (
-    <View className="flex-1 bg-bg3">
-      {/* top bar */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-3.5"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <View>
-          <Text className="font-sans text-[12px] text-muted tracking-[1px] uppercase">
-            Alertas
-          </Text>
-          <Text className="font-display text-[26px] text-ink tracking-[-0.5px]">
-            {open} abiertas
-          </Text>
-        </View>
-        <IconBtn icon={<Icon name="settings" color={T.ink} size={20} />} size={40} />
-      </View>
+  // En claro el ámbar oscuro del handoff; en oscuro sería ilegible, así que
+  // usamos el propio token de warn, ya aclarado para fondos oscuros.
+  const warnInk = isDark ? c.warn : '#B45309';
 
-      <ScrollView contentContainerClassName="gap-3 px-4 pb-[120px]" showsVerticalScrollIndicator={false}>
+  return (
+    <Box f={1} bg="$bg3">
+      {/* top bar */}
+      <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
+        <Col>
+          <Txt fos={12} tone="muted" ls={1} caps>
+            Alertas
+          </Txt>
+          <Txt font="display" fos={26} ls={-0.5}>
+            {open} abiertas
+          </Txt>
+        </Col>
+        <IconBtn icon={<Icon name="settings" color={c.ink} size={20} />} size={40} />
+      </Row>
+
+      <Scroll
+        bg="$bg3"
+        contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* críticas: vencido */}
         {overdue.map((v) => (
-          <View
+          <Box
             key={v.id}
-            className="overflow-hidden rounded-lg border-[1.5px] border-[rgba(239,68,68,0.2)] shadow-card"
+            ov="hidden"
+            br="$lg"
+            bw={1.5}
+            bc={isDark ? 'rgba(248,113,113,0.28)' : 'rgba(239,68,68,0.2)'}
+            style={sh.card}
+            transition="bouncy"
+            enterStyle={{ opacity: 0, y: 12 }}
           >
-            <LinearGradient colors={['#FEF2F2', '#ffffff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
-              <View className="mb-2.5 flex-row items-center gap-2.5">
-                <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-danger">
+            <LinearGradient colors={[c.dangerSoft, c.surface]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
+              <Row mb={10} gap={10}>
+                <Box h={36} w={36} ai="center" jc="center" br={10} bg="$danger">
                   <Icon name="bell" color="#fff" size={20} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-sans-bold text-[11px] text-danger tracking-[1.2px] uppercase">
+                </Box>
+                <Col f={1}>
+                  <Txt font="bold" fos={11} tone="danger" ls={1.2} caps>
                     Cambio vencido
-                  </Text>
-                  <Text className="font-display text-[17px] text-ink">
+                  </Txt>
+                  <Txt font="display" fos={17}>
                     {v.brand} {v.model}
-                  </Text>
-                </View>
-              </View>
-              <Text className="font-sans text-[13px] leading-[19.5px] text-muted">
+                  </Txt>
+                </Col>
+              </Row>
+              <Txt fos={13} lh={19.5} tone="muted">
                 Has superado el kilometraje recomendado. Excedido por{' '}
-                <Text className="font-mono text-danger">+{fmtKm(Math.abs(kmLeft(v)))} km</Text>.
-              </Text>
-              <View className="mt-3 flex-row gap-2">
+                <Txt font="mono" fos={13} tone="danger">+{fmtKm(Math.abs(kmLeft(v)))} km</Txt>.
+              </Txt>
+              <Row mt="$md" gap="$sm">
                 <Btn
                   kind="primary"
                   size="sm"
-                  className="flex-1 bg-danger"
+                  style={{ flex: 1, backgroundColor: c.danger }}
                   onPress={() => navigation.navigate('AddOil', { vehicleId: v.id })}
                 >
                   Registrar cambio
                 </Btn>
-                <Btn kind="ghost" size="sm" className="flex-1">
+                <Btn kind="ghost" size="sm" style={{ flex: 1 }}>
                   Posponer
                 </Btn>
-              </View>
+              </Row>
             </LinearGradient>
-          </View>
+          </Box>
         ))}
 
         {/* warning: próximo */}
         {soon.map((v) => (
-          <View
+          <Box
             key={v.id}
-            className="overflow-hidden rounded-lg border-[1.5px] border-[rgba(245,158,11,0.2)] shadow-card"
+            ov="hidden"
+            br="$lg"
+            bw={1.5}
+            bc={isDark ? 'rgba(251,191,36,0.28)' : 'rgba(245,158,11,0.2)'}
+            style={sh.card}
+            transition="bouncy"
+            enterStyle={{ opacity: 0, y: 12 }}
           >
-            <LinearGradient colors={['#FFFBEB', '#ffffff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
-              <View className="mb-2.5 flex-row items-center gap-2.5">
-                <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-warn">
+            <LinearGradient colors={[c.warnSoft, c.surface]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
+              <Row mb={10} gap={10}>
+                <Box h={36} w={36} ai="center" jc="center" br={10} bg="$warn">
                   <Icon name="gauge" color="#fff" size={20} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-sans-bold text-[11px] text-[#B45309] tracking-[1.2px] uppercase">
+                </Box>
+                <Col f={1}>
+                  <Txt font="bold" fos={11} ls={1.2} caps col={warnInk}>
                     Próximo cambio
-                  </Text>
-                  <Text className="font-display text-[17px] text-ink">
+                  </Txt>
+                  <Txt font="display" fos={17}>
                     {v.brand} {v.model}
-                  </Text>
-                </View>
-              </View>
-              <Text className="font-sans text-[13px] leading-[19.5px] text-muted">
-                Restan <Text className="font-mono text-[#B45309]">{fmtKm(kmLeft(v))} km</Text> para el próximo
+                  </Txt>
+                </Col>
+              </Row>
+              <Txt fos={13} lh={19.5} tone="muted">
+                Restan <Txt font="mono" fos={13} col={warnInk}>{fmtKm(kmLeft(v))} km</Txt> para el próximo
                 cambio. Programa tu visita al lubricentro.
-              </Text>
+              </Txt>
             </LinearGradient>
-          </View>
+          </Box>
         ))}
 
         {/* resueltas */}
-        <View className="-mx-4 mt-2">
+        <Box mx={-16} mt="$sm">
           <SectionHead>Resueltas</SectionHead>
-        </View>
+        </Box>
         {RESOLVED.map((r, i) => (
-          <Card key={i} className="flex-row items-center gap-3">
-            <View className="h-8 w-8 items-center justify-center rounded-[10px] bg-[#ECFDF5]">
-              <Icon name="check" color={T.ok} size={18} />
-            </View>
-            <View className="flex-1">
-              <Text className="font-sans-bold text-[14px] text-ink">{r.v}</Text>
-              <Text className="mt-px font-sans text-[12px] text-muted">{r.text}</Text>
-            </View>
-            <Text className="font-mono-med text-[11px] text-muted2">{r.date}</Text>
+          <Card key={i} fd="row" ai="center" gap="$md">
+            <Box h={32} w={32} ai="center" jc="center" br={10} bg="$okSoft">
+              <Icon name="check" color={c.ok} size={18} />
+            </Box>
+            <Col f={1}>
+              <Txt font="bold" fos={14}>{r.v}</Txt>
+              <Txt fos={12} tone="muted" mt={1}>{r.text}</Txt>
+            </Col>
+            <Txt font="monoMed" fos={11} tone="muted2">{r.date}</Txt>
           </Card>
         ))}
-      </ScrollView>
-    </View>
+      </Scroll>
+    </Box>
   );
 }

@@ -2,9 +2,8 @@
 import React, { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import clsx from 'clsx';
-import { Pressable, Text, View } from '../tw';
-import { palette, T } from '../theme';
+import { Box, Col, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
+import { palette } from '../theme';
 import { Btn, IconBtn } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { RootScreenProps } from '../navigation/types';
@@ -18,42 +17,47 @@ const OPTIONS: { kind: Kind; title: string; subtitle: string; gradient: [string,
 
 export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicleType'>) {
   const insets = useSafeAreaInsets();
+  const c = useAppColors();
+  const sh = useShadows();
   const [selected, setSelected] = useState<Kind>('car');
 
   return (
-    <View className="flex-1 bg-white">
+    <Box f={1} bg="$bg">
       {/* header */}
-      <View
-        className="flex-row items-center justify-between px-5"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
-        <Text className="font-mono text-[11px] text-muted tracking-[1px]">PASO 1 / 3</Text>
-        <View className="w-9" />
-      </View>
+      <Row jc="space-between" px="$xl" pt={insets.top + 12}>
+        <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
+        <Txt font="mono" fos={11} tone="muted" ls={1}>PASO 1 / 3</Txt>
+        <Box w={36} />
+      </Row>
 
-      <View className="px-6 pb-2 pt-6">
-        <Text className="font-display text-[30px] leading-[33px] text-ink tracking-[-0.6px]">
+      <Col px="$2xl" pb="$sm" pt="$2xl">
+        <Txt font="display" fos={30} lh={33} ls={-0.6}>
           ¿Qué vas a registrar?
-        </Text>
-        <Text className="mt-2 font-sans text-[15px] text-muted">
+        </Txt>
+        <Txt fos={15} tone="muted" mt="$sm">
           Elige el tipo de vehículo para comenzar.
-        </Text>
-      </View>
+        </Txt>
+      </Col>
 
-      <View className="gap-3.5 px-5 py-6">
+      <Col gap={14} px="$xl" py="$2xl">
         {OPTIONS.map((o) => {
           const isSelected = selected === o.kind;
           return (
-            <Pressable
+            <Touchable
               key={o.kind}
               onPress={() => setSelected(o.kind)}
-              className={clsx(
-                'flex-row items-center gap-4 rounded-lg bg-white p-[18px]',
-                isSelected
-                  ? 'border-2 border-accent shadow-[0px_0px_8px_rgba(37,99,235,0.18)]'
-                  : 'border-[1.5px] border-line shadow-card'
-              )}
+              fade
+              sink
+              transition="quick"
+              fd="row"
+              ai="center"
+              gap="$lg"
+              br="$lg"
+              bg="$surface"
+              p={18}
+              bw={isSelected ? 2 : 1.5}
+              bc={isSelected ? '$accent' : '$line'}
+              style={isSelected ? undefined : sh.card}
             >
               <LinearGradient
                 colors={o.gradient}
@@ -63,34 +67,34 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
               >
                 <Icon name={o.kind === 'car' ? 'car' : 'moto'} color="#fff" size={36} />
               </LinearGradient>
-              <View className="flex-1">
-                <Text className="font-display text-[20px] text-ink tracking-[-0.3px]">{o.title}</Text>
-                <Text className="mt-0.5 font-sans text-[13px] text-muted">{o.subtitle}</Text>
-              </View>
+              <Col f={1}>
+                <Txt font="display" fos={20} ls={-0.3}>{o.title}</Txt>
+                <Txt fos={13} tone="muted" mt={2}>{o.subtitle}</Txt>
+              </Col>
               {isSelected ? (
-                <View className="h-7 w-7 items-center justify-center rounded-full bg-accent">
+                <Box h={28} w={28} ai="center" jc="center" br="$pill" bg="$accent" transition="bouncy" enterStyle={{ scale: 0.5, opacity: 0 }}>
                   <Icon name="check" color="#fff" size={18} />
-                </View>
+                </Box>
               ) : (
-                <View className="h-7 w-7 rounded-full border-2 border-line" />
+                <Box h={28} w={28} br="$pill" bw={2} bc="$line" />
               )}
-            </Pressable>
+            </Touchable>
           );
         })}
-      </View>
+      </Col>
 
       {/* helper */}
-      <View className="mx-5 flex-row items-start gap-2.5 rounded-[14px] bg-bg2 p-3.5">
-        <View className="mt-0.5">
-          <Icon name="shield" color={palette.accent} size={20} />
-        </View>
-        <Text className="flex-1 font-sans text-[13px] leading-[19.5px] text-muted">
+      <Row mx="$xl" ai="flex-start" gap={10} br={14} bg="$bg2" p={14}>
+        <Box mt={2}>
+          <Icon name="shield" color={c.accent} size={20} />
+        </Box>
+        <Txt f={1} fos={13} lh={19.5} tone="muted">
           Podrás registrar tantos vehículos como quieras. Tu información se guarda solo en tu cuenta.
-        </Text>
-      </View>
+        </Txt>
+      </Row>
 
-      <View className="flex-1" />
-      <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
+      <Box f={1} />
+      <Box px="$xl" pb={Math.max(insets.bottom, 24) + 12}>
         <Btn
           kind="primary"
           size="lg"
@@ -99,7 +103,7 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
         >
           Continuar
         </Btn>
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }

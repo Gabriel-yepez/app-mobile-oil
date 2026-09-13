@@ -39,3 +39,4 @@ yarn-error.*
 # generated native folders (prebuild de Expo en app-mobile/)
 app-mobile/ios/
 app-mobile/android/
+.tamagui/
