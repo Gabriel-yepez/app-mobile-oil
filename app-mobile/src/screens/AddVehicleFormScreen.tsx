@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pressable, ScrollView, Text, View } from '../tw';
-import { T } from '../theme';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
@@ -20,6 +19,7 @@ const COLORS: { name: string; hex: string }[] = [
 
 export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'AddVehicleForm'>) {
   const insets = useSafeAreaInsets();
+  const c = useAppColors();
   const { kind } = route.params;
   const brands = kind === 'car' ? VE_BRANDS_CAR : VE_BRANDS_MOTO;
 
@@ -34,56 +34,71 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View className="flex-1 bg-bg3">
+      <Box f={1} bg="$bg3">
         {/* header */}
-        <View
-          className="flex-row items-center justify-between px-5"
-          style={{ paddingTop: insets.top + 12 }}
-        >
-          <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
-          <Text className="font-mono text-[11px] text-muted tracking-[1px]">PASO 2 / 3</Text>
-          <View className="w-9" />
-        </View>
+        <Row jc="space-between" px="$xl" pt={insets.top + 12}>
+          <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
+          <Txt font="mono" fos={11} tone="muted" ls={1}>PASO 2 / 3</Txt>
+          <Box w={36} />
+        </Row>
 
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-[140px]">
-          <View className="px-6 pb-2 pt-5">
-            <Text className="font-display text-[26px] leading-[30px] text-ink tracking-[-0.5px]">
+        <Scroll bg="$bg3" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
+          <Col px="$2xl" pb="$sm" pt="$xl">
+            <Txt font="display" fos={26} lh={30} ls={-0.5}>
               Datos del vehículo
-            </Text>
-            <Text className="mt-1.5 font-sans text-[14px] text-muted">
+            </Txt>
+            <Txt fos={14} tone="muted" mt={6}>
               Identifica tu {kind === 'car' ? 'carro' : 'moto'} para llevar el registro.
-            </Text>
-          </View>
+            </Txt>
+          </Col>
 
-          <View className="px-5 pt-5">
-            <Card className="gap-3.5">
+          <Box px="$xl" pt="$xl">
+            <Card gap={14}>
               <Field label="Marca">
                 <Select value={brand} placeholder="Selecciona la marca" options={brands} onChange={setBrand} />
               </Field>
               <Field label="Modelo">
                 <Input value={model} onChangeText={setModel} placeholder="Corolla XEI" />
               </Field>
-              <View className="flex-row gap-3">
-                <View className="flex-1">
+              <Row gap="$md" ai="flex-start">
+                <Box f={1}>
                   <Field label="Año">
                     <Input value={year} onChangeText={setYear} placeholder="2019" mono keyboardType="number-pad" maxLength={4} />
                   </Field>
-                </View>
-                <View className="flex-1">
+                </Box>
+                <Box f={1}>
                   <Field label="Color">
-                    <Pressable
+                    <Touchable
                       onPress={() => setColorIdx((i) => (i + 1) % COLORS.length)}
-                      className="h-[52px] flex-row items-center gap-2 rounded-md border-[1.5px] border-line bg-white px-3.5"
+                      fade
+                      fd="row"
+                      ai="center"
+                      h={52}
+                      gap="$sm"
+                      br="$md"
+                      bw={1.5}
+                      bc="$line"
+                      bg="$surface"
+                      px={14}
                     >
-                      <View
-                        className="h-[22px] w-[22px] rounded-full border-2 border-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)]"
-                        style={{ backgroundColor: color.hex }}
+                      <Box
+                        h={22}
+                        w={22}
+                        br="$pill"
+                        bw={2}
+                        bc="#FFFFFF"
+                        bg={color.hex}
+                        transition="quick"
+                        shadowColor="#000000"
+                        shadowOpacity={0.15}
+                        shadowRadius={2}
+                        shadowOffset={{ width: 0, height: 1 }}
                       />
-                      <Text className="font-sans text-[14px] text-ink">{color.name}</Text>
-                    </Pressable>
+                      <Txt fos={14}>{color.name}</Txt>
+                    </Touchable>
                   </Field>
-                </View>
-              </View>
+                </Box>
+              </Row>
               <Field label="Placa" suffix="formato VE">
                 <Input value={plate} onChangeText={(t) => setPlate(t.toUpperCase())} placeholder={kind === 'car' ? 'AC123BD' : 'AAB12P'} mono autoCapitalize="characters" />
               </Field>
@@ -94,17 +109,14 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   placeholder="78460"
                   mono
                   keyboardType="number-pad"
-                  right={<Text className="font-mono-med text-[12px] text-muted">km</Text>}
+                  right={<Txt font="monoMed" fos={12} tone="muted">km</Txt>}
                 />
               </Field>
             </Card>
-          </View>
-        </ScrollView>
+          </Box>
+        </Scroll>
 
-        <View
-          className="absolute bottom-0 left-0 right-0 bg-white px-5 pt-4"
-          style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}
-        >
+        <Box pos="absolute" b={0} l={0} r={0} bg="$bg" px="$xl" pt="$lg" pb={Math.max(insets.bottom, 24) + 12}>
           <Btn
             kind="primary"
             size="lg"
@@ -125,8 +137,8 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
           >
             Siguiente: Aceite
           </Btn>
-        </View>
-      </View>
+        </Box>
+      </Box>
     </KeyboardAvoidingView>
   );
 }

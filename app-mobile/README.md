@@ -21,36 +21,68 @@ npm run android    # emulador Android
 - **Zustand** — estado global (vehículos, cambios de aceite, perfil)
 - **expo-linear-gradient** — headers oscuros y thumbnails
 - **@expo-google-fonts** — Inter (UI), Space Grotesk (títulos), JetBrains Mono (km, USD, placas, cédula)
-- **Tailwind CSS v4 + NativeWind v5 + react-native-css** — styling con `className`
+- **Tamagui (`@tamagui/core`)** — estilos, tokens, temas claro/oscuro y animaciones
 
-## Tailwind
+## Tamagui y temas
 
-Configurado según la skill `expo-tailwind-setup` (`../.agents/skills/`, compartidas a nivel del monorepo):
+Todo el styling pasa por Tamagui. Dos decisiones que conviene conocer antes de tocarlo:
 
-- `metro.config.js` — `withNativewind` (sin babel config; todo es CSS-first)
-- `postcss.config.mjs` — plugin `@tailwindcss/postcss`
-- `src/global.css` — imports de Tailwind v4 + **tokens del handoff registrados en `@theme`**
-- `src/tw/` — wrappers con `useCssElement` (`View`, `Text`, `Pressable`, `ScrollView`, `TextInput`…)
-- `package.json` — `lightningcss` fijado a `1.30.1` (overrides) por compatibilidad con react-native-css
+**No usamos `@tamagui/config`.** Sus temas por defecto pesan ~5.4 MB en el bundle y no
+aportan nada, porque la app tiene su propia paleta del handoff. `tamagui.config.ts`
+define tokens, temas y fuentes a mano; así Tamagui cuesta ~0.6 MB.
 
-Uso — los tokens de OilTrack están disponibles como clases:
+**No usamos `@tamagui/babel-plugin`.** Es un optimizador opcional de build; en este
+proyecto no logra cargar la config y cuelga el bundle. Sin él Tamagui funciona igual
+(su propia documentación lo dice: *"You may not need the compiler"*).
+
+Archivos:
+
+- `tamagui.config.ts` — tokens, temas `light`/`dark`, fuentes y animaciones
+- `src/theme/` — paleta cruda: `light`, `dark`, radios, espaciados y sombras
+- `src/ui/` — primitivas styled (`Box`, `Row`, `Col`, `Txt`, `Touchable`, `Scroll`…)
+
+Uso — el color sale siempre de tokens de tema, nunca de literales:
 
 ```tsx
-import { View, Text } from '@/tw';
+import { Box, Txt, Touchable } from '@/ui';
 
-<View className="flex-1 bg-primary rounded-lg p-4">
-  <Text className="text-accent2 font-display text-xl">OilTrack VE</Text>
-  <Text className="text-muted font-sans">bg-bg2, border-line, text-ink, text-ok/warn/danger…</Text>
-</View>
+<Box f={1} bg="$bg" br="$lg" p="$lg">
+  <Txt font="display" fos={20}>OilTrack VE</Txt>
+  <Txt tone="muted">$bg2, $line, $ink, $ok/$warn/$danger…</Txt>
+  <Touchable fade sink transition="quick" bg="$primary" />
+</Box>
 ```
 
-> Nota: las pantallas actuales usan StyleSheet/estilos inline (fieles al handoff). Tailwind queda disponible para nuevas pantallas o migración gradual — ambos sistemas conviven sin conflicto.
+### Modo oscuro
+
+La app sigue el ajuste del sistema y reacciona en caliente. Tres piezas tienen que
+estar alineadas o no funciona:
+
+1. `app.json` → `userInterfaceStyle: "automatic"`. Si queda en `"light"`, el SO
+   reporta siempre `'light'` y nada de lo demás importa.
+2. `App.tsx` → `useColorScheme()` alimenta `<Theme name={scheme}>`.
+3. `src/navigation/index.tsx` → el `NavigationContainer` lleva su propio tema; sin
+   eso el fondo entre pantallas se queda blanco y se ve un flash al navegar.
+
+Ojo con `$primary` vs `$solid`: en claro son el mismo navy, pero `$primary` es
+además el color del hero (oscuro en ambos temas), mientras que `$solid` es el
+relleno de los controles sólidos — botón primario, chips activos, FAB, checkbox —
+y en oscuro pasa al azul acento. Si un control sólido usa `$primary`, en oscuro
+queda navy sobre navy y desaparece.
+
+Los 27 tokens semánticos existen en ambos temas con el mismo nombre, así que los
+componentes no ramifican por esquema. Hay una excepción deliberada: el prop `onDark`
+(en `Card`, `KPI`, `IconBtn`) marca los elementos que van sobre el hero navy, que es
+oscuro en los dos temas — **no** significa "modo oscuro". Para props que no pasan por
+Tamagui (`stroke`/`fill` de SVG, `colors` de LinearGradient, `placeholderTextColor`)
+está el hook `useAppColors()`, que lee la misma fuente de verdad.
 
 ## Estructura
 
 ```
 src/
-├── theme/          # tokens de diseño (paleta navy, semánticos, radios, sombras)
+├── theme/          # paleta cruda claro/oscuro, radios, espaciados, sombras
+├── ui/             # primitivas styled de Tamagui (Box, Row, Col, Txt, Touchable…)
 ├── components/     # Icon, BrandMark, OilGauge, TabBar, primitivas (Btn, Input, Card…)
 ├── data/mock.ts    # data mock: flota, cambios, perfil, marcas/aceites VE
 ├── store/          # Zustand + selectors (kmLeft, pct, status)

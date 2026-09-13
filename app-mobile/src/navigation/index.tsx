@@ -1,9 +1,9 @@
 // Navegación: stack raíz (auth + flujos) + bottom tabs con TabBar custom
 import React from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { T } from '../theme';
+import { dark, light, palette } from '../theme';
 import { TabBar } from '../components/TabBar';
 import { RootStackParamList } from './types';
 
@@ -37,14 +37,36 @@ function Tabs() {
   );
 }
 
-const theme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: T.bg3 },
+// El contenedor de navegación tiene su propio tema: sin esto el fondo entre
+// pantallas sigue siendo blanco y se ve un flash claro al navegar en oscuro.
+const navThemes = {
+  light: {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: light.bg3,
+      card: light.bg,
+      text: light.ink,
+      border: light.line,
+      primary: palette.accent,
+    },
+  },
+  dark: {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: dark.bg3,
+      card: dark.surface,
+      text: dark.ink,
+      border: dark.line,
+      primary: dark.accent,
+    },
+  },
 };
 
-export function AppNavigator() {
+export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer theme={navThemes[scheme]}>
       <Stack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />

@@ -2,9 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import clsx from 'clsx';
-import { Pressable, ScrollView, Text, View } from '../tw';
-import { T } from '../theme';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { SHOPS_VE, VE_OILS, VISCOSITIES } from '../data/mock';
@@ -16,6 +14,8 @@ const INTERVALS = [3000, 5000, 7500, 10000];
 
 export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
   const insets = useSafeAreaInsets();
+  const c = useAppColors();
+  const sh = useShadows();
   const { vehicleId, draft } = route.params ?? {};
   const vehicles = useStore((s) => s.vehicles);
   const addVehicle = useStore((s) => s.addVehicle);
@@ -67,87 +67,92 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
     }
   };
 
+  const sliderPct = (intervalIdx / (INTERVALS.length - 1)) * 100;
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View className="flex-1 bg-bg3">
+      <Box f={1} bg="$bg3">
         {/* header */}
-        <View
-          className="flex-row items-center justify-between px-5"
-          style={{ paddingTop: insets.top + 12 }}
-        >
-          <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
-          <Text className="font-mono text-[11px] text-muted tracking-[1px]">
+        <Row jc="space-between" px="$xl" pt={insets.top + 12}>
+          <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
+          <Txt font="mono" fos={11} tone="muted" ls={1}>
             {draft ? 'PASO 3 / 3' : 'NUEVO CAMBIO'}
-          </Text>
-          <View className="w-9" />
-        </View>
+          </Txt>
+          <Box w={36} />
+        </Row>
 
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-[140px]">
-          <View className="px-6 pb-2 pt-5">
-            <Text className="font-display text-[26px] leading-[30px] text-ink tracking-[-0.5px]">
+        <Scroll bg="$bg3" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
+          <Col px="$2xl" pb="$sm" pt="$xl">
+            <Txt font="display" fos={26} lh={30} ls={-0.5}>
               Registrar cambio de aceite
-            </Text>
+            </Txt>
             {subtitle ? (
-              <Text className="mt-1.5 font-sans text-[14px] text-muted">{subtitle}</Text>
+              <Txt fos={14} tone="muted" mt={6}>{subtitle}</Txt>
             ) : null}
-          </View>
+          </Col>
 
-          <View className="gap-3 px-4 pt-4">
+          <Col gap="$md" px="$lg" pt="$lg">
             {/* Card 1 — Aceite */}
-            <Card className="gap-3.5">
+            <Card gap={14}>
               <Field label="Tipo de aceite">
                 <Select value={oilName} options={oilOptions} onChange={setOilName} />
               </Field>
-              <View className="flex-row gap-3">
-                <View className="flex-1">
+              <Row gap="$md" ai="flex-start">
+                <Box f={1}>
                   <Field label="Viscosidad">
                     <Select value={viscosity} options={VISCOSITIES} onChange={setViscosity} />
                   </Field>
-                </View>
-                <View className="flex-1">
+                </Box>
+                <Box f={1}>
                   <Field label="Tipo">
                     <Select value={oilType} options={['Sintético', 'Semi-sintético', 'Mineral']} onChange={setOilType} />
                   </Field>
-                </View>
-              </View>
+                </Box>
+              </Row>
 
               {/* chips de viscosidad */}
-              <View className="flex-row flex-wrap gap-1.5">
+              <Row flexWrap="wrap" gap={6}>
                 {VISCOSITIES.map((v) => {
                   const isActive = v === viscosity;
                   return (
-                    <Pressable
+                    <Touchable
                       key={v}
                       onPress={() => setViscosity(v)}
-                      className={clsx(
-                        'h-[30px] items-center justify-center rounded-full px-3',
-                        isActive ? 'bg-primary' : 'border border-line bg-white'
-                      )}
+                      fade
+                      transition="quick"
+                      h={30}
+                      ai="center"
+                      jc="center"
+                      br="$pill"
+                      px="$md"
+                      bg={isActive ? '$solid' : '$surface'}
+                      bw={isActive ? 0 : 1}
+                      bc="$line"
                     >
-                      <Text className={clsx('font-mono text-[12px]', isActive ? 'text-white' : 'text-muted')}>
+                      <Txt font="mono" fos={12} tone={isActive ? 'onSolid' : 'muted'}>
                         {v}
-                      </Text>
-                    </Pressable>
+                      </Txt>
+                    </Touchable>
                   );
                 })}
-              </View>
+              </Row>
             </Card>
 
             {/* Card 2 — Kilometraje */}
-            <Card className="gap-3.5">
-              <View className="-mb-1 flex-row items-center gap-2">
-                <View className="h-3.5 w-1 rounded-[2px] bg-accent" />
-                <Text className="font-sans-bold text-[11px] text-muted tracking-[1.2px] uppercase">
+            <Card gap={14}>
+              <Row mb={-4} gap="$sm">
+                <Box h={14} w={4} br={2} bg="$accent" />
+                <Txt font="bold" fos={11} tone="muted" ls={1.2} caps>
                   Kilometraje
-                </Text>
-              </View>
+                </Txt>
+              </Row>
               <Field label="Kilometraje del cambio" suffix="km">
                 <Input
                   value={changeKm}
                   onChangeText={setChangeKm}
                   mono
                   keyboardType="number-pad"
-                  right={<Text className="font-mono-med text-[12px] text-muted">km</Text>}
+                  right={<Txt font="monoMed" fos={12} tone="muted">km</Txt>}
                 />
               </Field>
               <Field label="Próximo cambio a" suffix="km">
@@ -155,54 +160,55 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                   value={String(nextKm)}
                   editable={false}
                   mono
-                  right={<Text className="font-mono-med text-[12px] text-muted">km</Text>}
+                  right={<Txt font="monoMed" fos={12} tone="muted">km</Txt>}
                 />
               </Field>
 
               {/* slider de intervalo */}
-              <View>
-                <View className="mb-2 flex-row justify-between">
-                  <Text className="font-sans-semi text-[12px] text-muted">Intervalo</Text>
-                  <Text className="font-mono text-[13px] text-ink">{fmtKm(interval)} km</Text>
-                </View>
-                <View className="relative h-[22px] justify-center">
-                  <View className="h-1.5 rounded-[3px] bg-bg2">
-                    <View
-                      className="h-full rounded-[3px] bg-accent"
-                      style={{ width: `${(intervalIdx / (INTERVALS.length - 1)) * 100}%` }}
-                    />
-                  </View>
-                  <View
-                    className="absolute -ml-[11px] h-[22px] w-[22px] rounded-full border-[3px] border-accent bg-white shadow-[0px_2px_8px_rgba(0,0,0,0.12)]"
-                    style={{ left: `${(intervalIdx / (INTERVALS.length - 1)) * 100}%` }}
+              <Col>
+                <Row mb="$sm" jc="space-between">
+                  <Txt font="semi" fos={12} tone="muted">Intervalo</Txt>
+                  <Txt font="mono" fos={13}>{fmtKm(interval)} km</Txt>
+                </Row>
+                <Box h={22} jc="center">
+                  <Box h={6} br={3} bg="$bg2">
+                    <Box h="100%" br={3} bg="$accent" width={`${sliderPct}%`} transition="quick" />
+                  </Box>
+                  <Box
+                    pos="absolute"
+                    ml={-11}
+                    h={22}
+                    w={22}
+                    br="$pill"
+                    bw={3}
+                    bc="$accent"
+                    bg="$surface"
+                    left={`${sliderPct}%`}
+                    transition="quick"
+                    style={sh.card}
                   />
-                </View>
-                <View className="mt-1.5 flex-row justify-between">
+                </Box>
+                <Row mt={6} jc="space-between">
                   {INTERVALS.map((v, i) => (
-                    <Pressable key={v} onPress={() => setIntervalIdx(i)} hitSlop={10}>
-                      <Text
-                        className={clsx(
-                          'font-mono-med text-[10px]',
-                          i === intervalIdx ? 'text-accent' : 'text-muted2'
-                        )}
-                      >
+                    <Touchable key={v} onPress={() => setIntervalIdx(i)} hitSlop={10} fade>
+                      <Txt font="monoMed" fos={10} tone={i === intervalIdx ? 'accent' : 'muted2'}>
                         {fmtKm(v)}
-                      </Text>
-                    </Pressable>
+                      </Txt>
+                    </Touchable>
                   ))}
-                </View>
-              </View>
+                </Row>
+              </Col>
             </Card>
 
             {/* Card 3 — Detalles */}
-            <Card className="gap-3.5">
-              <View className="flex-row gap-3">
-                <View className="flex-1">
+            <Card gap={14}>
+              <Row gap="$md" ai="flex-start">
+                <Box f={1}>
                   <Field label="Fecha">
                     <Input value={date} onChangeText={setDate} mono />
                   </Field>
-                </View>
-                <View className="flex-1">
+                </Box>
+                <Box f={1}>
                   <Field label="Costo">
                     <Input
                       value={cost}
@@ -211,30 +217,27 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                       keyboardType="decimal-pad"
                       prefix="$"
                       right={
-                        <View className="rounded-[4px] bg-bg2 px-1.5 py-0.5">
-                          <Text className="font-mono-med text-[11px] text-muted">USD</Text>
-                        </View>
+                        <Box br={4} bg="$bg2" px={6} py={2}>
+                          <Txt font="monoMed" fos={11} tone="muted">USD</Txt>
+                        </Box>
                       }
                     />
                   </Field>
-                </View>
-              </View>
+                </Box>
+              </Row>
               <Field label="Lubricentro / Taller">
                 <Select value={shop} options={SHOPS_VE} onChange={setShop} />
               </Field>
             </Card>
-          </View>
-        </ScrollView>
+          </Col>
+        </Scroll>
 
-        <View
-          className="absolute bottom-0 left-0 right-0 bg-white px-5 pt-4"
-          style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}
-        >
+        <Box pos="absolute" b={0} l={0} r={0} bg="$bg" px="$xl" pt="$lg" pb={Math.max(insets.bottom, 24) + 12}>
           <Btn kind="primary" size="lg" icon={<Icon name="check" color="#fff" size={20} />} onPress={save}>
             Guardar cambio
           </Btn>
-        </View>
-      </View>
+        </Box>
+      </Box>
     </KeyboardAvoidingView>
   );
 }

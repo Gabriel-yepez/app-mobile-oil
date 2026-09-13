@@ -1,13 +1,14 @@
-// Primitivas — botones, inputs, cards, pills, KPI. Migradas del handoff (src/primitives.jsx)
+// Primitivas — botones, inputs, cards, pills, KPI. Migradas del handoff.
+//
+// Todo el color sale de tokens de tema, así que cada componente sirve en claro
+// y oscuro sin ramificar. La excepción es el prop `onDark`: marca los elementos
+// que viven sobre el hero navy, que es oscuro en AMBOS temas.
+// (Antes este prop se llamaba `dark`, lo que se confundía con el modo oscuro.)
 import React, { ReactNode, useState } from 'react';
-import { FlatList, Modal, StyleProp, ViewStyle } from 'react-native';
+import { FlatList, Modal, StyleProp, TextInputProps, ViewStyle } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import clsx from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { Pressable, Text, TextInput, View } from '../tw';
-import type { TextInputProps } from 'react-native';
-import { palette, T } from '../theme';
+import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { Icon } from './Icon';
 import { VehicleStatus } from '../data/mock';
 
@@ -17,67 +18,62 @@ import { VehicleStatus } from '../data/mock';
 type BtnKind = 'primary' | 'accent' | 'ghost' | 'soft' | 'danger';
 type BtnSize = 'lg' | 'md' | 'sm';
 
+const btnSize: Record<BtnSize, { height: number; px: number; fontSize: number }> = {
+  lg: { height: 56, px: 22, fontSize: 16 },
+  md: { height: 48, px: 18, fontSize: 15 },
+  sm: { height: 36, px: 14, fontSize: 13 },
+};
+
 type BtnProps = {
   children: ReactNode;
   kind?: BtnKind;
   size?: BtnSize;
   icon?: ReactNode;
-  className?: string;
   style?: StyleProp<ViewStyle>;
   textColor?: string;
   onPress?: () => void;
 };
 
-const btnSizeCls: Record<BtnSize, string> = {
-  lg: 'h-14 px-[22px]',
-  md: 'h-12 px-[18px]',
-  sm: 'h-9 px-3.5',
-};
+export function Btn({ children, kind = 'primary', size = 'md', icon, style, textColor, onPress }: BtnProps) {
+  const c = useAppColors();
+  const sh = useShadows();
+  const s = btnSize[size];
 
-const btnTextSizeCls: Record<BtnSize, string> = {
-  lg: 'text-[16px]',
-  md: 'text-[15px]',
-  sm: 'text-[13px]',
-};
+  const surface: Record<BtnKind, ViewStyle> = {
+    primary: { backgroundColor: c.solid, ...sh.primary },
+    accent: { backgroundColor: c.accent, ...sh.primary },
+    ghost: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: c.line },
+    soft: { backgroundColor: c.bg2 },
+    danger: { backgroundColor: c.dangerBg },
+  };
+  const ink: Record<BtnKind, string> = {
+    primary: c.solidInk,
+    accent: '#FFFFFF',
+    ghost: c.primary,
+    soft: c.primary,
+    danger: c.dangerInk,
+  };
 
-const btnKindCls: Record<BtnKind, string> = {
-  primary: 'bg-primary shadow-primary',
-  accent: 'bg-accent shadow-primary',
-  ghost: 'bg-transparent border-[1.5px] border-line',
-  soft: 'bg-bg2',
-  danger: 'bg-[#FEE2E2]',
-};
-
-const btnKindTextCls: Record<BtnKind, string> = {
-  primary: 'text-white',
-  accent: 'text-white',
-  ghost: 'text-primary',
-  soft: 'text-primary',
-  danger: 'text-[#B91C1C]',
-};
-
-export function Btn({ children, kind = 'primary', size = 'md', icon, className, style, textColor, onPress }: BtnProps) {
   return (
-    <Pressable
+    <Touchable
       onPress={onPress}
-      className={twMerge(
-        clsx(
-          'flex-row items-center justify-center gap-2 rounded-md active:opacity-85',
-          btnSizeCls[size],
-          btnKindCls[kind],
-          className
-        )
-      )}
-      style={style}
+      fade
+      sink
+      transition="quick"
+      fd="row"
+      ai="center"
+      jc="center"
+      gap="$sm"
+      br="$md"
+      h={s.height}
+      px={s.px}
+      style={[surface[kind], style] as StyleProp<ViewStyle>}
     >
       {icon}
-      <Text
-        className={clsx('font-sans-semi tracking-[-0.1px]', btnTextSizeCls[size], btnKindTextCls[kind])}
-        style={textColor ? { color: textColor } : undefined}
-      >
+      <Txt font="semi" fos={s.fontSize} ls={-0.1} col={textColor ?? ink[kind]}>
         {children}
-      </Text>
-    </Pressable>
+      </Txt>
+    </Touchable>
   );
 }
 
@@ -88,26 +84,24 @@ type FieldProps = { label?: string; hint?: string; suffix?: string; children: Re
 
 export function Field({ label, hint, suffix, children }: FieldProps) {
   return (
-    <View className="gap-2">
+    <Col gap="$sm">
       {label ? (
-        <View className="flex-row items-baseline justify-between gap-2">
-          <Text numberOfLines={1} className="font-sans-bold text-[11px] text-muted tracking-[0.6px] uppercase">
+        <Row ai="baseline" jc="space-between" gap="$sm">
+          <Txt numberOfLines={1} font="bold" fos={11} tone="muted" ls={0.6} caps>
             {label}
-          </Text>
-          {suffix ? <Text className="font-sans text-[11px] text-muted2">{suffix}</Text> : null}
-        </View>
+          </Txt>
+          {suffix ? <Txt fos={11} tone="muted2">{suffix}</Txt> : null}
+        </Row>
       ) : null}
       {children}
-      {hint ? <Text className="font-sans text-[12px] text-muted2">{hint}</Text> : null}
-    </View>
+      {hint ? <Txt fos={12} tone="muted2">{hint}</Txt> : null}
+    </Col>
   );
 }
 
 // ────────────────────────────────────────────
 // Input
 // ────────────────────────────────────────────
-const inputBoxCls = 'h-[52px] flex-row items-center gap-2 rounded-md border-[1.5px] border-line bg-white px-3.5';
-
 type InputProps = {
   mono?: boolean;
   prefix?: string;
@@ -116,29 +110,46 @@ type InputProps = {
 
 export function Input({ mono = false, prefix, right, style, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
+  const c = useAppColors();
+
   return (
-    <View
-      className={clsx(
-        inputBoxCls,
-        focused && 'border-accent shadow-[0px_0px_3px_rgba(37,99,235,0.18)]'
-      )}
+    <Row
+      h={52}
+      gap="$sm"
+      br="$md"
+      bw={1.5}
+      px={14}
+      bg="$surface"
+      bc={focused ? '$accent' : '$line'}
+      transition="quick"
     >
       {prefix ? (
-        <Text className={clsx('text-[14px] text-muted', mono ? 'font-mono-med' : 'font-sans')}>{prefix}</Text>
+        <Txt font={mono ? 'monoMed' : 'sans'} fos={14} tone="muted">
+          {prefix}
+        </Txt>
       ) : null}
-      <TextInput
+      <NativeInput
         {...rest}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        placeholderTextColor={T.muted2}
-        className={clsx(
-          'flex-1 py-0 text-ink',
-          mono ? 'font-mono-med text-[16px]' : 'font-sans text-[15px] tracking-[-0.1px]'
-        )}
+        onFocus={(e) => {
+          setFocused(true);
+          rest.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          rest.onBlur?.(e);
+        }}
+        placeholderTextColor={c.muted2}
+        f={1}
+        py={0}
+        col="$ink"
+        fos={mono ? 16 : 15}
+        ls={mono ? 0 : -0.1}
+        fontFamily={mono ? '$mono' : '$body'}
+        fontWeight={mono ? '600' : '500'}
         style={style}
       />
       {right}
-    </View>
+    </Row>
   );
 }
 
@@ -154,46 +165,67 @@ type SelectProps = {
 
 export function Select({ value, placeholder = 'Seleccionar', options, onChange }: SelectProps) {
   const [open, setOpen] = useState(false);
+  const c = useAppColors();
+
   return (
     <>
-      <Pressable className={inputBoxCls} onPress={() => setOpen(true)}>
-        <Text className={clsx('flex-1 font-sans text-[15px]', value ? 'text-ink' : 'text-muted2')}>
+      <Touchable
+        fade
+        onPress={() => setOpen(true)}
+        fd="row"
+        ai="center"
+        h={52}
+        gap="$sm"
+        br="$md"
+        bw={1.5}
+        px={14}
+        bg="$surface"
+        bc="$line"
+      >
+        <Txt f={1} fos={15} tone={value ? 'ink' : 'muted2'}>
           {value || placeholder}
-        </Text>
-        <Icon name="chevD" color={T.muted} size={20} />
-      </Pressable>
+        </Txt>
+        <Icon name="chevD" color={c.muted} size={20} />
+      </Touchable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable className="flex-1 justify-end bg-[rgba(10,18,38,0.4)]" onPress={() => setOpen(false)}>
-          <View className="max-h-[420px] rounded-t-xl bg-white py-3">
+        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={() => setOpen(false)}>
+          <Box
+            maxHeight={420}
+            borderTopLeftRadius="$xl"
+            borderTopRightRadius="$xl"
+            bg="$surface"
+            py="$md"
+            transition="bouncy"
+            enterStyle={{ y: 40, opacity: 0 }}
+          >
             <FlatList
               data={options}
               keyExtractor={(o) => o}
               renderItem={({ item }) => {
                 const selected = item === value;
                 return (
-                  <Pressable
-                    className="flex-row items-center px-6 py-[15px] active:bg-bg2"
+                  <Touchable
+                    fd="row"
+                    ai="center"
+                    px="$2xl"
+                    py={15}
+                    pressStyle={{ bg: '$bg2' }}
                     onPress={() => {
                       onChange?.(item);
                       setOpen(false);
                     }}
                   >
-                    <Text
-                      className={clsx(
-                        'flex-1 text-[15px]',
-                        selected ? 'font-sans-bold text-accent' : 'font-sans text-ink'
-                      )}
-                    >
+                    <Txt f={1} fos={15} font={selected ? 'bold' : 'sans'} tone={selected ? 'accent' : 'ink'}>
                       {item}
-                    </Text>
-                    {selected ? <Icon name="check" color={palette.accent} size={18} /> : null}
-                  </Pressable>
+                    </Txt>
+                    {selected ? <Icon name="check" color={c.accent} size={18} /> : null}
+                  </Touchable>
                 );
               }}
             />
-          </View>
-        </Pressable>
+          </Box>
+        </Touchable>
       </Modal>
     </>
   );
@@ -202,36 +234,33 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
 // ────────────────────────────────────────────
 // Status pill (estilo LED)
 // ────────────────────────────────────────────
-const pillMap: Record<VehicleStatus, { bgCls: string; dotCls: string; textCls: string; label: string }> = {
-  ok: {
-    bgCls: 'bg-[#ECFDF5]',
-    dotCls: 'bg-ok shadow-[0px_0px_4px_rgba(16,185,129,0.9)]',
-    textCls: 'text-ok',
-    label: 'Al día',
-  },
-  warn: {
-    bgCls: 'bg-[#FFFBEB]',
-    dotCls: 'bg-warn shadow-[0px_0px_4px_rgba(245,158,11,0.9)]',
-    textCls: 'text-warn',
-    label: 'Próximo',
-  },
-  danger: {
-    bgCls: 'bg-[#FEF2F2]',
-    dotCls: 'bg-danger shadow-[0px_0px_4px_rgba(239,68,68,0.9)]',
-    textCls: 'text-danger',
-    label: 'Vencido',
-  },
+const pillMeta: Record<VehicleStatus, { label: string; soft: keyof ReturnType<typeof useAppColors>; solid: keyof ReturnType<typeof useAppColors> }> = {
+  ok: { label: 'Al día', soft: 'okSoft', solid: 'ok' },
+  warn: { label: 'Próximo', soft: 'warnSoft', solid: 'warn' },
+  danger: { label: 'Vencido', soft: 'dangerSoft', solid: 'danger' },
 };
 
 export function StatusPill({ status = 'ok', label }: { status?: VehicleStatus; label?: string }) {
-  const s = pillMap[status];
+  const c = useAppColors();
+  const m = pillMeta[status];
+  const solid = c[m.solid] as string;
+
   return (
-    <View className={clsx('h-6 flex-row items-center gap-1.5 rounded-full px-2.5', s.bgCls)}>
-      <View className={clsx('h-1.5 w-1.5 rounded-full', s.dotCls)} />
-      <Text className={clsx('font-sans-bold text-[11px] tracking-[0.4px] uppercase', s.textCls)}>
-        {label || s.label}
-      </Text>
-    </View>
+    <Row h={24} gap={6} br="$pill" px={10} bg={c[m.soft] as string} transition="lazy">
+      <Box
+        h={6}
+        w={6}
+        br="$pill"
+        bg={solid}
+        shadowColor={solid}
+        shadowOpacity={0.9}
+        shadowRadius={4}
+        shadowOffset={{ width: 0, height: 0 }}
+      />
+      <Txt font="bold" fos={11} ls={0.4} caps col={solid}>
+        {label || m.label}
+      </Txt>
+    </Row>
   );
 }
 
@@ -240,42 +269,45 @@ export function StatusPill({ status = 'ok', label }: { status?: VehicleStatus; l
 // ────────────────────────────────────────────
 export function SectionHead({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <View className="mb-2.5 flex-row items-center justify-between px-5">
-      <View className="flex-row items-center gap-2">
-        <View className="h-3.5 w-1 rounded-[2px] bg-accent" />
-        <Text className="font-sans-bold text-[11px] text-muted tracking-[1.2px] uppercase">{children}</Text>
-      </View>
+    <Row mb={10} jc="space-between" px="$xl">
+      <Row gap="$sm">
+        <Box h={14} w={4} br={2} bg="$accent" />
+        <Txt font="bold" fos={11} tone="muted" ls={1.2} caps>
+          {children}
+        </Txt>
+      </Row>
       {right}
-    </View>
+    </Row>
   );
 }
 
 // ────────────────────────────────────────────
 // Card
 // ────────────────────────────────────────────
-type CardProps = {
+// Acepta además las props de layout de Box (fd, ai, gap…), que es como las
+// pantallas ajustan la disposición interna de cada tarjeta.
+type CardProps = React.ComponentProps<typeof Box> & {
   children: ReactNode;
   padded?: boolean;
-  dark?: boolean;
-  className?: string;
-  style?: StyleProp<ViewStyle>;
+  /** Sobre el hero navy (oscuro en ambos temas), no "modo oscuro". */
+  onDark?: boolean;
 };
 
-export function Card({ children, padded = true, dark = false, className, style }: CardProps) {
+export function Card({ children, padded = true, onDark = false, style, ...rest }: CardProps) {
+  const sh = useShadows();
   return (
-    <View
-      className={twMerge(
-        clsx(
-          'rounded-lg border',
-          dark ? 'bg-primary2 border-[rgba(255,255,255,0.08)]' : 'bg-white border-line shadow-card',
-          padded ? 'p-4' : 'overflow-hidden',
-          className
-        )
-      )}
-      style={style}
+    <Box
+      br="$lg"
+      bw={1}
+      bg={onDark ? '$primary2' : '$surface'}
+      bc={onDark ? 'rgba(255,255,255,0.08)' : '$line'}
+      p={padded ? '$lg' : 0}
+      ov={padded ? 'visible' : 'hidden'}
+      style={[onDark ? null : sh.card, style] as StyleProp<ViewStyle>}
+      {...rest}
     >
       {children}
-    </View>
+    </Box>
   );
 }
 
@@ -287,47 +319,39 @@ type KPIProps = {
   label: string;
   value: string | number;
   unit?: string;
-  dark?: boolean;
+  onDark?: boolean;
 };
 
-export function KPI({ icon, label, value, unit, dark = false }: KPIProps) {
+export function KPI({ icon, label, value, unit, onDark = false }: KPIProps) {
   return (
-    <View
-      className={clsx(
-        'flex-1 gap-2 rounded-md border p-3.5',
-        dark ? 'bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.06)]' : 'bg-bg2 border-line2'
-      )}
+    <Col
+      f={1}
+      gap="$sm"
+      br="$md"
+      bw={1}
+      p={14}
+      bg={onDark ? 'rgba(255,255,255,0.06)' : '$bg2'}
+      bc={onDark ? 'rgba(255,255,255,0.06)' : '$line2'}
     >
-      <View className="flex-row items-center gap-2">
-        <View
-          className={clsx(
-            'h-7 w-7 items-center justify-center rounded-[8px]',
-            dark ? 'bg-[rgba(255,255,255,0.08)]' : 'bg-[rgba(37,99,235,0.08)]'
-          )}
-        >
+      <Row gap="$sm">
+        <Box h={28} w={28} ai="center" jc="center" br={8} bg={onDark ? 'rgba(255,255,255,0.08)' : '$accentSoft'}>
           {icon}
-        </View>
-        <Text
-          numberOfLines={1}
-          className={clsx(
-            'flex-1 font-sans-bold text-[10px] tracking-[0.4px] uppercase',
-            dark ? 'text-[rgba(255,255,255,0.6)]' : 'text-muted'
-          )}
-        >
+        </Box>
+        <Txt numberOfLines={1} f={1} font="bold" fos={10} ls={0.4} caps tone={onDark ? 'onDarkMuted' : 'muted'}>
           {label}
-        </Text>
-      </View>
-      <View className="flex-row items-baseline gap-1">
-        <Text className={clsx('font-mono text-[24px] tracking-[-0.5px]', dark ? 'text-white' : 'text-ink')}>
+        </Txt>
+      </Row>
+      <Row ai="baseline" gap={4}>
+        <Txt font="mono" fos={24} ls={-0.5} tone={onDark ? 'onDark' : 'ink'}>
           {value}
-        </Text>
+        </Txt>
         {unit ? (
-          <Text className={clsx('font-sans text-[12px]', dark ? 'text-[rgba(255,255,255,0.6)]' : 'text-muted')}>
+          <Txt fos={12} tone={onDark ? 'onDarkMuted' : 'muted'}>
             {unit}
-          </Text>
+          </Txt>
         ) : null}
-      </View>
-    </View>
+      </Row>
+    </Col>
   );
 }
 
@@ -336,9 +360,11 @@ export function KPI({ icon, label, value, unit, dark = false }: KPIProps) {
 // ────────────────────────────────────────────
 export function VinPlate({ children }: { children: ReactNode }) {
   return (
-    <View className="h-[22px] flex-row items-center rounded-[4px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-2">
-      <Text className="font-mono-med text-[11px] text-[rgba(255,255,255,0.7)] tracking-[1px]">{children}</Text>
-    </View>
+    <Row h={22} br={4} bw={1} px="$sm" bc="rgba(255,255,255,0.12)" bg="rgba(255,255,255,0.06)">
+      <Txt font="monoMed" fos={11} ls={1} tone="onDarkSoft">
+        {children}
+      </Txt>
+    </Row>
   );
 }
 
@@ -381,7 +407,7 @@ export function TechGrid({ width = 500, height = 420, light = true }: { width?: 
   const vLines = Math.ceil(width / gap);
   const hLines = Math.ceil(height / gap);
   return (
-    <View className="absolute inset-0" pointerEvents="none">
+    <Box pos="absolute" t={0} l={0} r={0} b={0} pointerEvents="none">
       <Svg width={width} height={height}>
         {Array.from({ length: vLines }).map((_, i) => (
           <Line key={`v${i}`} x1={i * gap} y1={0} x2={i * gap} y2={height} stroke={stroke} strokeWidth={1} />
@@ -390,7 +416,7 @@ export function TechGrid({ width = 500, height = 420, light = true }: { width?: 
           <Line key={`h${i}`} x1={0} y1={i * gap} x2={width} y2={i * gap} stroke={stroke} strokeWidth={1} />
         ))}
       </Svg>
-    </View>
+    </Box>
   );
 }
 
@@ -400,30 +426,33 @@ export function TechGrid({ width = 500, height = 420, light = true }: { width?: 
 export function IconBtn({
   icon,
   onPress,
-  dark = false,
+  onDark = false,
   filled = false,
   size = 36,
 }: {
   icon: ReactNode;
   onPress?: () => void;
-  dark?: boolean;
+  onDark?: boolean;
   filled?: boolean;
   size?: number;
 }) {
+  const sh = useShadows();
   return (
-    <Pressable
+    <Touchable
       onPress={onPress}
-      className={clsx(
-        'items-center justify-center rounded-[12px] active:opacity-70',
-        filled
-          ? 'bg-primary shadow-primary'
-          : dark
-            ? 'bg-[rgba(255,255,255,0.12)]'
-            : 'border-[1.5px] border-line bg-white'
-      )}
-      style={{ width: size, height: size }}
+      fade="strong"
+      transition="quick"
+      ai="center"
+      jc="center"
+      br={12}
+      w={size}
+      h={size}
+      bg={filled ? '$solid' : onDark ? 'rgba(255,255,255,0.12)' : '$surface'}
+      bw={filled || onDark ? 0 : 1.5}
+      bc="$line"
+      style={filled ? sh.primary : undefined}
     >
       {icon}
-    </Pressable>
+    </Touchable>
   );
 }

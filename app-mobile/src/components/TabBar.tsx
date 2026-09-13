@@ -3,8 +3,7 @@ import React from 'react';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pressable, Text, View } from '../tw';
-import { palette, T } from '../theme';
+import { Box, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { Icon, IconName } from './Icon';
 
 const TAB_META: Record<string, { label: string; icon: IconName }> = {
@@ -16,6 +15,8 @@ const TAB_META: Record<string, { label: string; icon: IconName }> = {
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const c = useAppColors();
+  const sh = useShadows();
   const routes = state.routes.filter((r) => TAB_META[r.name]);
 
   const renderTab = (routeName: string) => {
@@ -23,47 +24,70 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     if (!route) return null;
     const isActive = state.routes[state.index]?.name === routeName;
     const meta = TAB_META[routeName];
-    const color = isActive ? palette.primary : T.muted2;
+    const color = isActive ? c.solid : c.muted2;
     return (
-      <Pressable
+      <Touchable
         key={routeName}
         onPress={() => navigation.navigate(routeName)}
-        className="h-[52px] flex-1 items-center justify-center gap-0.5"
+        fade
+        transition="quick"
+        h={52}
+        f={1}
+        ai="center"
+        jc="center"
+        gap={2}
       >
         <Icon name={meta.icon} color={color} size={22} />
-        <Text className="font-sans-semi text-[10px] tracking-[0.3px]" style={{ color }}>
+        <Txt font="semi" fos={10} ls={0.3} col={color}>
           {meta.label}
-        </Text>
-      </Pressable>
+        </Txt>
+      </Touchable>
     );
   };
 
   return (
-    <View
-      className="absolute bottom-0 left-0 right-0 pt-1.5"
-      style={{ paddingBottom: Math.max(insets.bottom, 24) }}
-      pointerEvents="box-none"
-    >
+    <Box pos="absolute" b={0} l={0} r={0} pt={6} pb={Math.max(insets.bottom, 24)} pointerEvents="box-none">
+      {/* Degradado que funde la barra con el fondo de la pantalla. */}
       <LinearGradient
-        colors={['rgba(255,255,255,0)', '#ffffff']}
+        colors={[`${c.bg3}00`, c.bg3]}
         style={{ position: 'absolute', top: -10, left: 0, right: 0, bottom: 0 }}
         pointerEvents="none"
       />
-      <View className="mx-4 h-16 flex-row items-center justify-around rounded-[22px] border border-line bg-white px-1.5 shadow-tabbar">
+      <Row
+        mx="$lg"
+        h={64}
+        jc="space-around"
+        br={22}
+        bw={1}
+        px={6}
+        bc="$line"
+        bg="$surface"
+        style={sh.tabbar}
+      >
         {renderTab('Home')}
         {renderTab('Vehicles')}
 
         {/* FAB central → flujo agregar vehículo */}
-        <Pressable
+        <Touchable
           onPress={() => navigation.navigate('AddVehicleType' as never)}
-          className="-mt-[22px] h-[52px] w-[52px] items-center justify-center rounded-[18px] bg-primary shadow-primary active:opacity-85"
+          fade
+          sink
+          transition="quick"
+          mt={-22}
+          h={52}
+          w={52}
+          ai="center"
+          jc="center"
+          br={18}
+          bg="$solid"
+          style={sh.primary}
         >
           <Icon name="plus" color="#fff" size={24} />
-        </Pressable>
+        </Touchable>
 
         {renderTab('Alerts')}
         {renderTab('Me')}
-      </View>
-    </View>
+      </Row>
+    </Box>
   );
 }

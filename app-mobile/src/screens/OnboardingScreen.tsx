@@ -1,8 +1,8 @@
 // Onboarding — 3 slides con pager horizontal, dots animados y CTA
 import React, { useRef, useState } from 'react';
-import { Animated, Dimensions, FlatList, ViewToken } from 'react-native';
+import { Dimensions, FlatList, ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pressable, Text, View } from '../tw';
+import { Box, Col, Row, Touchable, Txt, useAppColors } from '../ui';
 import Svg, {
   Circle,
   Defs,
@@ -14,7 +14,7 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
-import { fonts, palette, T } from '../theme';
+import { fonts, palette } from '../theme';
 import { Btn } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { RootScreenProps } from '../navigation/types';
@@ -61,6 +61,7 @@ function IllustrationCar() {
 
 // ───────── Ilustración 2: tacómetro 72% ─────────
 function IllustrationGauge() {
+  const c = useAppColors();
   const ticks = Array.from({ length: 11 }).map((_, i) => {
     const a = ((-225 + (270 * i) / 10) * Math.PI) / 180;
     return {
@@ -79,8 +80,8 @@ function IllustrationGauge() {
           <Stop offset="1" stopColor={palette.accent} />
         </LinearGradient>
       </Defs>
-      <Circle cx={140} cy={110} r={92} fill="#fff" stroke={T.line} />
-      <Circle cx={140} cy={110} r={80} fill="none" stroke={T.line2} strokeWidth={14} />
+      <Circle cx={140} cy={110} r={92} fill={c.surface} stroke={c.line} />
+      <Circle cx={140} cy={110} r={80} fill="none" stroke={c.line2} strokeWidth={14} />
       <Path d="M 70 130 A 80 80 0 0 1 200 70" fill="none" stroke="url(#ill2Body)" strokeWidth={14} strokeLinecap="round" />
       {ticks.map((t, i) => (
         <Line
@@ -89,20 +90,20 @@ function IllustrationGauge() {
           y1={t.y1}
           x2={t.x2}
           y2={t.y2}
-          stroke={palette.primary}
+          stroke={c.ink}
           strokeOpacity={0.4}
           strokeWidth={t.major ? 2 : 1}
         />
       ))}
       <G x={140} y={110} rotation={40}>
-        <Circle r={8} fill={palette.primary} />
-        <Path d="M 0 0 L 60 -3 L 60 3 Z" fill={palette.accent} />
+        <Circle r={8} fill={c.accent2} />
+        <Path d="M 0 0 L 60 -3 L 60 3 Z" fill={c.accent} />
         <Circle r={3} fill="#fff" />
       </G>
-      <SvgText x={140} y={170} textAnchor="middle" fontFamily={fonts.mono} fontSize={14} fill={palette.primary}>
+      <SvgText x={140} y={170} textAnchor="middle" fontFamily={fonts.mono} fontSize={14} fill={c.ink}>
         72%
       </SvgText>
-      <SvgText x={140} y={186} textAnchor="middle" fontFamily={fonts.sansBold} fontSize={9} fill={T.muted} letterSpacing={2}>
+      <SvgText x={140} y={186} textAnchor="middle" fontFamily={fonts.sansBold} fontSize={9} fill={c.muted} letterSpacing={2}>
         VIDA ÚTIL
       </SvgText>
     </Svg>
@@ -111,6 +112,7 @@ function IllustrationGauge() {
 
 // ───────── Ilustración 3: teléfono + campana ─────────
 function IllustrationBell() {
+  const c = useAppColors();
   return (
     <Svg viewBox="0 0 280 220" width={280} height={220}>
       <Defs>
@@ -132,16 +134,16 @@ function IllustrationBell() {
           strokeDasharray="3 4"
         />
       ))}
-      <Rect x={100} y={50} width={80} height={140} rx={12} fill="#0A1226" />
-      <Rect x={106} y={62} width={68} height={116} rx={6} fill="#fff" />
+      <Rect x={100} y={50} width={80} height={140} rx={12} fill={c.ink} />
+      <Rect x={106} y={62} width={68} height={116} rx={6} fill={c.surface} />
       <Rect x={106} y={62} width={68} height={20} fill={palette.primary} />
       <Rect x={112} y={92} width={56} height={36} rx={6} fill={palette.accent} opacity={0.1} />
       <Rect x={112} y={92} width={3} height={36} rx={1.5} fill={palette.accent} />
-      <Rect x={120} y={100} width={36} height={4} rx={2} fill={palette.primary} />
-      <Rect x={120} y={108} width={28} height={3} rx={1.5} fill={T.muted2} />
-      <Rect x={120} y={115} width={32} height={3} rx={1.5} fill={T.muted2} />
+      <Rect x={120} y={100} width={36} height={4} rx={2} fill={c.ink2} />
+      <Rect x={120} y={108} width={28} height={3} rx={1.5} fill={c.muted2} />
+      <Rect x={120} y={115} width={32} height={3} rx={1.5} fill={c.muted2} />
       <G x={180} y={60}>
-        <Circle r={20} fill={T.warn} />
+        <Circle r={20} fill={c.warn} />
         <Path
           d="M0 -10 C-6 -10 -8 -6 -8 -2 V 4 L-10 6 H10 L8 4 V-2 C8 -6 6 -10 0 -10 Z M-3 8 H3"
           fill="#fff"
@@ -204,13 +206,13 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
   };
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <Box f={1} bg="$bg" pt={insets.top}>
       {/* skip */}
-      <View className="items-end pr-5 pt-3">
-        <Pressable onPress={() => navigation.replace('Login')} hitSlop={12}>
-          <Text className="font-sans-semi text-[14px] text-muted">Saltar</Text>
-        </Pressable>
-      </View>
+      <Box ai="flex-end" pr="$xl" pt="$md">
+        <Touchable onPress={() => navigation.replace('Login')} hitSlop={12} fade>
+          <Txt font="semi" fos={14} tone="muted">Saltar</Txt>
+        </Touchable>
+      </Box>
 
       <FlatList
         ref={listRef}
@@ -222,52 +224,50 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         renderItem={({ item }) => (
-          <View className="flex-1" style={{ width: SCREEN_W }}>
-            <View className="flex-1 items-center justify-center px-5">
+          <Col f={1} width={SCREEN_W}>
+            <Box f={1} ai="center" jc="center" px="$xl">
               {item.illustration}
-            </View>
-            <View className="px-7 pb-[18px]">
-              <Text className="mb-2.5 font-sans-bold text-[11px] text-accent tracking-[2px] uppercase">
+            </Box>
+            <Col px={28} pb={18}>
+              <Txt font="bold" fos={11} tone="accent" ls={2} caps mb={10}>
                 {item.eyebrow}
-              </Text>
-              <Text className="font-display text-[30px] leading-[33px] text-ink tracking-[-0.8px]">
+              </Txt>
+              <Txt font="display" fos={30} lh={33} ls={-0.8}>
                 {item.title}
-              </Text>
-              <Text className="mt-3 font-sans text-[15px] leading-[22.5px] text-muted">
+              </Txt>
+              <Txt fos={15} lh={22.5} tone="muted" mt="$md">
                 {item.body}
-              </Text>
-            </View>
-          </View>
+              </Txt>
+            </Col>
+          </Col>
         )}
       />
 
       {/* dots + cta */}
-      <View
-        className="flex-row items-center justify-between px-5 pt-2"
-        style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}
-      >
-        <View className="flex-row gap-1.5">
+      <Row jc="space-between" px="$xl" pt="$sm" pb={Math.max(insets.bottom, 24) + 12}>
+        <Row gap={6}>
           {SLIDES.map((_, i) => (
             <Dot key={i} active={i === index} />
           ))}
-        </View>
+        </Row>
         <Btn kind="primary" icon={<Icon name="arrow" color="#fff" size={18} />} onPress={next}>
           {index === SLIDES.length - 1 ? 'Empezar' : 'Continuar'}
         </Btn>
-      </View>
-    </View>
+      </Row>
+    </Box>
   );
 }
 
-// Dot que se expande de 8×8 a 24×8 (transition width .25s)
+// Dot que se expande de 8×8 a 24×8. Tamagui interpola el ancho solo al cambiar
+// la prop, así que ya no hace falta el Animated.Value manual.
 function Dot({ active }: { active: boolean }) {
-  const width = useRef(new Animated.Value(active ? 24 : 8)).current;
-  React.useEffect(() => {
-    Animated.timing(width, { toValue: active ? 24 : 8, duration: 250, useNativeDriver: false }).start();
-  }, [active, width]);
   return (
-    <Animated.View
-      style={{ width, height: 8, borderRadius: 4, backgroundColor: active ? palette.primary : T.line }}
+    <Box
+      transition="lazy"
+      width={active ? 24 : 8}
+      height={8}
+      br={4}
+      bg={active ? '$primary' : '$line'}
     />
   );
 }

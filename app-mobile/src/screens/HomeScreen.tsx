@@ -5,8 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, Text, View } from '../tw';
-import { palette, T } from '../theme';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, KPI, SectionHead, TechGrid, VehicleThumb } from '../components/primitives';
 import { OilGauge } from '../components/OilGauge';
 import { Icon } from '../components/Icon';
@@ -19,6 +18,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const c = useAppColors();
   const vehicles = useStore((s) => s.vehicles);
   const changes = useStore((s) => s.changes);
   const profile = useStore((s) => s.profile);
@@ -36,11 +36,11 @@ export function HomeScreen() {
   };
 
   return (
-    <View className="flex-1 bg-bg3">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-[120px]">
+    <Box f={1} bg="$bg3">
+      <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Panel oscuro tipo tablero */}
         <LinearGradient
-          colors={[palette.primary, palette.primary2]}
+          colors={[c.primary, c.primary2]}
           style={{
             paddingTop: insets.top + 12,
             paddingHorizontal: 20,
@@ -53,146 +53,174 @@ export function HomeScreen() {
           <TechGrid />
 
           {/* greeting */}
-          <View className="mb-4 flex-row items-center justify-between">
-            <View>
-              <Text className="font-sans text-[12px] text-[rgba(255,255,255,0.65)] tracking-[1px] uppercase">
+          <Row mb="$lg" jc="space-between">
+            <Col>
+              <Txt fos={12} col="rgba(255,255,255,0.65)" ls={1} caps>
                 Hola, {firstName}
-              </Text>
-              <Text className="mt-0.5 font-display text-[22px] text-white tracking-[-0.4px]">
+              </Txt>
+              <Txt font="display" fos={22} tone="onDark" ls={-0.4} mt={2}>
                 Tu tablero del día
-              </Text>
-            </View>
-            <Pressable
+              </Txt>
+            </Col>
+            <Touchable
               onPress={() => navigation.navigate('Tabs' as never)}
-              className="h-10 w-10 items-center justify-center rounded-[12px] bg-[rgba(255,255,255,0.1)]"
+              fade
+              transition="quick"
+              h={40}
+              w={40}
+              ai="center"
+              jc="center"
+              br={12}
+              bg="rgba(255,255,255,0.1)"
             >
               <Icon name="bell" color="#fff" size={20} />
               {openAlerts > 0 ? (
-                <View className="absolute right-2 top-2 h-2 w-2 rounded-full bg-warn" />
+                <Box pos="absolute" r={8} t={8} h={8} w={8} br="$pill" bg="$warn" />
               ) : null}
-            </Pressable>
-          </View>
+            </Touchable>
+          </Row>
 
           {/* pill del vehículo activo */}
-          <Pressable
+          <Touchable
             onPress={() => setPickerOpen(true)}
-            className="mb-4 flex-row items-center gap-2.5 rounded-[14px] border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.06)] px-3 py-2.5"
+            fade
+            transition="quick"
+            mb="$lg"
+            fd="row"
+            ai="center"
+            gap={10}
+            br={14}
+            bw={1}
+            bc="rgba(255,255,255,0.1)"
+            bg="rgba(255,255,255,0.06)"
+            px="$md"
+            py={10}
           >
             <VehicleThumb kind={active.kind} color={active.color} size={36} />
-            <View className="flex-1">
-              <Text className="font-sans-bold text-[14px] text-white">
+            <Col f={1}>
+              <Txt font="bold" fos={14} tone="onDark">
                 {active.brand} {active.model}
-              </Text>
-              <Text className="font-mono-med text-[11px] text-[rgba(255,255,255,0.65)]">
+              </Txt>
+              <Txt font="monoMed" fos={11} col="rgba(255,255,255,0.65)">
                 {active.plate} · {active.year}
-              </Text>
-            </View>
+              </Txt>
+            </Col>
             <Icon name="chevD" color="rgba(255,255,255,0.7)" size={20} />
-          </Pressable>
+          </Touchable>
 
           {/* gauge */}
-          <Pressable
-            className="mb-2 mt-1 items-center"
+          <Touchable
+            fade
+            mb="$sm"
+            mt={4}
+            ai="center"
             onPress={() => navigation.navigate('AddOil', { vehicleId: active.id })}
           >
             <OilGauge pct={pct} kmLeft={kmLeft(active)} size={220} />
-          </Pressable>
+          </Touchable>
 
           {/* tech readout */}
-          <View className="mt-1 flex-row rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.18)] px-3.5 py-3">
+          <Row mt={4} br={14} bw={1} bc="rgba(255,255,255,0.08)" bg="rgba(0,0,0,0.18)" px={14} py="$md" ai="stretch">
             {[
               { l: 'Odómetro', v: fmtKm(active.km), u: 'km' },
               { l: 'Próximo', v: fmtKm(active.nextChange), u: 'km' },
               { l: 'Aceite', v: active.oil.viscosity, u: active.oil.brand },
             ].map((r) => (
-              <View key={r.l} className="flex-1 items-center">
-                <Text className="font-sans-bold text-[9px] text-[rgba(255,255,255,0.55)] tracking-[1.2px] uppercase">
+              <Col key={r.l} f={1} ai="center">
+                <Txt font="bold" fos={9} col="rgba(255,255,255,0.55)" ls={1.2} caps>
                   {r.l}
-                </Text>
-                <Text className="mt-0.5 font-mono text-[16px] text-white">{r.v}</Text>
-                <Text className="font-sans text-[10px] text-[rgba(255,255,255,0.55)]">{r.u}</Text>
-              </View>
+                </Txt>
+                <Txt font="mono" fos={16} tone="onDark" mt={2}>{r.v}</Txt>
+                <Txt fos={10} col="rgba(255,255,255,0.55)">{r.u}</Txt>
+              </Col>
             ))}
-          </View>
+          </Row>
         </LinearGradient>
 
         {/* KPI row */}
-        <View className="flex-row gap-2.5 px-4 pt-4">
-          <KPI icon={<Icon name="car" color={palette.accent} size={18} />} label="Vehículos" value={vehicles.length} unit="activos" />
-          <KPI icon={<Icon name="calendar" color={palette.accent} size={18} />} label="Últ. cambio" value={active.daysSince} unit="días" />
-          <KPI icon={<Icon name="bell" color={T.warn} size={18} />} label="Alertas" value={openAlerts} unit="abiertas" />
-        </View>
+        <Row gap={10} px="$lg" pt="$lg" ai="stretch">
+          <KPI icon={<Icon name="car" color={c.accent} size={18} />} label="Vehículos" value={vehicles.length} unit="activos" />
+          <KPI icon={<Icon name="calendar" color={c.accent} size={18} />} label="Últ. cambio" value={active.daysSince} unit="días" />
+          <KPI icon={<Icon name="bell" color={c.warn} size={18} />} label="Alertas" value={openAlerts} unit="abiertas" />
+        </Row>
 
         {/* Historial reciente */}
-        <View className="pt-5">
+        <Box pt="$xl">
           <SectionHead
             right={
-              <Pressable onPress={() => navigation.navigate('History')} hitSlop={8}>
-                <Text className="font-sans-semi text-[12px] text-accent">Ver todo</Text>
-              </Pressable>
+              <Touchable onPress={() => navigation.navigate('History')} hitSlop={8} fade>
+                <Txt font="semi" fos={12} tone="accent">Ver todo</Txt>
+              </Touchable>
             }
           >
             Historial reciente
           </SectionHead>
-          <View className="gap-2.5 px-4">
+          <Col gap={10} px="$lg">
             {recent.map((h) => (
-              <Card key={h.id} className="flex-row items-center gap-3">
-                <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-[rgba(37,99,235,0.08)]">
-                  <Icon name="drop" color={palette.accent} size={18} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-sans-bold text-[14px] text-ink">{vehicleName(h.vehicleId)}</Text>
-                  <Text className="mt-px font-sans text-[12px] text-muted">
-                    {h.date} · <Text className="font-mono-med">{fmtKm(h.km)}</Text> km · {h.oil.brand} {h.oil.viscosity}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text className="font-mono text-[14px] text-ink">{fmtUsd(h.costUsd)}</Text>
-                  <Text className="font-sans text-[10px] text-muted2">USD</Text>
-                </View>
+              <Card key={h.id} fd="row" ai="center" gap="$md">
+                <Box h={36} w={36} ai="center" jc="center" br={10} bg="$accentSoft">
+                  <Icon name="drop" color={c.accent} size={18} />
+                </Box>
+                <Col f={1}>
+                  <Txt font="bold" fos={14}>{vehicleName(h.vehicleId)}</Txt>
+                  <Txt fos={12} tone="muted" mt={1}>
+                    {h.date} · <Txt font="monoMed" fos={12} tone="muted">{fmtKm(h.km)}</Txt> km · {h.oil.brand} {h.oil.viscosity}
+                  </Txt>
+                </Col>
+                <Col ai="flex-end">
+                  <Txt font="mono" fos={14}>{fmtUsd(h.costUsd)}</Txt>
+                  <Txt fos={10} tone="muted2">USD</Txt>
+                </Col>
               </Card>
             ))}
-          </View>
-        </View>
-      </ScrollView>
+          </Col>
+        </Box>
+      </Scroll>
 
       {/* selector de vehículo activo */}
       <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
-        <Pressable
-          className="flex-1 justify-end bg-[rgba(10,18,38,0.4)]"
-          onPress={() => setPickerOpen(false)}
-        >
-          <View
-            className="rounded-t-xl bg-white pt-3"
-            style={{ paddingBottom: insets.bottom + 12 }}
+        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={() => setPickerOpen(false)}>
+          <Box
+            borderTopLeftRadius="$xl"
+            borderTopRightRadius="$xl"
+            bg="$surface"
+            pt="$md"
+            pb={insets.bottom + 12}
+            transition="bouncy"
+            enterStyle={{ y: 40, opacity: 0 }}
           >
             <FlatList
               data={vehicles}
               keyExtractor={(v) => v.id}
               renderItem={({ item }) => (
-                <Pressable
-                  className="flex-row items-center gap-3 px-6 py-3 active:bg-bg2"
+                <Touchable
+                  fd="row"
+                  ai="center"
+                  gap="$md"
+                  px="$2xl"
+                  py="$md"
+                  pressStyle={{ bg: '$bg2' }}
                   onPress={() => {
                     setActiveVehicle(item.id);
                     setPickerOpen(false);
                   }}
                 >
                   <VehicleThumb kind={item.kind} color={item.color} size={40} />
-                  <View className="flex-1">
-                    <Text className="font-sans-bold text-[14px] text-ink">
+                  <Col f={1}>
+                    <Txt font="bold" fos={14}>
                       {item.brand} {item.model}
-                    </Text>
-                    <Text className="font-mono-med text-[11px] text-muted">
+                    </Txt>
+                    <Txt font="monoMed" fos={11} tone="muted">
                       {item.plate} · {item.year}
-                    </Text>
-                  </View>
-                  {item.id === active.id ? <Icon name="check" color={palette.accent} size={18} /> : null}
-                </Pressable>
+                    </Txt>
+                  </Col>
+                  {item.id === active.id ? <Icon name="check" color={c.accent} size={18} /> : null}
+                </Touchable>
               )}
             />
-          </View>
-        </Pressable>
+          </Box>
+        </Touchable>
       </Modal>
-    </View>
+    </Box>
   );
 }

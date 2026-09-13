@@ -3,9 +3,8 @@ import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import clsx from 'clsx';
-import { ScrollView, Text, View } from '../tw';
-import { palette, radius, T } from '../theme';
+import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
+import { radius } from '../theme';
 import { Card, IconBtn, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm, fmtUsd } from '../utils/format';
@@ -15,106 +14,105 @@ import { useStore } from '../store/useStore';
 export function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const c = useAppColors();
   const changes = useStore((s) => s.changes);
   const vehicles = useStore((s) => s.vehicles);
 
-  const totalUsd = changes.reduce((sum, c) => sum + c.costUsd, 0);
+  const totalUsd = changes.reduce((sum, ch) => sum + ch.costUsd, 0);
   const maxBar = Math.max(...SPEND_BARS);
   const vehicleOf = (id: string) => vehicles.find((v) => v.id === id);
 
   return (
-    <View className="flex-1 bg-bg3">
+    <Box f={1} bg="$bg3">
       {/* top bar */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-3.5"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <View className="flex-row items-center gap-3">
+      <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
+        <Row gap="$md">
           {navigation.canGoBack() ? (
-            <IconBtn icon={<Icon name="chevL" color={T.ink} size={20} />} onPress={() => navigation.goBack()} />
+            <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
           ) : null}
-          <View>
-            <Text className="font-sans text-[12px] text-muted tracking-[1px] uppercase">
+          <Col>
+            <Txt fos={12} tone="muted" ls={1} caps>
               Historial
-            </Text>
-            <Text className="font-display text-[26px] text-ink tracking-[-0.5px]">
+            </Txt>
+            <Txt font="display" fos={26} ls={-0.5}>
               {changes.length} cambios
-            </Text>
-          </View>
-        </View>
-        <IconBtn icon={<Icon name="search" color={T.ink} size={20} />} size={40} />
-      </View>
+            </Txt>
+          </Col>
+        </Row>
+        <IconBtn icon={<Icon name="search" color={c.ink} size={20} />} size={40} />
+      </Row>
 
-      <ScrollView contentContainerClassName="pb-[120px]" showsVerticalScrollIndicator={false}>
+      <Scroll bg="$bg3" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* inversión */}
-        <View className="px-4 pb-3.5">
+        <Box px="$lg" pb={14}>
           <LinearGradient
-            colors={[palette.primary, palette.primary2]}
+            colors={[c.primary, c.primary2]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ borderRadius: radius.lg, padding: 16 }}
           >
-            <Text className="font-sans-bold text-[11px] text-[rgba(255,255,255,0.6)] tracking-[1.2px] uppercase">
+            <Txt font="bold" fos={11} tone="onDarkMuted" ls={1.2} caps>
               Inversión 2026
-            </Text>
-            <View className="mt-1.5 flex-row items-baseline gap-2">
-              <Text className="font-mono text-[32px] text-white tracking-[-1px]">{fmtUsd(totalUsd)}</Text>
-              <Text className="font-sans text-[12px] text-[rgba(255,255,255,0.7)]">
+            </Txt>
+            <Row ai="baseline" gap="$sm" mt={6}>
+              <Txt font="mono" fos={32} tone="onDark" ls={-1}>{fmtUsd(totalUsd)}</Txt>
+              <Txt fos={12} tone="onDarkSoft">
                 USD · ≈ Bs.S {fmtKm(totalUsd * BS_RATE)}
-              </Text>
-            </View>
+              </Txt>
+            </Row>
 
             {/* mini bar chart */}
-            <View className="mt-3.5 h-[50px] flex-row items-end gap-1.5">
+            <Row mt={14} h={50} ai="flex-end" gap={6}>
               {SPEND_BARS.map((h, i) => (
-                <View
+                <Box
                   key={i}
-                  className={clsx(
-                    'flex-1 rounded-[3px]',
-                    i === SPEND_BARS.length - 1 ? 'bg-accent2' : 'bg-[rgba(255,255,255,0.18)]'
-                  )}
-                  style={{ height: `${(h / maxBar) * 100}%` }}
+                  f={1}
+                  br={3}
+                  bg={i === SPEND_BARS.length - 1 ? '$accent2' : 'rgba(255,255,255,0.18)'}
+                  height={`${(h / maxBar) * 100}%`}
+                  transition="gauge"
+                  enterStyle={{ height: 0 }}
                 />
               ))}
-            </View>
-            <View className="mt-1.5 flex-row justify-between">
+            </Row>
+            <Row mt={6} jc="space-between">
               {['ENE', 'ABR', 'JUL', 'OCT', 'DIC'].map((m) => (
-                <Text key={m} className="font-mono-med text-[10px] text-[rgba(255,255,255,0.6)]">
+                <Txt key={m} font="monoMed" fos={10} tone="onDarkMuted">
                   {m}
-                </Text>
+                </Txt>
               ))}
-            </View>
+            </Row>
           </LinearGradient>
-        </View>
+        </Box>
 
         {/* lista */}
-        <View className="gap-2.5 px-4">
+        <Col gap={10} px="$lg">
           {changes.map((h) => {
             const v = vehicleOf(h.vehicleId);
             return (
-              <Card key={h.id} className="flex-row items-center gap-3">
+              <Card key={h.id} fd="row" ai="center" gap="$md">
                 <VehicleThumb kind={v?.kind ?? 'car'} color={v?.color ?? '#1F2937'} size={42} />
-                <View className="flex-1">
-                  <Text className="font-sans-bold text-[14px] text-ink tracking-[-0.1px]">
+                <Col f={1}>
+                  <Txt font="bold" fos={14} ls={-0.1}>
                     {v ? `${v.brand} ${v.model}` : 'Vehículo'}
-                  </Text>
-                  <Text className="mt-px font-sans text-[12px] text-muted">
-                    <Text className="font-mono-med">{h.date}</Text> ·{' '}
-                    <Text className="font-mono-med">{fmtKm(h.km)}</Text> km
-                  </Text>
-                  <Text className="mt-px font-sans text-[12px] text-muted2">
+                  </Txt>
+                  <Txt fos={12} tone="muted" mt={1}>
+                    <Txt font="monoMed" fos={12} tone="muted">{h.date}</Txt> ·{' '}
+                    <Txt font="monoMed" fos={12} tone="muted">{fmtKm(h.km)}</Txt> km
+                  </Txt>
+                  <Txt fos={12} tone="muted2" mt={1}>
                     {h.oil.brand} {h.oil.tag} {h.oil.viscosity}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text className="font-mono text-[14px] text-ink">{fmtUsd(h.costUsd)}</Text>
-                  <Text className="font-sans text-[10px] text-muted2">USD</Text>
-                </View>
+                  </Txt>
+                </Col>
+                <Col ai="flex-end">
+                  <Txt font="mono" fos={14}>{fmtUsd(h.costUsd)}</Txt>
+                  <Txt fos={10} tone="muted2">USD</Txt>
+                </Col>
               </Card>
             );
           })}
-        </View>
-      </ScrollView>
-    </View>
+        </Col>
+      </Scroll>
+    </Box>
   );
 }

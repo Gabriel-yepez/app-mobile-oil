@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
 import Svg, { Defs, LinearGradient, Line, Path, Stop } from 'react-native-svg';
-import { Text, View } from '../tw';
-import { palette, T } from '../theme';
+import { Box, Txt, useAppColors } from '../ui';
+import { palette } from '../theme';
 import { fmtKm } from '../utils/format';
 import { StatusPill } from './primitives';
 import { VehicleStatus } from '../data/mock';
@@ -25,7 +25,10 @@ export function OilGauge({ pct = 70, kmLeft = 1840, size = 220 }: Props) {
   const cy = size / 2;
   const clamped = Math.max(0, Math.min(1, pct / 100));
   const status: VehicleStatus = pct > 40 ? 'ok' : pct > 15 ? 'warn' : 'danger';
-  const statusColor = status === 'ok' ? palette.accent : status === 'warn' ? T.warn : T.danger;
+  // El medidor vive sobre el hero navy, que es oscuro en ambos temas; aun así
+  // los colores de estado salen del tema activo para no desentonar con el resto.
+  const c = useAppColors();
+  const statusColor = status === 'ok' ? palette.accent : status === 'warn' ? c.warn : c.danger;
 
   const polar = (deg: number): [number, number] => {
     const a = (deg * Math.PI) / 180;
@@ -78,7 +81,7 @@ export function OilGauge({ pct = 70, kmLeft = 1840, size = 220 }: Props) {
   }, [size]);
 
   return (
-    <View style={{ width: size, height: size }}>
+    <Box width={size} height={size}>
       <Svg width={size} height={size}>
         <Defs>
           <LinearGradient id="gaugeGrad" x1="0" x2="0" y1="0" y2="1">
@@ -114,20 +117,29 @@ export function OilGauge({ pct = 70, kmLeft = 1840, size = 220 }: Props) {
       </Svg>
 
       {/* lectura central */}
-      <View className="absolute inset-0 items-center justify-center">
-        <Text className="font-sans-bold text-[11px] text-[rgba(255,255,255,0.55)] tracking-[1.5px] uppercase">
+      <Box pos="absolute" t={0} l={0} r={0} b={0} ai="center" jc="center">
+        <Txt font="bold" fos={11} col="rgba(255,255,255,0.55)" ls={1.5} caps>
           Próximo cambio
-        </Text>
-        <Text className="mt-1 font-mono text-[44px] leading-[48px] text-white tracking-[-1px]">
+        </Txt>
+        <Txt
+          font="mono"
+          fos={44}
+          lh={48}
+          tone="onDark"
+          ls={-1}
+          mt={4}
+          transition="gauge"
+          enterStyle={{ opacity: 0, scale: 0.92 }}
+        >
           {fmtKm(kmLeft)}
-        </Text>
-        <Text className="mt-0.5 font-sans text-[13px] text-[rgba(255,255,255,0.6)]">
+        </Txt>
+        <Txt fos={13} col="rgba(255,255,255,0.6)" mt={2}>
           km restantes
-        </Text>
-        <View className="mt-2.5">
+        </Txt>
+        <Box mt={10}>
           <StatusPill status={status} label={status === 'ok' ? 'AL DÍA' : status === 'warn' ? 'PRÓXIMO' : 'VENCIDO'} />
-        </View>
-      </View>
-    </View>
+        </Box>
+      </Box>
+    </Box>
   );
 }

@@ -3,9 +3,7 @@ import React, { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import clsx from 'clsx';
-import { Pressable, ScrollView, Text, View } from '../tw';
-import { palette, T } from '../theme';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, IconBtn, StatusPill, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm } from '../utils/format';
@@ -18,6 +16,7 @@ type Filter = 'all' | 'car' | 'moto';
 export function VehiclesScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const c = useAppColors();
   const vehicles = useStore((s) => s.vehicles);
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -32,117 +31,132 @@ export function VehiclesScreen() {
   ];
 
   return (
-    <View className="flex-1 bg-bg3">
+    <Box f={1} bg="$bg3">
       {/* top bar */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-3.5"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <View>
-          <Text className="font-sans text-[12px] text-muted tracking-[1px] uppercase">
+      <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
+        <Col>
+          <Txt fos={12} tone="muted" ls={1} caps>
             Mis vehículos
-          </Text>
-          <Text className="font-display text-[26px] text-ink tracking-[-0.5px]">
+          </Txt>
+          <Txt font="display" fos={26} ls={-0.5}>
             Garaje · {vehicles.length}
-          </Text>
-        </View>
+          </Txt>
+        </Col>
         <IconBtn
           icon={<Icon name="plus" color="#fff" size={22} />}
           filled
           size={40}
           onPress={() => navigation.navigate('AddVehicleType')}
         />
-      </View>
+      </Row>
 
       {/* filter chips */}
-      <View className="mb-4 flex-row gap-2 px-5">
-        {chips.map((c) => {
-          const isActive = filter === c.id;
+      <Row mb="$lg" gap="$sm" px="$xl">
+        {chips.map((chip) => {
+          const isActive = filter === chip.id;
           return (
-            <Pressable
-              key={c.id}
-              onPress={() => setFilter(c.id)}
-              className={clsx(
-                'h-[34px] flex-row items-center gap-1.5 rounded-full px-3.5',
-                isActive ? 'bg-primary' : 'border border-line bg-white'
-              )}
+            <Touchable
+              key={chip.id}
+              onPress={() => setFilter(chip.id)}
+              fade
+              transition="quick"
+              fd="row"
+              ai="center"
+              h={34}
+              gap={6}
+              br="$pill"
+              px={14}
+              bg={isActive ? '$solid' : '$surface'}
+              bw={isActive ? 0 : 1}
+              bc="$line"
             >
-              <Text className={clsx('font-sans-semi text-[13px]', isActive ? 'text-white' : 'text-ink')}>
-                {c.label}
-              </Text>
-              <View
-                className={clsx(
-                  'rounded-[6px] px-1.5 py-px',
-                  isActive ? 'bg-[rgba(255,255,255,0.18)]' : 'bg-bg2'
-                )}
-              >
-                <Text className={clsx('font-mono-med text-[10px]', isActive ? 'text-white' : 'text-muted')}>
-                  {c.n}
-                </Text>
-              </View>
-            </Pressable>
+              <Txt font="semi" fos={13} tone={isActive ? 'onSolid' : 'ink'}>
+                {chip.label}
+              </Txt>
+              <Box br={6} px={6} py={1} bg={isActive ? 'rgba(255,255,255,0.18)' : '$bg2'}>
+                <Txt font="monoMed" fos={10} tone={isActive ? 'onSolid' : 'muted'}>
+                  {chip.n}
+                </Txt>
+              </Box>
+            </Touchable>
           );
         })}
-      </View>
+      </Row>
 
-      <ScrollView contentContainerClassName="gap-3 px-4 pb-[120px]" showsVerticalScrollIndicator={false}>
+      <Scroll
+        bg="$bg3"
+        contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
         {filtered.map((v) => {
           const pct = oilPct(v);
           const status = vehicleStatus(v);
-          const accent = status === 'ok' ? T.ok : status === 'warn' ? T.warn : T.danger;
+          const accent = status === 'ok' ? c.ok : status === 'warn' ? c.warn : c.danger;
           return (
-            <Pressable key={v.id} onPress={() => navigation.navigate('VehicleDetail', { vehicleId: v.id })}>
+            <Touchable key={v.id} fade sink transition="quick" onPress={() => navigation.navigate('VehicleDetail', { vehicleId: v.id })}>
               <Card>
-                <View className="flex-row items-center gap-3.5">
+                <Row gap={14}>
                   <VehicleThumb kind={v.kind} color={v.color} size={56} />
-                  <View className="flex-1">
-                    <View className="mb-1 flex-row items-center gap-2">
-                      <View className="rounded-[4px] border border-line px-1.5 py-0.5">
-                        <Text className="font-mono-med text-[10px] text-muted tracking-[0.5px]">
+                  <Col f={1}>
+                    <Row mb={4} gap="$sm">
+                      <Box br={4} bw={1} bc="$line" px={6} py={2}>
+                        <Txt font="monoMed" fos={10} tone="muted" ls={0.5}>
                           {v.kind === 'car' ? 'CARRO' : 'MOTO'}
-                        </Text>
-                      </View>
+                        </Txt>
+                      </Box>
                       <StatusPill status={status} />
-                    </View>
-                    <Text className="font-sans-bold text-[16px] text-ink tracking-[-0.2px]">
+                    </Row>
+                    <Txt font="bold" fos={16} ls={-0.2}>
                       {v.brand} {v.model}
-                    </Text>
-                    <Text className="mt-px font-mono-med text-[12px] text-muted">
+                    </Txt>
+                    <Txt font="monoMed" fos={12} tone="muted" mt={1}>
                       {v.plate} · {v.year} · {fmtKm(v.km)} km
-                    </Text>
-                  </View>
-                  <Icon name="chevR" color={T.muted2} size={22} />
-                </View>
+                    </Txt>
+                  </Col>
+                  <Icon name="chevR" color={c.muted2} size={22} />
+                </Row>
 
                 {/* mini progress */}
-                <View className="mt-3.5 flex-row items-center gap-2.5">
-                  <View className="h-1.5 flex-1 overflow-hidden rounded-[3px] bg-bg2">
-                    <View
-                      className="h-full rounded-[3px]"
-                      style={{
-                        width: `${Math.max(4, Math.min(100, pct))}%`,
-                        backgroundColor: accent,
-                      }}
+                <Row mt={14} gap={10}>
+                  <Box h={6} f={1} ov="hidden" br={3} bg="$bg2">
+                    <Box
+                      h="100%"
+                      br={3}
+                      bg={accent}
+                      width={`${Math.max(4, Math.min(100, pct))}%`}
+                      transition="gauge"
+                      enterStyle={{ width: '0%' }}
                     />
-                  </View>
-                  <Text className="min-w-[88px] text-right font-mono text-[12px] text-ink">
-                    {fmtKm(kmLeft(v))} <Text className="font-sans text-muted">km</Text>
-                  </Text>
-                </View>
+                  </Box>
+                  <Txt font="mono" fos={12} minWidth={88} ta="right">
+                    {fmtKm(kmLeft(v))} <Txt fos={12} tone="muted">km</Txt>
+                  </Txt>
+                </Row>
               </Card>
-            </Pressable>
+            </Touchable>
           );
         })}
 
         {/* agregar vehículo */}
-        <Pressable
+        <Touchable
           onPress={() => navigation.navigate('AddVehicleType')}
-          className="h-20 flex-row items-center justify-center gap-2.5 rounded-lg border-[1.5px] border-dashed border-line"
+          fade
+          sink
+          transition="quick"
+          h={80}
+          fd="row"
+          ai="center"
+          jc="center"
+          gap={10}
+          br="$lg"
+          bw={1.5}
+          borderStyle="dashed"
+          bc="$line"
         >
-          <Icon name="plus" color={palette.accent} size={18} />
-          <Text className="font-sans-semi text-[14px] text-accent">Agregar vehículo</Text>
-        </Pressable>
-      </ScrollView>
-    </View>
+          <Icon name="plus" color={c.accent} size={18} />
+          <Txt font="semi" fos={14} tone="accent">Agregar vehículo</Txt>
+        </Touchable>
+      </Scroll>
+    </Box>
   );
 }

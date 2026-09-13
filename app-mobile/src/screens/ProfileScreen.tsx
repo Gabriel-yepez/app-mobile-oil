@@ -4,9 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import clsx from 'clsx';
-import { Pressable, ScrollView, Text, View } from '../tw';
-import { palette, T } from '../theme';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
+import { palette } from '../theme';
 import { Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore } from '../store/useStore';
@@ -17,6 +16,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const c = useAppColors();
   const profile = useStore((s) => s.profile);
   const vehicles = useStore((s) => s.vehicles);
   const changes = useStore((s) => s.changes);
@@ -43,11 +43,11 @@ export function ProfileScreen() {
   ];
 
   return (
-    <View className="flex-1 bg-bg3">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-[120px]">
+    <Box f={1} bg="$bg3">
+      <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* hero */}
         <LinearGradient
-          colors={[palette.primary, palette.primary2]}
+          colors={[c.primary, c.primary2]}
           style={{
             paddingTop: insets.top + 12,
             borderBottomLeftRadius: 28,
@@ -56,14 +56,14 @@ export function ProfileScreen() {
           }}
         >
           <TechGrid />
-          <View className="flex-row items-center justify-between px-5 pb-2">
-            <Text className="font-sans text-[12px] text-[rgba(255,255,255,0.7)] tracking-[1px] uppercase">
+          <Row jc="space-between" px="$xl" pb="$sm">
+            <Txt fos={12} tone="onDarkSoft" ls={1} caps>
               Perfil
-            </Text>
-            <IconBtn dark icon={<Icon name="edit" color="#fff" size={20} />} />
-          </View>
+            </Txt>
+            <IconBtn onDark icon={<Icon name="edit" color="#fff" size={20} />} />
+          </Row>
 
-          <View className="flex-row items-center gap-3.5 px-5 pb-6 pt-2">
+          <Row gap={14} px="$xl" pb="$2xl" pt="$sm">
             <LinearGradient
               colors={[palette.accent2, palette.primary]}
               start={{ x: 0, y: 0 }}
@@ -78,104 +78,125 @@ export function ProfileScreen() {
                 borderColor: 'rgba(255,255,255,0.2)',
               }}
             >
-              <Text className="font-display text-[26px] text-white">{initials}</Text>
+              <Txt font="display" fos={26} tone="onDark">{initials}</Txt>
             </LinearGradient>
-            <View className="flex-1">
-              <Text className="font-display text-[22px] text-white tracking-[-0.4px]">
+            <Col f={1}>
+              <Txt font="display" fos={22} tone="onDark" ls={-0.4}>
                 {profile.fullName}
-              </Text>
-              <Text className="mt-0.5 font-mono-med text-[12px] text-[rgba(255,255,255,0.7)]">
+              </Txt>
+              <Txt font="monoMed" fos={12} tone="onDarkSoft" mt={2}>
                 {profile.cedula}
-              </Text>
-              <View className="mt-1.5 flex-row items-center gap-1.5 self-start rounded-full bg-[rgba(255,255,255,0.1)] px-2 py-[3px]">
-                <View className="h-1.5 w-1.5 rounded-full bg-ok" />
-                <Text className="font-sans-semi text-[11px] text-white">Cuenta verificada</Text>
-              </View>
-            </View>
-          </View>
+              </Txt>
+              <Row mt={6} gap={6} als="flex-start" br="$pill" bg="rgba(255,255,255,0.1)" px="$sm" py={3}>
+                <Box h={6} w={6} br="$pill" bg="$ok" />
+                <Txt font="semi" fos={11} tone="onDark">Cuenta verificada</Txt>
+              </Row>
+            </Col>
+          </Row>
 
           {/* mini stats */}
-          <View className="flex-row gap-2 px-5 pb-6">
+          <Row gap="$sm" px="$xl" pb="$2xl" ai="stretch">
             {[
               { l: 'Vehículos', v: String(vehicles.length) },
               { l: 'Cambios', v: String(changes.length) },
               { l: 'Activo', v: '8m' },
             ].map((s) => (
-              <View
+              <Col
                 key={s.l}
-                className="flex-1 items-center rounded-[12px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.08)] px-3 py-2.5"
+                f={1}
+                ai="center"
+                br={12}
+                bw={1}
+                bc="rgba(255,255,255,0.08)"
+                bg="rgba(255,255,255,0.08)"
+                px="$md"
+                py={10}
               >
-                <Text className="font-mono text-[18px] text-white">{s.v}</Text>
-                <Text className="font-sans text-[10px] text-[rgba(255,255,255,0.65)] tracking-[1px] uppercase">
+                <Txt font="mono" fos={18} tone="onDark">{s.v}</Txt>
+                <Txt fos={10} col="rgba(255,255,255,0.65)" ls={1} caps>
                   {s.l}
-                </Text>
-              </View>
+                </Txt>
+              </Col>
             ))}
-          </View>
+          </Row>
         </LinearGradient>
 
         {/* datos personales */}
-        <View className="pt-[18px]">
+        <Box pt={18}>
           <SectionHead>Datos personales</SectionHead>
-          <View className="px-4">
+          <Box px="$lg">
             <Card>
               {personalRows.map((r, i) => (
-                <View
+                <Row
                   key={r.k}
-                  className={clsx(
-                    'flex-row items-center justify-between py-3',
-                    i !== personalRows.length - 1 && 'border-b border-line2'
-                  )}
+                  jc="space-between"
+                  py="$md"
+                  borderBottomWidth={i !== personalRows.length - 1 ? 1 : 0}
+                  borderBottomColor="$line2"
                 >
-                  <Text className="font-sans text-[13px] text-muted">{r.k}</Text>
-                  <Text className={clsx('text-[14px] text-ink', r.mono ? 'font-mono-med' : 'font-sans-semi')}>
+                  <Txt fos={13} tone="muted">{r.k}</Txt>
+                  <Txt fos={14} font={r.mono ? 'monoMed' : 'semi'}>
                     {r.v}
-                  </Text>
-                </View>
+                  </Txt>
+                </Row>
               ))}
             </Card>
-          </View>
-        </View>
+          </Box>
+        </Box>
 
         {/* preferencias */}
-        <View className="pt-[18px]">
+        <Box pt={18}>
           <SectionHead>Preferencias</SectionHead>
-          <View className="px-4">
+          <Box px="$lg">
             <Card padded={false}>
               {prefRows.map((r, i) => (
-                <Pressable
+                <Touchable
                   key={r.k}
-                  className={clsx(
-                    'flex-row items-center gap-3 px-4 py-3.5 active:bg-bg2',
-                    i !== prefRows.length - 1 && 'border-b border-line2'
-                  )}
+                  fd="row"
+                  ai="center"
+                  gap="$md"
+                  px="$lg"
+                  py={14}
+                  pressStyle={{ bg: '$bg2' }}
+                  borderBottomWidth={i !== prefRows.length - 1 ? 1 : 0}
+                  borderBottomColor="$line2"
                 >
-                  <View className="h-8 w-8 items-center justify-center rounded-[10px] bg-[rgba(37,99,235,0.08)]">
-                    <Icon name={r.icon} color={palette.accent} size={18} />
-                  </View>
-                  <Text className="flex-1 font-sans-semi text-[14px] text-ink">{r.k}</Text>
-                  {r.v ? <Text className="font-sans text-[13px] text-muted">{r.v}</Text> : null}
-                  <Icon name="chevR" color={T.muted2} size={20} />
-                </Pressable>
+                  <Box h={32} w={32} ai="center" jc="center" br={10} bg="$accentSoft">
+                    <Icon name={r.icon} color={c.accent} size={18} />
+                  </Box>
+                  <Txt f={1} font="semi" fos={14}>{r.k}</Txt>
+                  {r.v ? <Txt fos={13} tone="muted">{r.v}</Txt> : null}
+                  <Icon name="chevR" color={c.muted2} size={20} />
+                </Touchable>
               ))}
             </Card>
-          </View>
-        </View>
+          </Box>
+        </Box>
 
         {/* cerrar sesión */}
-        <View className="px-4 pt-[18px]">
-          <Pressable
+        <Box px="$lg" pt={18}>
+          <Touchable
             onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
-            className="h-12 flex-row items-center justify-center gap-2 rounded-md border-[1.5px] border-line bg-transparent active:bg-bg2"
+            transition="quick"
+            h={48}
+            fd="row"
+            ai="center"
+            jc="center"
+            gap="$sm"
+            br="$md"
+            bw={1.5}
+            bc="$line"
+            bg="transparent"
+            pressStyle={{ bg: '$bg2' }}
           >
-            <Icon name="logout" color={T.danger} size={20} />
-            <Text className="font-sans-semi text-[15px] text-danger">Cerrar sesión</Text>
-          </Pressable>
-          <Text className="mt-3 text-center font-mono-med text-[11px] text-muted2 tracking-[0.4px]">
+            <Icon name="logout" color={c.danger} size={20} />
+            <Txt font="semi" fos={15} tone="danger">Cerrar sesión</Txt>
+          </Touchable>
+          <Txt font="monoMed" fos={11} tone="muted2" ls={0.4} ta="center" mt="$md">
             OilTrack VE · v1.0.0
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+          </Txt>
+        </Box>
+      </Scroll>
+    </Box>
   );
 }
