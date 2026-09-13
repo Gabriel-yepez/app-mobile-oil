@@ -70,8 +70,8 @@ describe('reorderables', () => {
     expect(reorderables(l, ['a'] as unknown as WidgetId[])).toEqual(['b', 'd']);
   });
 
-  it('en el layout de fábrica es solo el historial reciente', () => {
-    expect(reorderables(DEFAULT_LAYOUT)).toEqual(['recentHistory']);
+  it('en el layout de fábrica no hay nada que reordenar', () => {
+    expect(reorderables(DEFAULT_LAYOUT)).toEqual([]);
   });
 });
 
@@ -147,12 +147,10 @@ describe('reconcile', () => {
     expect(reconcile(42, known, defHidden).order).toEqual(known);
   });
 
-  it('el default real de la app tiene openAlerts oculto y el resto visible', () => {
+  it('el inicio de fábrica son los cuatro fijos y nada más', () => {
     expect(DEFAULT_LAYOUT.order).toEqual(WIDGET_ORDER);
-    expect(DEFAULT_HIDDEN).toEqual(['openAlerts']);
-    expect(visibleWidgets(DEFAULT_LAYOUT)).toEqual([
-      'gauge', 'techReadout', 'quickActions', 'kpis', 'recentHistory',
-    ]);
+    expect(DEFAULT_HIDDEN).toEqual(['recentHistory', 'openAlerts']);
+    expect(visibleWidgets(DEFAULT_LAYOUT)).toEqual(PINNED_WIDGETS);
   });
 });
 
@@ -166,8 +164,10 @@ describe('bloque fijo', () => {
     expect(WIDGET_ORDER.slice(0, 4)).toEqual(PINNED_WIDGETS);
   });
 
-  it('ninguno de los fijos nace oculto', () => {
-    for (const id of PINNED_WIDGETS) expect(DEFAULT_HIDDEN).not.toContain(id);
+  it('ninguno de los fijos nace oculto, y todos los demás sí', () => {
+    for (const id of WIDGET_ORDER) {
+      expect(DEFAULT_HIDDEN.includes(id)).toBe(!PINNED_WIDGETS.includes(id));
+    }
   });
 
   it('un widget fijo no se puede mover', () => {
@@ -209,6 +209,11 @@ describe('bloque fijo', () => {
       fijos
     );
     expect(r.hidden).toEqual(['c']);
+  });
+
+  it('respeta lo que el usuario ya había mostrado: el default solo aplica a los nuevos', () => {
+    const guardado = { order: WIDGET_ORDER, hidden: [] };
+    expect(reconcile(guardado).hidden).toEqual([]);
   });
 
   it('un layout guardado con el orden viejo se normaliza al bloque fijo actual', () => {

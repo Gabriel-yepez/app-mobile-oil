@@ -414,12 +414,9 @@ export function StatusPill({ status = 'ok', label }: { status?: VehicleStatus; l
 export function SectionHead({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <Row mb={10} jc="space-between" px="$xl">
-      <Row gap="$sm">
-        <Box h={14} w={4} br={2} bg="$accent" />
-        <Txt font="bold" fos={11} tone="muted" ls={1.2} caps>
-          {children}
-        </Txt>
-      </Row>
+      <Txt font="bold" fos={11} tone="muted" ls={1.2} caps>
+        {children}
+      </Txt>
       {right}
     </Row>
   );

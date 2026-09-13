@@ -25,6 +25,7 @@ export type RootStackParamList = {
   ForgotPassword: { email?: string } | undefined;
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
   VehicleDetail: { vehicleId: string };
+  EditVehicle: { vehicleId: string };
   AddVehicleType: undefined;
   AddVehicleForm: { kind: 'car' | 'moto' };
   AddOil: { vehicleId?: string; draft?: VehicleDraft };
@@ -34,7 +35,10 @@ export type RootStackParamList = {
   // stack y se llega a ellos desde el Menú o desde el hero del inicio.
   Alerts: undefined;
   Profile: undefined;
+  EditProfile: undefined;
+  Subscription: undefined;
   CustomizeHome: undefined;
+  SecuritySettings: undefined;
 };
 
 export type RootScreenProps<S extends keyof RootStackParamList> = NativeStackScreenProps<

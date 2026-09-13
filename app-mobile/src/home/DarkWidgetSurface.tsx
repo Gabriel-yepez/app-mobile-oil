@@ -5,21 +5,17 @@
 // obligaría a rediseñar los arcos y ticks del gauge— se les da su propio fondo,
 // y así pueden caer en cualquier posición de la lista sin volverse ilegibles.
 import React, { ReactNode } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Box, useAppColors } from '../ui';
-
+import { Box } from '../ui';
+import { HeroSurface } from '../components/HeroSurface';
 
 export function DarkWidgetSurface({ children }: { children: ReactNode }) {
-  const c = useAppColors();
+  // El mismo material que los heroes: la card navy y el hero de arriba tienen
+  // que leerse como la misma superficie, no como dos azules parecidos.
   return (
     <Box mx="$lg" br={20} overflow="hidden">
-      <LinearGradient
-        colors={[c.primary, c.primary2]}
-        style={{ paddingHorizontal: 16, paddingVertical: 16 }}
-      >
-
+      <HeroSurface style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
         {children}
-      </LinearGradient>
+      </HeroSurface>
     </Box>
   );
 }

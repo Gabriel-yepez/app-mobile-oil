@@ -38,6 +38,76 @@ export type Profile = {
   currency: 'USD' | 'BS' | 'BOTH';
 };
 
+// ────────────────────────────────────────────
+// Suscripción
+// ────────────────────────────────────────────
+// Los topes viven en el plan, no en la pantalla: "cuánto llevás usado" se
+// calcula contra estos números, así que subir un límite es tocar una línea acá.
+// `null` es sin tope — no 0 ni Infinity, que se confunden con "no queda nada".
+export type PlanId = 'free' | 'pro';
+
+export type Plan = {
+  id: PlanId;
+  name: string;
+  /** Lo que se cobra por mes, en USD. 0 en el plan gratis. */
+  priceUsd: number;
+  maxVehicles: number | null;
+  /** Cambios de aceite que se pueden registrar por mes. */
+  maxChangesPerMonth: number | null;
+  /** Lo que el plan incluye, tal cual se lista en la pantalla de suscripción. */
+  features: string[];
+};
+
+export const PLANS: Record<PlanId, Plan> = {
+  free: {
+    id: 'free',
+    name: 'Gratis',
+    priceUsd: 0,
+    maxVehicles: 5,
+    maxChangesPerMonth: 10,
+    features: [
+      'Hasta 5 vehículos',
+      '10 cambios de aceite por mes',
+      'Recordatorios de próximo cambio',
+      'Historial de los últimos 12 meses',
+    ],
+  },
+  pro: {
+    id: 'pro',
+    name: 'Pro',
+    priceUsd: 4,
+    maxVehicles: null,
+    maxChangesPerMonth: null,
+    features: [
+      'Vehículos ilimitados',
+      'Cambios de aceite ilimitados',
+      'Recordatorios de próximo cambio',
+      'Historial completo, sin límite de tiempo',
+      'Exportar el historial a PDF',
+      'Soporte prioritario',
+    ],
+  },
+};
+
+/** Los planes en el orden en que se muestran: el gratis primero. */
+export const PLAN_LIST: Plan[] = [PLANS.free, PLANS.pro];
+
+export type Subscription = {
+  plan: PlanId;
+  status: 'active' | 'trial' | 'expired';
+  /** Próxima renovación, ya formateada como el resto de las fechas mock. */
+  renewsOn: string;
+  /** Cambios registrados en el mes en curso — lo que se compara con el tope. */
+  changesThisMonth: number;
+};
+
+export const MOCK_SUBSCRIPTION: Subscription = {
+  plan: 'free',
+  status: 'active',
+  renewsOn: '14 oct 2026',
+  changesThisMonth: 3,
+};
+
 export const VE_BRANDS_CAR = ['Toyota', 'Chevrolet', 'Ford', 'Hyundai', 'Kia', 'Renault', 'Fiat', 'Jeep', 'Nissan', 'Mitsubishi'];
 export const VE_BRANDS_MOTO = ['Bera', 'Empire Keeway', 'MD', 'Yamaha', 'Suzuki', 'Honda', 'AVA', 'Skygo'];
 

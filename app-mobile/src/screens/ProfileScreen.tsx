@@ -1,29 +1,45 @@
 // Perfil — hero oscuro con avatar + datos personales + preferencias.
 // Cerrar sesión y Notificaciones viven en el Menú desde que el perfil dejó de
 // ser un destino raíz del tab bar.
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { Box, Col, Row, Touchable, Txt, useAppColors } from '../ui';
 import { Avatar, Card, IconBtn, SectionHead } from '../components/primitives';
+import { PlanHeader, UsoLista } from '../components/subscription';
+import { HeroSurface, useHeroTopColor } from '../components/HeroSurface';
+import { StickyHeader, estimarHeaderH } from '../components/StickyHeader';
 import { Icon, IconName } from '../components/Icon';
-import { useStore } from '../store/useStore';
+import { useStore, usePlan, usePlanUsage } from '../store/useStore';
+import { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const [headerH, setHeaderH] = useState(estimarHeaderH(insets.top));
+  const navigation = useNavigation<Nav>();
   const c = useAppColors();
+  const heroTop = useHeroTopColor();
   const profile = useStore((s) => s.profile);
   const vehicles = useStore((s) => s.vehicles);
   const changes = useStore((s) => s.changes);
+  const subscription = useStore((s) => s.subscription);
+  const plan = usePlan();
+  const uso = usePlanUsage();
 
   const personalRows = [
+    { k: 'Cédula', v: profile.cedula, mono: true },
     { k: 'Correo', v: profile.email },
     { k: 'Teléfono', v: profile.phone, mono: true },
     { k: 'Estado', v: profile.state },
     { k: 'Ciudad', v: profile.city },
-    { k: 'Moneda', v: 'USD · Bs.S' },
   ];
 
   // Notificaciones y Cerrar sesión se mudaron al Menú: el perfil dejó de ser un
@@ -36,35 +52,35 @@ export function ProfileScreen() {
 
   return (
     <Box f={1} bg="$bg3">
-      <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      {/* El header va ENCIMA del scroll —no arriba de él— para que el cristal
+          tenga algo que desenfocar cuando el contenido pasa por debajo. */}
+      <StickyHeader
+        scrollY={scrollY}
+        onBack={() => navigation.goBack()}
+        actionIcon="edit"
+        onAction={() => navigation.navigate('EditProfile')}
+        onHeight={setHeaderH}
+      />
+
+      <Animated.ScrollView
+        style={{ flex: 1, backgroundColor: c.bg3 }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         {/* Fondo absoluto para cubrir el overscroll superior */}
-        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={c.primary} />
-        {/* hero */}
-        <LinearGradient
-          colors={[c.primary, c.primary2]}
+        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={heroTop} />
+        {/* El header no pinta nada propio: deja ver este degradado, así que no
+            hay dos azules que puedan desalinearse. */}
+        <HeroSurface
           style={{
-            paddingTop: insets.top + 12,
+            paddingTop: headerH,
             borderBottomLeftRadius: 28,
             borderBottomRightRadius: 28,
             overflow: 'hidden',
           }}
         >
-
-          {/* Igual que Alertas: el perfil dejó de ser un tab y ahora se empuja,
-              así que lleva su propio botón de volver. */}
-          <Row jc="space-between" ai="center" px="$xl" pb="$sm">
-            <Row f={1} ai="center" gap="$sm">
-              <IconBtn
-                onDark
-                icon={<Icon name="chevL" color="#fff" size={20} />}
-                onPress={() => navigation.goBack()}
-              />
-              <Txt fos={12} tone="onDarkSoft" ls={1} caps>
-                Perfil
-              </Txt>
-            </Row>
-            <IconBtn onDark icon={<Icon name="edit" color="#fff" size={20} />} />
-          </Row>
 
           <Row gap={14} px="$xl" pb="$2xl" pt="$sm">
             <Avatar name={profile.fullName} size={72} ring={3} />
@@ -107,7 +123,26 @@ export function ProfileScreen() {
               </Col>
             ))}
           </Row>
-        </LinearGradient>
+        </HeroSurface>
+
+        {/* suscripción — resumen tocable; el detalle vive en su propia pantalla */}
+        <Box pt={18}>
+          <SectionHead>Suscripción</SectionHead>
+          <Box px="$lg">
+            <Touchable fade sink transition="quick" onPress={() => navigation.navigate('Subscription')}>
+              <Card>
+                <PlanHeader plan={plan} subscription={subscription} />
+                <Box mt="$lg">
+                  <UsoLista items={uso} />
+                </Box>
+                <Row ai="center" jc="center" gap={4} mt="$lg">
+                  <Txt font="semi" fos={13} tone="accent">Ver detalle del plan</Txt>
+                  <Icon name="chevR" color={c.accent} size={16} />
+                </Row>
+              </Card>
+            </Touchable>
+          </Box>
+        </Box>
 
         {/* datos personales */}
         <Box pt={18}>
@@ -163,7 +198,7 @@ export function ProfileScreen() {
             Ruédalo · v1.0.0
           </Txt>
         </Box>
-      </Scroll>
+      </Animated.ScrollView>
     </Box>
   );
 }

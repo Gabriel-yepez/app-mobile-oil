@@ -1,13 +1,14 @@
 // Menú — tercer destino del tab bar. No tiene contenido propio: es el índice
 // de todo lo que dejó de ser un tab cuando la barra bajó a tres destinos.
 import React from 'react';
+import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, SectionHead } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
-import { useOpenAlerts, useStore } from '../store/useStore';
+import { useStore, usePlan } from '../store/useStore';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { RootStackParamList } from '../navigation/types';
 
@@ -15,33 +16,76 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type Fila = { k: string; v?: string; icon: IconName; onPress: () => void };
 
+/** Página de soporte. Pegar acá la URL definitiva — es el único lugar que hay
+ *  que tocar. Mientras esté vacía la fila no abre nada, en vez de mandar al
+ *  navegador a una dirección en blanco. */
+const SOPORTE_URL = '';
+
+/** Abre la página en el navegador del teléfono. `openURL` rechaza si no hay
+ *  quién maneje el enlace (o si la URL está mal escrita), y una promesa
+ *  rechazada sin atrapar tumba la app en release. */
+function abrirSoporte() {
+  if (!SOPORTE_URL) {
+    console.log('Soporte: falta definir SOPORTE_URL en MenuScreen');
+    return;
+  }
+  Linking.openURL(SOPORTE_URL).catch(() => {
+    console.log('Soporte: no se pudo abrir', SOPORTE_URL);
+  });
+}
+
 export function MenuScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
   const profile = useStore((s) => s.profile);
-  const openAlerts = useOpenAlerts();
   const notifEnabled = useNotifPrefs((s) => s.prefs.enabled);
+  const plan = usePlan();
 
   const cuenta: Fila[] = [
     { k: 'Mi perfil', v: profile.fullName, icon: 'user', onPress: () => navigation.navigate('Profile') },
-    {
-      k: 'Alertas',
-      v: openAlerts > 0 ? `${openAlerts} abiertas` : 'Al día',
-      icon: 'bell',
-      onPress: () => navigation.navigate('Alerts'),
-    },
     { k: 'Historial', icon: 'history', onPress: () => navigation.navigate('History') },
   ];
 
   const gestion: Fila[] = [
-    { k: 'Agregar vehículo', icon: 'plus', onPress: () => navigation.navigate('AddVehicleType') },
-    { k: 'Personalizar inicio', icon: 'sliders', onPress: () => navigation.navigate('CustomizeHome') },
+    {
+      k: 'Seguridad de tu cuenta',
+      icon: 'shield',
+      onPress: () => navigation.navigate('SecuritySettings'),
+    },
     {
       k: 'Notificaciones',
       v: notifEnabled ? 'Activadas' : 'Desactivadas',
       icon: 'settings',
       onPress: () => navigation.navigate('Notifications'),
+    },
+  ];
+
+  // Un solo enlace: el detalle entero (topes, consumo, qué incluye, cambiar de
+  // plan) vive en su propia pantalla. Acá alcanza con el plan a la vista.
+  const planFilas: Fila[] = [
+    {
+      k: 'Mi suscripción',
+      v: `Plan ${plan.name}`,
+      icon: 'spark',
+      onPress: () => navigation.navigate('Subscription'),
+    },
+  ];
+
+  const ayuda: Fila[] = [
+    { k: 'Soporte', icon: 'help', onPress: abrirSoporte },
+  ];
+
+  const acerca: Fila[] = [
+    {
+      k: 'Términos y condiciones',
+      icon: 'flag',
+      onPress: () => console.log('Abrir Términos (Próximamente)'),
+    },
+    {
+      k: 'Privacidad',
+      icon: 'shield',
+      onPress: () => console.log('Abrir Privacidad (Próximamente)'),
     },
   ];
 
@@ -77,10 +121,7 @@ export function MenuScreen() {
     <Box f={1} bg="$bg3">
       <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
         <Col>
-          <Txt fos={12} tone="muted" ls={1} caps>
-            Ruédalo
-          </Txt>
-          <Txt font="display" fos={26} ls={-0.5}>
+          <Txt font="display" fos={32} ls={-0.5}>
             Menú
           </Txt>
         </Col>
@@ -91,8 +132,23 @@ export function MenuScreen() {
         {grupo(cuenta)}
 
         <Box pt={18}>
-          <SectionHead>Gestión</SectionHead>
+          <SectionHead>Ajustes</SectionHead>
           {grupo(gestion)}
+        </Box>
+
+        <Box pt={18}>
+          <SectionHead>Plan</SectionHead>
+          {grupo(planFilas)}
+        </Box>
+
+        <Box pt={18}>
+          <SectionHead>Ayuda</SectionHead>
+          {grupo(ayuda)}
+        </Box>
+
+        <Box pt={18}>
+          <SectionHead>Acerca de</SectionHead>
+          {grupo(acerca)}
         </Box>
 
         {/* Cerrar sesión se mudó acá desde Perfil: ahora que el perfil dejó de
@@ -108,7 +164,7 @@ export function MenuScreen() {
             gap="$sm"
             br="$md"
             bw={1.5}
-            bc="$line"
+            bc="$danger"
             bg="transparent"
             pressStyle={{ bg: '$bg2' }}
           >

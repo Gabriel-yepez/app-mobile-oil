@@ -13,6 +13,7 @@ import Bell from 'lucide-react-native/icons/bell';
 import Calendar from 'lucide-react-native/icons/calendar';
 import Car from 'lucide-react-native/icons/car';
 import Check from 'lucide-react-native/icons/check';
+import CircleQuestionMark from 'lucide-react-native/icons/circle-question-mark';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
@@ -71,7 +72,8 @@ export type IconName =
   | 'mail'
   | 'menu'
   | 'sliders'
-  | 'grip';
+  | 'grip'
+  | 'help';
 
 export const ICONS: Record<IconName, LucideIcon> = {
   car: Car,
@@ -105,6 +107,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   menu: Menu,
   sliders: SlidersHorizontal,
   grip: GripVertical,
+  help: CircleQuestionMark,
 };
 
 // Grosores del handoff: la mayoría a 1.75, los iconos "de acción" un poco más.

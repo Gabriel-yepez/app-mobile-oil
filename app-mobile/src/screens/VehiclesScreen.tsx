@@ -35,10 +35,7 @@ export function VehiclesScreen() {
       {/* top bar */}
       <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
         <Col>
-          <Txt fos={12} tone="muted" ls={1} caps>
-            Mis vehículos
-          </Txt>
-          <Txt font="display" fos={26} ls={-0.5}>
+          <Txt font="display" fos={32} ls={-0.5}>
             Garaje · {vehicles.length}
           </Txt>
         </Col>
@@ -143,14 +140,15 @@ export function VehiclesScreen() {
           fade
           sink
           transition="quick"
-          h={80}
+          h={56}
           fd="row"
           ai="center"
           jc="center"
           gap={10}
           br="$lg"
           bw={1}
-          bc="$line"
+          bc="$accent"
+          borderStyle="dashed"
           bg="$surfaceDim"
         >
           <Icon name="plus" color={c.accent} size={18} />

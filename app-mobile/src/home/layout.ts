@@ -39,11 +39,19 @@ export const WIDGET_ORDER: WidgetId[] = [
   'openAlerts',
 ];
 
-export const DEFAULT_HIDDEN: WidgetId[] = ['openAlerts'];
-
 export function isPinned(id: WidgetId, pinned: WidgetId[] = PINNED_WIDGETS): boolean {
   return pinned.includes(id);
 }
+
+/**
+ * Todo lo que no es fijo nace oculto: el inicio de un usuario nuevo son los
+ * cuatro del núcleo y nada más, y "Restablecer" vuelve a eso.
+ *
+ * Se deriva de WIDGET_ORDER en vez de escribirse a mano para que la regla valga
+ * también para los widgets que sumemos después: uno nuevo aparece en "Ocultos"
+ * y entra al inicio solo si el usuario lo agrega.
+ */
+export const DEFAULT_HIDDEN: WidgetId[] = WIDGET_ORDER.filter((id) => !isPinned(id));
 
 export const DEFAULT_LAYOUT: HomeLayout = {
   order: WIDGET_ORDER,

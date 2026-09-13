@@ -18,6 +18,9 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { VehiclesScreen } from '../screens/VehiclesScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { SubscriptionScreen } from '../screens/SubscriptionScreen';
+import { EditVehicleScreen } from '../screens/EditVehicleScreen';
 import { MenuScreen } from '../screens/MenuScreen';
 import { VehicleDetailScreen } from '../screens/VehicleDetailScreen';
 import { AddVehicleTypeScreen } from '../screens/AddVehicleTypeScreen';
@@ -26,6 +29,7 @@ import { AddOilScreen } from '../screens/AddOilScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { CustomizeHomeScreen } from '../screens/CustomizeHomeScreen';
+import { SecuritySettingsScreen } from '../screens/SecuritySettingsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -89,6 +93,7 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="Tabs" component={Tabs} />
         <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
+        <Stack.Screen name="EditVehicle" component={EditVehicleScreen} />
         <Stack.Screen name="AddVehicleType" component={AddVehicleTypeScreen} />
         <Stack.Screen name="AddVehicleForm" component={AddVehicleFormScreen} />
         <Stack.Screen name="AddOil" component={AddOilScreen} />
@@ -96,7 +101,10 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Alerts" component={AlertsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+        <Stack.Screen name="Subscription" component={SubscriptionScreen} />
         <Stack.Screen name="CustomizeHome" component={CustomizeHomeScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

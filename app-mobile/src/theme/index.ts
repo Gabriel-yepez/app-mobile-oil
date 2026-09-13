@@ -153,6 +153,44 @@ export const dark: typeof light = {
 export type AppTheme = typeof light;
 
 // ────────────────────────────────────────────
+// Degradado navy de las superficies oscuras
+// ────────────────────────────────────────────
+// Lo usan el hero de Inicio, Perfil y Detalle de vehículo, y las cards navy del
+// inicio. Vive acá y no en cada pantalla para que las cuatro superficies sean
+// el mismo material: cuando cada una traía su propio par de colores, dos azules
+// contiguos no coincidían y la junta se veía.
+//
+// Tres decisiones que lo separan del degradado anterior:
+//
+//  1. TRES paradas, no dos. El salto anterior (#0A2540 → #0F2E54) era tan corto
+//     que sobre un área grande no se leía como degradado sino como el bandeo de
+//     un panel de 8 bits. Con una parada intermedia la rampa es continua.
+//  2. Recorrido real. Del navy claro al profundo hay una diferencia que se ve a
+//     propósito; antes era tan sutil que parecía un defecto de render.
+//  3. Diagonal y no vertical: la luz entra por arriba a la izquierda, que es de
+//     donde la espera el ojo. Vertical lee como franja.
+//
+// Los tres tonos quedan bien por debajo de 4.5:1 contra blanco (el más claro da
+// ~12.9:1), así que el texto onDark y los arcos del gauge siguen legibles en
+// cualquier punto de la rampa.
+export const heroGradient = {
+  light: {
+    colors: ['#10395F', '#0A2540', '#061525'] as const,
+    locations: [0, 0.5, 1] as const,
+  },
+  dark: {
+    colors: ['#12314F', '#0C1B2E', '#05101C'] as const,
+    locations: [0, 0.5, 1] as const,
+  },
+};
+
+/** Arranque y final de la diagonal, iguales en los dos temas. */
+export const heroGradientAxis = {
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
+};
+
+// ────────────────────────────────────────────
 // Familias cargadas vía @expo-google-fonts en App.tsx
 // ────────────────────────────────────────────
 export const fonts = {

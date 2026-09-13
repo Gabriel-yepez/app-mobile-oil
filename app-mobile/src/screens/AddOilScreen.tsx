@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
+import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
 import { SHOPS_VE, VE_OILS, VISCOSITIES } from '../data/mock';
 import { fmtKm } from '../utils/format';
@@ -72,14 +73,18 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Box f={1} bg="$bg3">
-        {/* header */}
-        <Row jc="space-between" px="$xl" pt={insets.top + 12}>
-          <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
-          <Txt font="mono" fos={11} tone="muted" ls={1}>
-            {draft ? 'PASO 3 / 3' : 'NUEVO CAMBIO'}
-          </Txt>
-          <Box w={36} />
-        </Row>
+        {/* Esta pantalla es el paso 3 del alta, pero también se abre sola para
+            registrar un cambio en un vehículo que ya existe: ahí no hay pasos
+            que contar y el header vuelve a ser un título. */}
+        {draft ? (
+          <StepHeader step={3} total={3} onBack={() => navigation.goBack()} />
+        ) : (
+          <Row jc="space-between" px="$xl" pt={insets.top + 12}>
+            <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={() => navigation.goBack()} />
+            <Txt font="mono" fos={11} tone="muted" ls={1}>NUEVO CAMBIO</Txt>
+            <Box w={36} />
+          </Row>
+        )}
 
         <Scroll bg="$bg3" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
           <Col px="$2xl" pb="$sm" pt="$xl">
