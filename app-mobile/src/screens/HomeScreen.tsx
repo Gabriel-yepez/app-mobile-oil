@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
-import { Avatar, TechGrid, VehicleThumb } from '../components/primitives';
+import { Avatar, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { useActiveVehicle, useOpenAlerts, useStore } from '../store/useStore';
 import { useHomeLayout } from '../store/homeLayout';
@@ -38,6 +38,9 @@ export function HomeScreen() {
   return (
     <Box f={1} bg="$bg3">
       <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Fondo absoluto para cubrir el overscroll (bounce) superior en iOS/Android con el color del header */}
+        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={c.primary} />
+        
         {/* Hero fijo: no es un widget. Es el ancla del vehículo activo del que
             dependen gauge, techReadout y quickActions — si se pudiera ocultar,
             esos widgets mostrarían datos de un vehículo imposible de cambiar. */}
@@ -52,7 +55,7 @@ export function HomeScreen() {
             overflow: 'hidden',
           }}
         >
-          <TechGrid />
+
 
           <Row mb="$lg" jc="space-between" ai="center">
             <Row f={1} ai="center" gap={12}>

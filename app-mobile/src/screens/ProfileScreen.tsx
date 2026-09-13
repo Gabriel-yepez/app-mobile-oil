@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
-import { Avatar, Card, IconBtn, SectionHead, TechGrid } from '../components/primitives';
+import { Avatar, Card, IconBtn, SectionHead } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore } from '../store/useStore';
 
@@ -37,6 +37,8 @@ export function ProfileScreen() {
   return (
     <Box f={1} bg="$bg3">
       <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Fondo absoluto para cubrir el overscroll superior */}
+        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={c.primary} />
         {/* hero */}
         <LinearGradient
           colors={[c.primary, c.primary2]}
@@ -47,7 +49,7 @@ export function ProfileScreen() {
             overflow: 'hidden',
           }}
         >
-          <TechGrid />
+
           {/* Igual que Alertas: el perfil dejó de ser un tab y ahora se empuja,
               así que lleva su propio botón de volver. */}
           <Row jc="space-between" ai="center" px="$xl" pb="$sm">

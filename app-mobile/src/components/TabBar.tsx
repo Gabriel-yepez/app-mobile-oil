@@ -50,9 +50,17 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     const { x, y, width, height } = e.nativeEvent.layout;
     setSlots((prev) => {
       const old = prev[routeName];
-      // Sin esta comparación, cada onLayout dispara un render que vuelve a
-      // disparar onLayout.
-      if (old && old.x === x && old.y === y && old.w === width && old.h === height) return prev;
+      // Sin esta comparación con tolerancia, cada onLayout puede disparar un render
+      // que vuelva a disparar onLayout debido a minúsculas diferencias decimales en la medida.
+      if (
+        old &&
+        Math.abs(old.x - x) < 0.5 &&
+        Math.abs(old.y - y) < 0.5 &&
+        Math.abs(old.w - width) < 0.5 &&
+        Math.abs(old.h - height) < 0.5
+      ) {
+        return prev;
+      }
       return { ...prev, [routeName]: { x, y, w: width, h: height } };
     });
   };

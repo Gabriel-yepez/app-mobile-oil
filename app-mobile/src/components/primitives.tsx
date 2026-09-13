@@ -6,7 +6,7 @@
 // (Antes este prop se llamaba `dark`, lo que se confundía con el modo oscuro.)
 import React, { ReactNode, useState } from 'react';
 import { FlatList, Modal, StyleProp, TextInputProps, ViewStyle } from 'react-native';
-import Svg, { Line } from 'react-native-svg';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { palette } from '../theme';
@@ -455,28 +455,6 @@ export function Avatar({
     <Touchable onPress={onPress} fade="strong" sink transition="quick" br={size / 2} hitSlop={8}>
       {circle}
     </Touchable>
-  );
-}
-
-// ────────────────────────────────────────────
-// Grid técnico (overlay para headers oscuros)
-// ────────────────────────────────────────────
-export function TechGrid({ width = 500, height = 420, light = true }: { width?: number; height?: number; light?: boolean }) {
-  const gap = 24;
-  const stroke = light ? 'rgba(255,255,255,0.04)' : 'rgba(10,37,64,0.04)';
-  const vLines = Math.ceil(width / gap);
-  const hLines = Math.ceil(height / gap);
-  return (
-    <Box pos="absolute" t={0} l={0} r={0} b={0} pointerEvents="none">
-      <Svg width={width} height={height}>
-        {Array.from({ length: vLines }).map((_, i) => (
-          <Line key={`v${i}`} x1={i * gap} y1={0} x2={i * gap} y2={height} stroke={stroke} strokeWidth={1} />
-        ))}
-        {Array.from({ length: hLines }).map((_, i) => (
-          <Line key={`h${i}`} x1={0} y1={i * gap} x2={width} y2={i * gap} stroke={stroke} strokeWidth={1} />
-        ))}
-      </Svg>
-    </Box>
   );
 }
 

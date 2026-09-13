@@ -3,7 +3,7 @@ import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
-import { Btn, Card, IconBtn, SectionHead, StatusPill, TechGrid, VehicleThumb, VinPlate } from '../components/primitives';
+import { Btn, Card, IconBtn, SectionHead, StatusPill, VehicleThumb, VinPlate } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm, fmtUsd } from '../utils/format';
 import { kmLeft, oilPct, useStore, vehicleStatus } from '../store/useStore';
@@ -13,7 +13,7 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
   const insets = useSafeAreaInsets();
   const c = useAppColors();
   const vehicle = useStore((s) => s.vehicles.find((v) => v.id === route.params.vehicleId));
-  const changes = useStore((s) => s.changes.filter((ch) => ch.vehicleId === route.params.vehicleId));
+  const changes = useStore((s) => s.changes).filter((ch) => ch.vehicleId === route.params.vehicleId);
   const profile = useStore((s) => s.profile);
 
   if (!vehicle) return null;
@@ -23,6 +23,8 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
   return (
     <Box f={1} bg="$bg3">
       <Scroll bg="$bg3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Fondo absoluto para cubrir el overscroll superior */}
+        <Box pos="absolute" t={-1000} l={0} r={0} h={1000} bg={c.primary} />
         {/* hero */}
         <LinearGradient
           colors={[c.primary, c.primary2]}
@@ -35,7 +37,7 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
             overflow: 'hidden',
           }}
         >
-          <TechGrid />
+
           <Row mb="$xl" jc="space-between">
             <IconBtn onDark icon={<Icon name="chevL" color="#fff" size={20} />} onPress={() => navigation.goBack()} />
             <IconBtn onDark icon={<Icon name="edit" color="#fff" size={20} />} />

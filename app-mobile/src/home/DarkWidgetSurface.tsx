@@ -7,7 +7,7 @@
 import React, { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Box, useAppColors } from '../ui';
-import { TechGrid } from '../components/primitives';
+
 
 export function DarkWidgetSurface({ children }: { children: ReactNode }) {
   const c = useAppColors();
@@ -17,7 +17,7 @@ export function DarkWidgetSurface({ children }: { children: ReactNode }) {
         colors={[c.primary, c.primary2]}
         style={{ paddingHorizontal: 16, paddingVertical: 16 }}
       >
-        <TechGrid height={320} />
+
         {children}
       </LinearGradient>
     </Box>
