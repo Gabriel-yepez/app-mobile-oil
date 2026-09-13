@@ -39,14 +39,24 @@ export function AlertsScreen() {
     <Box f={1} bg="$bg3">
       {/* top bar */}
       <Row jc="space-between" px="$xl" pb={14} pt={insets.top + 12}>
-        <Col>
-          <Txt fos={12} tone="muted" ls={1} caps>
-            Alertas
-          </Txt>
-          <Txt font="display" fos={26} ls={-0.5}>
-            {open} abiertas
-          </Txt>
-        </Col>
+        {/* Alertas dejó de ser un tab: ahora se empuja sobre el stack, así que
+            necesita su propia salida. El gesto de borde de iOS no alcanza —
+            en Android no existe y la pantalla quedaría sin retorno visible. */}
+        <Row f={1} ai="center" gap="$md">
+          <IconBtn
+            icon={<Icon name="chevL" color={c.ink} size={22} />}
+            size={40}
+            onPress={() => navigation.goBack()}
+          />
+          <Col f={1}>
+            <Txt fos={12} tone="muted" ls={1} caps>
+              Alertas
+            </Txt>
+            <Txt font="display" fos={26} ls={-0.5}>
+              {open} abiertas
+            </Txt>
+          </Col>
+        </Row>
         <IconBtn
           icon={<Icon name="settings" color={c.ink} size={20} />}
           size={40}

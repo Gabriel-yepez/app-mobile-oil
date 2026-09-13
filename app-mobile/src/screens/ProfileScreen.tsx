@@ -2,6 +2,7 @@
 // Cerrar sesión y Notificaciones viven en el Menú desde que el perfil dejó de
 // ser un destino raíz del tab bar.
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
@@ -11,6 +12,7 @@ import { useStore } from '../store/useStore';
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const c = useAppColors();
   const profile = useStore((s) => s.profile);
   const vehicles = useStore((s) => s.vehicles);
@@ -46,10 +48,19 @@ export function ProfileScreen() {
           }}
         >
           <TechGrid />
-          <Row jc="space-between" px="$xl" pb="$sm">
-            <Txt fos={12} tone="onDarkSoft" ls={1} caps>
-              Perfil
-            </Txt>
+          {/* Igual que Alertas: el perfil dejó de ser un tab y ahora se empuja,
+              así que lleva su propio botón de volver. */}
+          <Row jc="space-between" ai="center" px="$xl" pb="$sm">
+            <Row f={1} ai="center" gap="$sm">
+              <IconBtn
+                onDark
+                icon={<Icon name="chevL" color="#fff" size={20} />}
+                onPress={() => navigation.goBack()}
+              />
+              <Txt fos={12} tone="onDarkSoft" ls={1} caps>
+                Perfil
+              </Txt>
+            </Row>
             <IconBtn onDark icon={<Icon name="edit" color="#fff" size={20} />} />
           </Row>
 
@@ -147,7 +158,7 @@ export function ProfileScreen() {
 
         <Box px="$lg" pt={18}>
           <Txt font="monoMed" fos={11} tone="muted2" ls={0.4} ta="center" mt="$md">
-            OilTrack VE · v1.0.0
+            Ruédalo · v1.0.0
           </Txt>
         </Box>
       </Scroll>
