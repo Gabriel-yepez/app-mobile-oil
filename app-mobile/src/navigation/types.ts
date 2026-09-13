@@ -39,6 +39,7 @@ export type RootStackParamList = {
   Subscription: undefined;
   CustomizeHome: undefined;
   SecuritySettings: undefined;
+  Theme: undefined;
 };
 
 export type RootScreenProps<S extends keyof RootStackParamList> = NativeStackScreenProps<

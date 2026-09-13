@@ -24,7 +24,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { Box, Row, useAppColors, useBlur } from '../ui';
+import { Box, Row, Touchable, useAppColors, useBlur } from '../ui';
 import { IconBtn } from './primitives';
 import { Icon, IconName } from './Icon';
 
@@ -62,18 +62,18 @@ export function StickyHeader({ scrollY, onBack, actionIcon, onAction, onHeight, 
 
   const relleno = { paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: px };
 
+  /** Los dos juegos de botones son SOLO pintura: no llevan onPress. Los toques
+   *  los recibe la capa de abajo, que es la única siempre opaca. */
   const botones = (onDark: boolean) => (
     <>
       <IconBtn
         onDark={onDark}
         icon={<Icon name="chevL" color={onDark ? '#fff' : c.ink} size={20} />}
-        onPress={onBack}
       />
       {actionIcon ? (
         <IconBtn
           onDark={onDark}
           icon={<Icon name={actionIcon} color={onDark ? '#fff' : c.ink} size={20} />}
-          onPress={onAction}
         />
       ) : (
         <Box w={36} />
@@ -107,19 +107,40 @@ export function StickyHeader({ scrollY, onBack, actionIcon, onAction, onHeight, 
         />
       </Animated.View>
 
-      {/* Juego claro: encima, pero transparente a los toques. */}
+      {/* Juego claro: se ve sobre el cristal. */}
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, relleno, cristal]}>
         <Row jc="space-between" ai="center">
           {botones(false)}
         </Row>
       </Animated.View>
 
-      {/* Juego oscuro: en flujo. Fija el alto y es el que se toca. */}
-      <Animated.View style={[relleno, azul]}>
+      {/* Juego oscuro: EN FLUJO, porque es el que le da el alto a la barra. */}
+      <Animated.View pointerEvents="none" style={[relleno, azul]}>
         <Row jc="space-between" ai="center">
           {botones(true)}
         </Row>
       </Animated.View>
+
+      {/* Capa táctil: invisible, encima de los dos juegos y SIN opacidad
+          animada. Existe porque en iOS UIKit descarta del hit test las vistas
+          con alpha < 0.01: cuando el juego oscuro llegaba a opacidad 0 al
+          scrollear, dejaba de recibir toques y el botón de volver se sentía
+          deshabilitado. Los juegos pintados son decoración; los toques viven
+          acá, en una capa que nunca se desvanece. */}
+      <Box pos="absolute" t={0} l={0} r={0} b={0} style={relleno}>
+        <Row jc="space-between" ai="center">
+          <Touchable
+            onPress={onBack}
+            h={36}
+            w={36}
+            br={12}
+            // hitSlop generoso: el asa de volver está pegada al borde y a la
+            // isla dinámica, donde el dedo cae impreciso.
+            hitSlop={10}
+          />
+          {actionIcon ? <Touchable onPress={onAction} h={36} w={36} br={12} hitSlop={10} /> : <Box w={36} />}
+        </Row>
+      </Box>
     </Box>
   );
 }

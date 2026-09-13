@@ -8,7 +8,7 @@ import React, { ReactNode, useState } from 'react';
 import { FlatList, Modal, ScrollView, StyleProp, TextInputProps, ViewStyle } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useShadows } from '../ui';
+import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useColorScheme, useShadows } from '../ui';
 import { palette } from '../theme';
 import { Icon } from './Icon';
 import { VehicleStatus } from '../data/mock';
@@ -132,6 +132,7 @@ type InputProps = {
 export function Input({ mono = false, prefix, right, invalid = false, style, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
   const c = useAppColors();
+  const esquema = useColorScheme();
 
   return (
     <Row
@@ -149,7 +150,12 @@ export function Input({ mono = false, prefix, right, invalid = false, style, ...
           {prefix}
         </Txt>
       ) : null}
+      {/* El override de apariencia de la ventana ya debería arrastrar al
+          teclado, pero iOS no siempre lo respeta con el valor 'default'.
+          Decirlo explícito no cuesta nada y lo deja fuera de duda. Va antes
+          de `...rest` para que una pantalla pueda pisarlo si lo necesita. */}
       <NativeInput
+        keyboardAppearance={esquema}
         {...rest}
         onFocus={(e) => {
           setFocused(true);
@@ -240,6 +246,7 @@ type CodeInputProps = {
 };
 
 export function CodeInput({ value, onChange, length = 6, autoFocus = false }: CodeInputProps) {
+  const esquema = useColorScheme();
   const [focused, setFocused] = useState(false);
   const digits = value.split('');
 
@@ -279,6 +286,7 @@ export function CodeInput({ value, onChange, length = 6, autoFocus = false }: Co
         r={0}
         b={0}
         opacity={0}
+        keyboardAppearance={esquema}
         value={value}
         // El teclado numérico de iOS no impide pegar texto, así que el filtro
         // no es decorativo: sin él, pegar "Código: 123456" rompe las casillas.

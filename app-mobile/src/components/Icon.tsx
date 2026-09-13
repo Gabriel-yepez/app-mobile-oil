@@ -35,6 +35,7 @@ import Settings from 'lucide-react-native/icons/settings';
 import Shield from 'lucide-react-native/icons/shield';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Sparkles from 'lucide-react-native/icons/sparkles';
+import SunMoon from 'lucide-react-native/icons/sun-moon';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import Trash from 'lucide-react-native/icons/trash';
 import User from 'lucide-react-native/icons/user';
@@ -73,7 +74,8 @@ export type IconName =
   | 'menu'
   | 'sliders'
   | 'grip'
-  | 'help';
+  | 'help'
+  | 'theme';
 
 export const ICONS: Record<IconName, LucideIcon> = {
   car: Car,
@@ -108,6 +110,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   sliders: SlidersHorizontal,
   grip: GripVertical,
   help: CircleQuestionMark,
+  theme: SunMoon,
 };
 
 // Grosores del handoff: la mayoría a 1.75, los iconos "de acción" un poco más.

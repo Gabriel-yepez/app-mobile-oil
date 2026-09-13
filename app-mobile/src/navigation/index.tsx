@@ -30,6 +30,7 @@ import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { CustomizeHomeScreen } from '../screens/CustomizeHomeScreen';
 import { SecuritySettingsScreen } from '../screens/SecuritySettingsScreen';
+import { ThemeScreen } from '../screens/ThemeScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -105,6 +106,7 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="Subscription" component={SubscriptionScreen} />
         <Stack.Screen name="CustomizeHome" component={CustomizeHomeScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
+        <Stack.Screen name="Theme" component={ThemeScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

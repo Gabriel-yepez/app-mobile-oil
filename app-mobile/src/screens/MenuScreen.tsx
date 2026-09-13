@@ -10,6 +10,7 @@ import { Card, SectionHead } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore, usePlan } from '../store/useStore';
 import { useNotifPrefs } from '../store/notifPrefs';
+import { THEME_LABEL, useThemePref } from '../store/themePref';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -40,6 +41,7 @@ export function MenuScreen() {
   const c = useAppColors();
   const profile = useStore((s) => s.profile);
   const notifEnabled = useNotifPrefs((s) => s.prefs.enabled);
+  const themePref = useThemePref((s) => s.pref);
   const plan = usePlan();
 
   const cuenta: Fila[] = [
@@ -52,6 +54,12 @@ export function MenuScreen() {
       k: 'Seguridad de tu cuenta',
       icon: 'shield',
       onPress: () => navigation.navigate('SecuritySettings'),
+    },
+    {
+      k: 'Tema',
+      v: THEME_LABEL[themePref],
+      icon: 'theme',
+      onPress: () => navigation.navigate('Theme'),
     },
     {
       k: 'Notificaciones',
