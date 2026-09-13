@@ -16,8 +16,9 @@ npm run android    # emulador Android
 ## Stack
 
 - **Expo SDK 57** + TypeScript
-- **React Navigation** — stack nativo + bottom tabs con TabBar custom (FAB central)
+- **React Navigation** — stack nativo + bottom tabs con TabBar custom (Inicio, Vehículos, Menú)
 - **react-native-svg** — iconos, ilustraciones, medidor radial `OilGauge`
+- **react-native-gesture-handler** + **Reanimated** — arrastre para ordenar los widgets del inicio
 - **Zustand** — estado global (vehículos, cambios de aceite, perfil)
 - **expo-linear-gradient** — headers oscuros y thumbnails
 - **@expo-google-fonts** — Inter (UI), Space Grotesk (títulos), JetBrains Mono (km, USD, placas, cédula)
@@ -68,7 +69,7 @@ estar alineadas o no funciona:
 
 Ojo con `$primary` vs `$solid`: en claro son el mismo navy, pero `$primary` es
 además el color del hero (oscuro en ambos temas), mientras que `$solid` es el
-relleno de los controles sólidos — botón primario, chips activos, FAB, checkbox —
+relleno de los controles sólidos — botón primario, chips activos, checkbox —
 y en oscuro pasa al azul acento. Si un control sólido usa `$primary`, en oscuro
 queda navy sobre navy y desaparece.
 
@@ -97,7 +98,7 @@ src/
 ## Pantallas
 
 1. **Onboarding** (3 slides con pager) → 2. **Login** → 3. **Signup**
-4. **Home** — tablero con OilGauge radial animado, KPIs, historial reciente
+4. **Home** — hero con el vehículo activo + widgets que el usuario ordena y oculta
 5. **Garaje** — lista multi-vehículo con filtros y progreso
 6–7. **Agregar vehículo** — tipo (carro/moto) → datos → aceite (3 pasos)
 8. **Detalle del vehículo** — hero oscuro + card de aceite + timeline
@@ -106,6 +107,8 @@ src/
 11. **Alertas** — vencido / próximo / resueltas (derivadas del estado)
 12. **Perfil** — datos personales (cédula V-, estado VE) + preferencias
 13. **Notificaciones** — switch maestro, tipos de aviso, día y hora del recordatorio
+14. **Menú** — índice de todo lo que dejó de ser un tab
+15. **Personalizar inicio** — orden y visibilidad de los widgets, arrastrando
 
 ## Pendiente (próximas iteraciones)
 
