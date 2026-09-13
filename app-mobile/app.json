@@ -27,7 +27,15 @@
       "expo-font",
       "expo-status-bar",
       "expo-sqlite",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0A2540",
+          "defaultChannel": "oil-reminders"
+        }
+      ]
     ]
   }
 }

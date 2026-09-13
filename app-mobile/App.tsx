@@ -9,12 +9,17 @@ import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { JetBrainsMono_600SemiBold, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import config from './tamagui.config';
 import { AppNavigator } from './src/navigation';
+import { useNotificationsSync } from './src/notifications';
 
 export default function App() {
   // Sigue el ajuste del sistema y reacciona en caliente cuando el usuario lo
   // cambia. Requiere userInterfaceStyle: "automatic" en app.json — si queda en
   // "light", el SO reporta siempre 'light' y esto nunca cambia.
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+
+  // Programa y reconcilia las notificaciones locales. Va antes del return
+  // temprano por fuentes: los hooks deben llamarse siempre en el mismo orden.
+  useNotificationsSync();
 
   const [fontsLoaded] = useFonts({
     Inter_500Medium,
