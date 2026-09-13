@@ -1,19 +1,6 @@
 import { DEFAULT_PREFS } from '../../notifications/types';
 import { useNotifPrefs } from '../notifPrefs';
 
-// El backend de persistencia es nativo; en Node lo reemplazamos por memoria.
-jest.mock('expo-sqlite/kv-store', () => {
-  const mem = new Map<string, string>();
-  return {
-    __esModule: true,
-    default: {
-      getItem: async (k: string) => mem.get(k) ?? null,
-      setItem: async (k: string, v: string) => void mem.set(k, v),
-      removeItem: async (k: string) => void mem.delete(k),
-    },
-  };
-});
-
 describe('useNotifPrefs', () => {
   beforeEach(() => {
     useNotifPrefs.setState({ prefs: { ...DEFAULT_PREFS } });
