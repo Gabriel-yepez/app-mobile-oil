@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: el datasource solo declara el motor. La URL de conexión vive en
+// prisma.config.ts (para el CLI) y en el adapter del PrismaClient (para la
+// app) — `url` aquí ya no se admite.
+datasource db {
+  provider = "postgresql"
+}
+
+enum Currency {
+  USD
+  BS
+  BOTH
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  cedula       String   @unique
+  passwordHash String
+  fullName     String
+  phone        String
+  state        String?
+  city         String?
+  currency     Currency @default(BOTH)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  // Se guarda el SHA-256 del token, nunca el token: un volcado de la base no
+  // debe entregar sesiones vivas.
+  id         String    @id @default(uuid()) @db.Uuid
+  tokenHash  String    @unique
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  // Id del token que lo sucedió: el rastro que permite detectar que alguien
+  // reusó un refresh ya rotado.
+  replacedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
