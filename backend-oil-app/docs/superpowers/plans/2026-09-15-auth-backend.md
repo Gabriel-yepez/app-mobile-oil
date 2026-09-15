@@ -2838,7 +2838,7 @@ const submit = async () => {
 ) : null}
 ```
 
-Si `tone="danger"` no existe en `src/ui/index.tsx`, usar el token de color de peligro que ya use el proyecto; comprobarlo antes en `src/theme/index.ts`.
+`tone="danger"` ya existe en `src/ui/index.tsx` y resuelve al token `$danger`, definido en claro (`#EF4444`) y en oscuro (`#F87171`). No hace falta color literal.
 
 5. En el `<Btn>`, añadir `disabled={enviando}` y cambiar el texto a `{enviando ? 'Entrando…' : 'Iniciar sesión'}`.
 
@@ -2916,40 +2916,76 @@ git commit -m "feat(auth): login y registro conectados al backend"
 Cierra el círculo: la app abre donde toca y el perfil deja de ser mock.
 
 **Files:**
-- Modify: `app-mobile/src/navigation/index.tsx`, `app-mobile/src/store/useStore.ts`, `app-mobile/src/screens/MenuScreen.tsx`
-- Modify: `app-mobile/README.md`
+- Modify: `app-mobile/App.tsx:20-60`, `app-mobile/src/navigation/index.tsx:87-90`
+- Modify: `app-mobile/src/store/useStore.ts`, `app-mobile/src/screens/MenuScreen.tsx:165`
+- Modify: `app-mobile/README.md`, `README.md` (raíz)
 
 **Interfaces:**
 - Consumes: `useAuth` (Task 12).
+- Produces: `AppNavigator` pasa a recibir `{ scheme, authed }`.
 
-- [ ] **Step 1: Arrancar la sesión al montar la navegación**
+- [ ] **Step 1: Arrancar la sesión en `App.tsx`, junto a las otras esperas**
 
-En `navigation/index.tsx`, dentro del componente raíz que monta el `NavigationContainer`:
+No hace falta inventar un splash: `App.tsx` **ya tiene este patrón**, y su
+comentario explica por qué existe («si no, quien tenga "oscuro" ve un destello
+claro en cada arranque»). La sesión es exactamente el mismo problema, así que
+se engancha a la misma compuerta en lugar de crear otra.
+
+Añadir los imports y, **antes** del `if` de fuentes (los hooks deben llamarse
+siempre en el mismo orden — el propio archivo lo advierte):
 
 ```tsx
-const status = useAuth((s) => s.status);
-const bootstrap = useAuth((s) => s.bootstrap);
-
-useEffect(() => {
-  void bootstrap();
-}, [bootstrap]);
-
-// Mientras se lee el almacenamiento seguro no se decide ruta: pintar Login y
-// saltar a Tabs medio segundo después es un parpadeo feo y confuso.
-if (status === 'loading') return <SplashScreen />;
+import { useEffect } from 'react';
+import { useAuth } from './src/store/auth';
+import { useStore } from './src/store/useStore';
 ```
 
-Para el splash, reusar lo que ya haya; si no hay nada, basta con un `<Box f={1} bg="$bg3" ai="center" jc="center"><BrandMark size={48} /></Box>`.
+```tsx
+  // Lee el token del almacenamiento seguro y confirma contra /me.
+  const authStatus = useAuth((s) => s.status);
+  const user = useAuth((s) => s.user);
+  const bootstrap = useAuth((s) => s.bootstrap);
+  const setProfileFromUser = useStore((s) => s.setProfileFromUser);
+
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
+
+  useEffect(() => {
+    if (user) setProfileFromUser(user);
+  }, [user, setProfileFromUser]);
+```
+
+Y extender la compuerta que ya existe, en la línea del `return null`:
+
+```tsx
+  // Se espera también a la sesión: decidir la ruta antes de saber si hay token
+  // haría que quien ya entró viera un destello del Login antes de ir a Tabs.
+  if (!fontsLoaded || !themeHydrated || authStatus === 'loading') return null;
+```
+
+Y pasar el resultado al navegador:
+
+```tsx
+<AppNavigator scheme={scheme} authed={authStatus === 'authed'} />
+```
 
 - [ ] **Step 2: Elegir la ruta inicial según la sesión**
 
-En el `<Stack.Navigator>`, cambiar la ruta inicial fija por:
+En `src/navigation/index.tsx` la ruta inicial **sí está declarada explícitamente**
+(`initialRouteName="Onboarding"` en el `<Stack.Navigator>`). Cambiar la firma y
+esa línea:
 
 ```tsx
-initialRouteName={status === 'authed' ? 'Tabs' : 'Onboarding'}
+export function AppNavigator({ scheme, authed }: { scheme: 'light' | 'dark'; authed: boolean }) {
 ```
 
-Comprobar cómo está declarada hoy: si el navegador no usa `initialRouteName` sino el orden de las `Screen`, hay que añadirlo explícitamente.
+```tsx
+      <Stack.Navigator
+        initialRouteName={authed ? 'Tabs' : 'Onboarding'}
+        screenOptions={{ headerShown: false }}
+      >
+```
 
 - [ ] **Step 3: Alimentar el perfil con el usuario real**
 
@@ -2976,37 +3012,35 @@ setProfileFromUser: (u: {
   })),
 ```
 
-Y llamarla desde el componente raíz de navegación cuando el usuario cambie:
-
-```tsx
-const user = useAuth((s) => s.user);
-const setProfileFromUser = useStore((s) => s.setProfileFromUser);
-
-useEffect(() => {
-  if (user) setProfileFromUser(user);
-}, [user, setProfileFromUser]);
-```
+El `useEffect` que la invoca ya quedó puesto en `App.tsx` en el Step 1.
 
 - [ ] **Step 4: Cerrar sesión de verdad desde el menú**
 
-En `MenuScreen.tsx`, buscar la opción de cerrar sesión (si no existe, añadirla al final de la lista) y conectarla:
+`MenuScreen.tsx` **ya tiene el botón** «Cerrar sesión» (sobre la línea 165), pero
+hoy solo navega: `onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}`.
+Es decir, deja la sesión abierta y los tokens guardados — quien reabra la app
+vuelve a entrar sin credenciales.
+
+Añadir el selector:
 
 ```tsx
 const signOut = useAuth((s) => s.signOut);
-
-const cerrarSesion = () => {
-  Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
-    { text: 'Cancelar', style: 'cancel' },
-    {
-      text: 'Cerrar sesión',
-      style: 'destructive',
-      onPress: () => {
-        void signOut().then(() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }));
-      },
-    },
-  ]);
-};
 ```
+
+y reemplazar solo el `onPress` de ese `Touchable`, sin tocar su estilo:
+
+```tsx
+onPress={() => {
+  // Primero se cierra la sesión (revoca el refresh en el servidor y borra
+  // los tokens del dispositivo) y después se navega. Al revés, el Login
+  // aparecería con la sesión todavía viva.
+  void signOut().then(() =>
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] }),
+  );
+}}
+```
+
+Import nuevo: `import { useAuth } from '../store/auth';`
 
 - [ ] **Step 5: Verificar el ciclo completo a mano**
 
