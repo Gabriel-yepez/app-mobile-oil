@@ -2164,7 +2164,7 @@ git commit -m "feat(auth): endpoints de registro, login, refresh, logout y /me"
 
 # Fase 2 — App móvil
 
-> Todo lo que sigue ocurre en `../app-mobile/`, que es **otro repositorio git**. Los commits de esta fase van allí.
+> Todo lo que sigue ocurre en `../app-mobile/`. Es **el mismo repositorio git** que el backend (monorepo, sin submódulos): los commits de esta fase van al mismo sitio que los de la Fase 1, y una tarea puede tocar ambas carpetas si hace falta. Lo que sí cambia es el gestor de paquetes — `npm`/`npx expo` en `app-mobile/`, `pnpm` en `backend-oil-app/`.
 
 ### Task 10: Almacenamiento seguro de tokens
 

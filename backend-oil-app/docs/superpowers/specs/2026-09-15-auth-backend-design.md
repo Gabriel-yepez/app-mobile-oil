@@ -310,13 +310,12 @@ peticiones concurrentes, y que un refresco fallido cierre la sesión.
 
 ## 9. Riesgos y notas
 
-- **`backend-oil-app/` es un repo git independiente**, sin commits ni remoto,
-  anidado en el repo raíz (que lo ve como carpeta sin seguimiento; no es
-  submódulo). El histórico del backend no viaja con el del monorepo. Conviene
-  decidir aparte si se convierte en submódulo, se absorbe en el repo raíz o se
-  le pone remoto propio. No bloquea esta entrega.
-- El README raíz aún anuncia la carpeta como `backend/` y en estado
-  «🔜 Pendiente»: hay que actualizarlo.
+- ~~`backend-oil-app/` es un repo git independiente~~ **Resuelto el
+  2026-09-15:** el backend se absorbió en el repo raíz con un subtree merge, de
+  modo que su histórico se conserva y ambos proyectos comparten commits, ramas
+  y remoto. Ya no hay repos anidados ni submódulos, y el README raíz quedó
+  actualizado. Consecuencia para quien ejecute el plan: **todos los commits,
+  los de backend y los de móvil, van al mismo repositorio.**
 - Los `state`, `city` y `currency` del `Profile` no se piden en el registro:
   quedan nulos o por defecto hasta que el usuario los llene en `EditProfile`.
   Las pantallas que los muestren deben tolerar el valor vacío.
