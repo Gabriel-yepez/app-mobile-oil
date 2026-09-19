@@ -12,6 +12,7 @@
     "@tamagui/animate-presence": "^2.7.7",
     "@tamagui/animations-react-native": "^2.7.7",
     "@tamagui/core": "^2.7.7",
+    "axios": "^1.20.0",
     "expo": "~57.0.22",
     "expo-asset": "~57.0.17",
     "expo-blur": "~57.0.3",

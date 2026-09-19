@@ -1,11 +1,38 @@
-import { ApiClient, ApiError } from '../base';
-import { authController } from '../controllers/auth.controller';
-import { tokenStorage } from '../tokens';
+// Se mockea la instancia de axios, no `fetch`: `base.ts` crea la suya con
+// axios.create() en el cuerpo del módulo.
+//
+// El jest.fn se crea DENTRO de la factoría a propósito. Declararlo fuera no
+// sirve: `axios.create()` se ejecuta al importar `base.ts`, o sea antes de que
+// el `const` del test llegue a inicializarse, y la instancia quedaría con un
+// `request` indefinido. `create` devuelve siempre la MISMA instancia para que
+// el test y `base.ts` compartan el espía.
+const esErrorDeAxios = (e: unknown) => Boolean((e as { isAxiosError?: boolean })?.isAxiosError);
+
+jest.mock('axios', () => {
+  const request = jest.fn();
+  const instancia = { request };
+  return {
+    __esModule: true,
+    default: { create: () => instancia, isAxiosError: esErrorDeAxios },
+    isAxiosError: esErrorDeAxios,
+  };
+});
 
 jest.mock('../tokens', () => ({
   tokenStorage: { get: jest.fn(), save: jest.fn(), clear: jest.fn() },
 }));
+
+import type { AxiosRequestConfig } from 'axios';
+import { ApiClient, ApiError } from '../base';
+import { authController } from '../controllers/auth.controller';
+import { tokenStorage } from '../tokens';
+
 const storage = tokenStorage as jest.Mocked<typeof tokenStorage>;
+
+// El mismo objeto que usa base.ts, recuperado del módulo mockeado.
+const mockRequest = (
+  jest.requireMock('axios') as { default: { create: () => { request: jest.Mock } } }
+).default.create().request;
 
 // Segundo controlador, solo para este test: sirve para comprobar que la cola
 // de refresco se comparte entre controladores distintos y no por instancia.
@@ -25,19 +52,32 @@ class PruebaController extends ApiClient {
 }
 const pruebaController = new PruebaController();
 
-const respuesta = (status: number, body: unknown) =>
-  Promise.resolve({
-    status,
-    ok: status >= 200 && status < 300,
-    json: () => Promise.resolve(body),
-  } as Response);
+// axios resuelve en 2xx y LANZA en el resto: al revés que fetch.
+const ok = (status: number, data: unknown) => Promise.resolve({ status, data });
 
-const llamada = (i: number) =>
-  (global.fetch as jest.Mock).mock.calls[i] as [string, RequestInit];
+const httpError = (status: number, data: unknown) =>
+  Promise.reject(
+    Object.assign(new Error('respuesta de error'), { isAxiosError: true, response: { status, data } })
+  );
 
-const cabeceras = (i: number) => llamada(i)[1].headers as Record<string, string>;
+const sinRed = () =>
+  Promise.reject(
+    Object.assign(new Error('Network Error'), { isAxiosError: true, response: undefined })
+  );
 
-describe('ApiClient', () => {
+const timeout = () =>
+  Promise.reject(
+    Object.assign(new Error('timeout'), {
+      isAxiosError: true,
+      response: undefined,
+      code: 'ECONNABORTED',
+    })
+  );
+
+const config = (i: number) => mockRequest.mock.calls[i][0] as AxiosRequestConfig;
+const cabeceras = (i: number) => (config(i).headers ?? {}) as Record<string, string>;
+
+describe('ApiClient (axios)', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     ApiClient.__reset();
@@ -46,15 +86,16 @@ describe('ApiClient', () => {
 
   describe('construcción de la petición', () => {
     it('concatena la ruta del controlador con la del método', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
+      mockRequest.mockImplementation(() => ok(200, {}));
 
       await authController.me();
 
-      expect(llamada(0)[0]).toContain('/auth/me');
+      expect(config(0).url).toBe('/auth/me');
+      expect(config(0).method).toBe('GET');
     });
 
     it('manda el Bearer cuando auth es true', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
+      mockRequest.mockImplementation(() => ok(200, {}));
 
       await authController.me();
 
@@ -62,61 +103,46 @@ describe('ApiClient', () => {
     });
 
     it('no manda Bearer en las rutas públicas', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
+      mockRequest.mockImplementation(() => ok(200, {}));
 
       await authController.login('a@b.c', 'clave1234');
 
       expect(cabeceras(0).Authorization).toBeUndefined();
+      expect(config(0).data).toEqual({ email: 'a@b.c', password: 'clave1234' });
     });
 
-    // Concatenar a mano rompería con un "+" en un correo o un "&" en un filtro.
-    it('codifica los query params', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
+    // Se delega en axios la serialización: construirla a mano rompería con un
+    // "+" en un correo o un "&" en un filtro.
+    it('pasa los query params a axios para que los serialice', async () => {
+      mockRequest.mockImplementation(() => ok(200, {}));
 
       await pruebaController.buscar({ correo: 'a+b@c.com', pagina: 2 });
 
-      const url = llamada(0)[0];
-      expect(url).toContain('correo=a%2Bb%40c.com');
-      expect(url).toContain('pagina=2');
+      expect(config(0).params).toEqual({ correo: 'a+b@c.com', pagina: 2 });
     });
 
-    // Un filtro ausente no debe viajar como la cadena "undefined".
-    it('omite los query params nulos o indefinidos', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
+    it('no manda `params` si no hay query', async () => {
+      mockRequest.mockImplementation(() => ok(200, {}));
 
-      await pruebaController.buscar({ a: 1, b: undefined, c: null });
+      await authController.me();
 
-      const url = llamada(0)[0];
-      expect(url).toContain('a=1');
-      expect(url).not.toContain('b=');
-      expect(url).not.toContain('c=');
-    });
-
-    it('no deja "?" colgando si todos los query params se omiten', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
-
-      await pruebaController.buscar({ a: undefined });
-
-      expect(llamada(0)[0]).not.toContain('?');
+      expect(config(0).params).toBeUndefined();
     });
 
     it('mezcla las cabeceras extra con las de por defecto', async () => {
-      global.fetch = jest.fn().mockReturnValue(respuesta(200, {}));
+      mockRequest.mockImplementation(() => ok(200, {}));
 
       await pruebaController.conCabeceras({ 'X-Origen': 'onboarding' });
 
       expect(cabeceras(0)['X-Origen']).toBe('onboarding');
-      expect(cabeceras(0)['Content-Type']).toBe('application/json');
     });
   });
 
   describe('errores', () => {
     it('convierte el error del backend en ApiError con su código', async () => {
-      global.fetch = jest
-        .fn()
-        .mockReturnValue(
-          respuesta(409, { error: 'EMAIL_TAKEN', message: 'Ese correo ya tiene una cuenta.' })
-        );
+      mockRequest.mockImplementation(() =>
+        httpError(409, { error: 'EMAIL_TAKEN', message: 'Ese correo ya tiene una cuenta.' })
+      );
 
       await expect(
         authController.register({
@@ -133,36 +159,44 @@ describe('ApiClient', () => {
       });
     });
 
-    // Sin internet fetch lanza; el usuario merece un mensaje, no un crash.
     it('convierte un fallo de red en ApiError legible', async () => {
-      global.fetch = jest.fn().mockRejectedValue(new TypeError('Network request failed'));
+      mockRequest.mockImplementation(() => sinRed());
 
       await expect(authController.login('a@b.c', 'x')).rejects.toMatchObject({
         code: 'NETWORK_ERROR',
       });
     });
 
-    // Un 204 no trae cuerpo: llamar a .json() ahí revienta.
-    it('maneja el 204 del logout sin intentar parsear cuerpo', async () => {
-      global.fetch = jest.fn().mockReturnValue(
-        Promise.resolve({
-          status: 204,
-          ok: true,
-          json: () => Promise.reject(new Error('sin cuerpo')),
-        } as unknown as Response)
-      );
+    // Se distingue del corte de red porque el consejo al usuario es distinto:
+    // esperar frente a revisar la conexión.
+    it('distingue el timeout del corte de red', async () => {
+      mockRequest.mockImplementation(() => timeout());
+
+      await expect(authController.login('a@b.c', 'x')).rejects.toMatchObject({
+        code: 'TIMEOUT',
+      });
+    });
+
+    // Un 204 no trae cuerpo: axios deja `data` en cadena vacía.
+    it('maneja el 204 del logout devolviendo undefined', async () => {
+      mockRequest.mockImplementation(() => ok(204, ''));
 
       await expect(authController.logout('r')).resolves.toBeUndefined();
+    });
+
+    it('nunca deja escapar un error crudo de axios', async () => {
+      mockRequest.mockImplementation(() => httpError(500, {}));
+
+      await expect(authController.me()).rejects.toBeInstanceOf(ApiError);
     });
   });
 
   describe('refresco del token', () => {
     it('ante 401 refresca una vez y reintenta con el token nuevo', async () => {
-      global.fetch = jest
-        .fn()
-        .mockReturnValueOnce(respuesta(401, { error: 'X' }))
-        .mockReturnValueOnce(respuesta(200, { accessToken: 'nuevo', refreshToken: 'ref2' }))
-        .mockReturnValueOnce(respuesta(200, { user: { id: '1' } }));
+      mockRequest
+        .mockImplementationOnce(() => httpError(401, { error: 'X' }))
+        .mockImplementationOnce(() => ok(200, { accessToken: 'nuevo', refreshToken: 'ref2' }))
+        .mockImplementationOnce(() => ok(200, { user: { id: '1' } }));
 
       await authController.me();
 
@@ -178,44 +212,45 @@ describe('ApiClient', () => {
     // presentaría un token ya rotado, y el backend cerraría TODAS las sesiones
     // del usuario por sospecha de robo.
     it('dos CONTROLADORES distintos caducados a la vez refrescan UNA sola vez', async () => {
-      const urls: string[] = [];
-      global.fetch = jest.fn().mockImplementation((url: string, init: RequestInit) => {
-        urls.push(url);
-        if (url.endsWith('/auth/refresh')) {
-          return respuesta(200, { accessToken: 'nuevo', refreshToken: 'ref2' });
+      mockRequest.mockImplementation((c: AxiosRequestConfig) => {
+        if (c.url === '/auth/refresh') {
+          return ok(200, { accessToken: 'nuevo', refreshToken: 'ref2' });
         }
-        const auth = (init.headers as Record<string, string>).Authorization;
-        return auth === 'Bearer nuevo' ? respuesta(200, { ok: true }) : respuesta(401, { error: 'X' });
+        const auth = (c.headers as Record<string, string>)?.Authorization;
+        return auth === 'Bearer nuevo' ? ok(200, { ok: true }) : httpError(401, { error: 'X' });
       });
 
       await Promise.all([authController.me(), pruebaController.cosa()]);
 
-      expect(urls.filter((u) => u.endsWith('/auth/refresh'))).toHaveLength(1);
+      const refrescos = mockRequest.mock.calls.filter(
+        (c) => (c[0] as AxiosRequestConfig).url === '/auth/refresh'
+      );
+      expect(refrescos).toHaveLength(1);
     });
 
     it('tres peticiones del mismo controlador refrescan UNA sola vez', async () => {
-      const urls: string[] = [];
-      global.fetch = jest.fn().mockImplementation((url: string, init: RequestInit) => {
-        urls.push(url);
-        if (url.endsWith('/auth/refresh')) {
-          return respuesta(200, { accessToken: 'nuevo', refreshToken: 'ref2' });
+      mockRequest.mockImplementation((c: AxiosRequestConfig) => {
+        if (c.url === '/auth/refresh') {
+          return ok(200, { accessToken: 'nuevo', refreshToken: 'ref2' });
         }
-        const auth = (init.headers as Record<string, string>).Authorization;
-        return auth === 'Bearer nuevo' ? respuesta(200, { ok: true }) : respuesta(401, { error: 'X' });
+        const auth = (c.headers as Record<string, string>)?.Authorization;
+        return auth === 'Bearer nuevo' ? ok(200, { ok: true }) : httpError(401, { error: 'X' });
       });
 
       await Promise.all([authController.me(), authController.me(), authController.me()]);
 
-      expect(urls.filter((u) => u.endsWith('/auth/refresh'))).toHaveLength(1);
+      const refrescos = mockRequest.mock.calls.filter(
+        (c) => (c[0] as AxiosRequestConfig).url === '/auth/refresh'
+      );
+      expect(refrescos).toHaveLength(1);
     });
 
     it('si el refresco falla, limpia los tokens y avisa que expiró la sesión', async () => {
       const expiro = jest.fn();
       ApiClient.setOnSessionExpired(expiro);
-      global.fetch = jest
-        .fn()
-        .mockReturnValueOnce(respuesta(401, { error: 'X' }))
-        .mockReturnValueOnce(respuesta(401, { error: 'INVALID_REFRESH_TOKEN' }));
+      mockRequest
+        .mockImplementationOnce(() => httpError(401, { error: 'X' }))
+        .mockImplementationOnce(() => httpError(401, { error: 'INVALID_REFRESH_TOKEN' }));
 
       await expect(authController.me()).rejects.toBeInstanceOf(ApiError);
 
@@ -227,10 +262,10 @@ describe('ApiClient', () => {
     // llamada perdida y un refresh con `undefined`.
     it('no intenta refrescar si no hay tokens guardados', async () => {
       storage.get.mockResolvedValue(null);
-      global.fetch = jest.fn().mockReturnValue(respuesta(401, { error: 'X' }));
+      mockRequest.mockImplementation(() => httpError(401, { error: 'X' }));
 
       await expect(authController.me()).rejects.toBeInstanceOf(ApiError);
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(mockRequest).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -29,7 +29,7 @@ con `<Icon name="..." />` en vez de importar uno nuevo.
 
 ```
 src/api/
-├── base.ts                      clase ApiClient + ApiError. NO tocar por endpoint.
+├── base.ts                      clase ApiClient + ApiError (sobre axios). NO tocar por endpoint.
 ├── tokens.ts                    los tokens, en Keychain/Keystore
 └── controllers/
     ├── auth.controller.ts       ← la nomenclatura: <recurso>.controller.ts
@@ -72,12 +72,19 @@ Los tipos de la respuesta viven en el mismo archivo del controlador.
 
 ## Lo que `base.ts` ya resuelve — no lo repitas en un controlador
 
-- **URL base** desde `EXPO_PUBLIC_API_URL`.
+- **URL base** desde `EXPO_PUBLIC_API_URL`, en una instancia de axios.
 - **Bearer** cuando pasas `auth: true`.
-- **Query params** codificados con `URLSearchParams`; los `undefined`/`null` se
-  omiten. No construyas la query a mano: un `+` en un correo rompe la URL.
-- **Errores**: todo fallo sale como `ApiError` con `status`, `code` y `message`.
-  Ramifica por `code` (contrato estable del backend), nunca por el texto.
+- **Query params**: pásalos en `query` y los serializa axios, omitiendo los
+  `undefined` y `null`. No construyas la query a mano: un `+` en un correo o un
+  `&` en un filtro romperían la URL.
+- **Timeout de 15 s.** En móvil, una petición sin tope se queda colgada con mala
+  cobertura y la pantalla nunca sale de "Cargando…".
+- **Errores**: axios lanza en todo lo que no sea 2xx, y `base.ts` lo traduce.
+  Hacia arriba solo sale `ApiError` con `status`, `code` y `message` —los
+  controladores no saben que existe axios. Ramifica por `code` (contrato
+  estable del backend), nunca por el texto. Códigos propios del cliente:
+  `NETWORK_ERROR` (sin conexión) y `TIMEOUT` (el servidor no contestó a tiempo);
+  se distinguen porque el consejo al usuario es distinto.
 - **Refresco del token** ante un `401`, con reintento automático.
 
 ## Dos cosas que no se tocan
@@ -91,6 +98,14 @@ distintos a la vez.
 
 **`EXPO_PUBLIC_*` no es secreto.** Esas variables quedan incrustadas en el
 binario al compilar. Sirven para una URL; una clave de API jamás va ahí.
+
+## Al testear un controlador
+
+El `jest.fn` del mock de axios debe crearse **dentro** de la factoría de
+`jest.mock`, no en una constante del test: `base.ts` llama a `axios.create()`
+en el cuerpo del módulo, o sea antes de que las constantes del test se
+inicialicen, y la instancia se quedaría con un `request` indefinido. Mira
+`src/api/__tests__/base.test.ts`.
 
 ## Configuración
 
