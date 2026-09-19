@@ -1,10 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsHexColor,
   IsIn,
   IsInt,
   IsNumber,
+  IsOptional,
   IsString,
+  IsUUID,
   Length,
   Max,
   Min,
@@ -12,6 +14,19 @@ import {
 import { KM_PER_DAY_MAX, KM_PER_DAY_MIN } from '../domain/oil-status';
 
 export class CreateVehicleDto {
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: [
+      'Id generado por la app. Si se manda, el backend lo usa tal cual y la',
+      'creación es **idempotente**: reenviar el mismo id devuelve el registro',
+      'ya creado (200) en vez de duplicarlo. Es lo que permite crear sin señal',
+      'y sincronizar después sin riesgo de duplicar en un reintento.',
+    ].join(' '),
+  })
+  @IsOptional()
+  @IsUUID('4')
+  id?: string;
+
   @ApiProperty({ enum: ['CAR', 'MOTO'] })
   @IsIn(['CAR', 'MOTO'])
   kind!: 'CAR' | 'MOTO';

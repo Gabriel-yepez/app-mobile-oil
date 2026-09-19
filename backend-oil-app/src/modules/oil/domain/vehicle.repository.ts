@@ -46,7 +46,9 @@ export interface VehicleRepository {
   findById(id: string): Promise<Vehicle | null>;
   findByUser(userId: string): Promise<Vehicle[]>;
   listAllIds(): Promise<string[]>;
-  create(data: NewVehicle): Promise<Vehicle>;
+  /** `id` opcional: lo genera la app para poder crear sin señal. */
+  create(data: NewVehicle & { id?: string }): Promise<Vehicle>;
+  findByPlate(userId: string, plate: string): Promise<Vehicle | null>;
   /** Solo lo llama OilCycleService. Ver la regla del escritor único. */
   updateCycleMirror(id: string, mirror: CycleMirror): Promise<void>;
   updateKmRate(

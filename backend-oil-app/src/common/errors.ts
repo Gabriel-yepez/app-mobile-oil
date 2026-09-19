@@ -105,4 +105,13 @@ export const Errors = {
       'OIL_CHANGE_BACKWARDS',
       'El kilometraje del cambio no puede ser menor que el del cambio anterior.',
     ),
+
+  // Por usuario, no global: dos personas distintas pueden tener la misma placa
+  // mal escrita, y no es asunto de una que la otra exista.
+  plateTaken: () =>
+    new AppError(
+      HttpStatus.CONFLICT,
+      'PLATE_TAKEN',
+      'Ya tienes un vehículo con esa placa.',
+    ),
 };

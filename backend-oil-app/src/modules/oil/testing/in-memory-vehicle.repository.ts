@@ -24,10 +24,18 @@ export class InMemoryVehicleRepository implements VehicleRepository {
     return [...this.rows.keys()];
   }
 
-  async create(data: NewVehicle): Promise<Vehicle> {
+  async findByPlate(userId: string, plate: string): Promise<Vehicle | null> {
+    return (
+      [...this.rows.values()].find(
+        (v) => v.userId === userId && v.plate === plate,
+      ) ?? null
+    );
+  }
+
+  async create(data: NewVehicle & { id?: string }): Promise<Vehicle> {
     const row: Vehicle = {
       ...data,
-      id: `v${++this.seq}`,
+      id: data.id ?? `v${++this.seq}`,
       kmPerDaySource: 'DECLARED',
       lastChangeKm: null,
       lastChangeAt: null,

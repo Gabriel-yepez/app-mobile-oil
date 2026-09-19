@@ -47,11 +47,50 @@ export class OilService {
     return v;
   }
 
+  /**
+   * Crea el vehículo, de forma IDEMPOTENTE cuando la app manda el id.
+   *
+   * Eso es lo que hace segura la cola de escrituras: si el envío se cortó
+   * DESPUÉS de que el servidor guardó, el reintento tiene que ser inofensivo
+   * y no un duplicado.
+   */
   async createVehicle(
     userId: string,
-    data: Omit<NewVehicle, 'userId'>,
+    data: Omit<NewVehicle, 'userId'> & { id?: string },
   ): Promise<Vehicle> {
-    return this.vehicles.create({ ...data, userId });
+    return (await this.createVehicleIdempotent(userId, data)).vehicle;
+  }
+
+  /**
+   * Igual que createVehicle, pero además dice si CREÓ o reusó.
+   *
+   * El controlador lo necesita para responder 201 o 200: el 200 es la señal
+   * de "esto ya estaba, tu reintento llegó tarde y no pasó nada malo", y la
+   * app lo trata como éxito en vez de como conflicto.
+   */
+  async createVehicleIdempotent(
+    userId: string,
+    data: Omit<NewVehicle, 'userId'> & { id?: string },
+  ): Promise<{ vehicle: Vehicle; created: boolean }> {
+    if (data.id) {
+      const existente = await this.vehicles.findById(data.id);
+      if (existente) {
+        // De otro usuario: 404 y no 409, para no confirmar que ese id existe.
+        if (existente.userId !== userId) throw Errors.vehicleNotFound();
+        // Se devuelve tal cual está, sin aplicar el cuerpo nuevo: el reintento
+        // no es una edición. Para eso está PATCH.
+        return { vehicle: existente, created: false };
+      }
+    }
+
+    if (await this.vehicles.findByPlate(userId, data.plate)) {
+      throw Errors.plateTaken();
+    }
+
+    return {
+      vehicle: await this.vehicles.create({ ...data, userId }),
+      created: true,
+    };
   }
 
   async listVehicles(userId: string): Promise<Vehicle[]> {

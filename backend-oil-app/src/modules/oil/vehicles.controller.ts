@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,6 +21,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { User } from '../users/domain/user';
@@ -59,12 +61,25 @@ export class VehiclesController {
     ].join(' '),
   })
   @ApiCreatedResponse({ type: VehicleResponseDto })
+  @ApiOkResponse({
+    type: VehicleResponseDto,
+    description:
+      'El `id` ya existía: se devuelve el registro tal cual, sin duplicar. Es un reintento de la cola, no un error.',
+  })
   @Post()
   async create(
     @CurrentUser() user: User,
     @Body() dto: CreateVehicleDto,
+    // passthrough: Nest sigue serializando el retorno; acá solo se ajusta el
+    // código, que es 201 por defecto en @Post.
+    @Res({ passthrough: true }) res: Response,
   ): Promise<VehicleResponseDto> {
-    return toVehicleResponse(await this.oil.createVehicle(user.id, dto));
+    const { vehicle, created } = await this.oil.createVehicleIdempotent(
+      user.id,
+      dto,
+    );
+    res.status(created ? HttpStatus.CREATED : HttpStatus.OK);
+    return toVehicleResponse(vehicle);
   }
 
   @ApiOperation({
