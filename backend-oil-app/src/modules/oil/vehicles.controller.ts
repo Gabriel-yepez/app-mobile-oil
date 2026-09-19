@@ -36,6 +36,7 @@ import {
   OilChangePageDto,
 } from './dto/oil-change-response.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { OilStatusResponseDto } from './dto/oil-status-response.dto';
 import {
   toVehicleResponse,
@@ -85,6 +86,40 @@ export class VehiclesController {
     );
     res.status(created ? HttpStatus.CREATED : HttpStatus.OK);
     return toVehicleResponse(vehicle);
+  }
+
+  @ApiOperation({
+    summary: 'Editar la ficha de un vehículo',
+    description: [
+      'No toca el ciclo ni el historial: eso se cambia registrando o',
+      'corrigiendo un cambio de aceite. Si se manda `kmPerDay`, la fuente',
+      'vuelve a `DECLARED` — el usuario está pisando lo medido a propósito, y',
+      'el próximo ciclo medido lo recalibra solo.',
+    ].join(' '),
+  })
+  @ApiOkResponse({ type: VehicleResponseDto })
+  @Patch(':id')
+  async update(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateVehicleDto,
+  ): Promise<VehicleResponseDto> {
+    return toVehicleResponse(await this.oil.updateVehicle(user.id, id, dto));
+  }
+
+  @ApiOperation({
+    summary: 'Borrar un vehículo',
+    description:
+      'Se lleva con él su historial y sus lecturas de odómetro. No se puede deshacer.',
+  })
+  @ApiNoContentResponse()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id')
+  async remove(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.oil.removeVehicle(user.id, id);
   }
 
   @ApiOperation({

@@ -9,6 +9,18 @@ import { KM_PER_DAY_MAX, KM_PER_DAY_MIN } from './oil-status';
 
 export type RateSample = { km: number; changedAt: Date };
 
+export type KmRateResult = {
+  kmPerDay: number;
+  /**
+   * Si salió de ciclos reales o es el valor declarado.
+   *
+   * Lo devuelve en vez de dejar que el llamador lo deduzca comparando números:
+   * un ritmo medido que coincide con el declarado es igual de medido, y
+   * deducirlo por igualdad lo marcaría mal.
+   */
+  medido: boolean;
+};
+
 /**
  * Cuántos ciclos entran al promedio. Tres alcanza para amortiguar un mes raro
  * sin quedar anclado a cómo se usaba el vehículo hace dos años.
@@ -22,7 +34,7 @@ const CICLOS_A_PROMEDIAR = 3;
 export function computeKmPerDay(
   changes: RateSample[],
   fallback: number,
-): number {
+): KmRateResult {
   const ritmos: number[] = [];
 
   for (let i = 0; i < changes.length - 1; i++) {
@@ -44,6 +56,9 @@ export function computeKmPerDay(
     if (ritmos.length === CICLOS_A_PROMEDIAR) break;
   }
 
-  if (ritmos.length === 0) return fallback;
-  return ritmos.reduce((a, b) => a + b, 0) / ritmos.length;
+  if (ritmos.length === 0) return { kmPerDay: fallback, medido: false };
+  return {
+    kmPerDay: ritmos.reduce((a, b) => a + b, 0) / ritmos.length,
+    medido: true,
+  };
 }

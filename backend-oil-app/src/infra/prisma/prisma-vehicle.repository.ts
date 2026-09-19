@@ -66,6 +66,21 @@ export class PrismaVehicleRepository implements VehicleRepository {
     return this.toDomain(row);
   }
 
+  async update(
+    id: string,
+    patch: Partial<Omit<NewVehicle, 'userId'>> & {
+      kmPerDaySource?: KmRateSource;
+    },
+  ): Promise<Vehicle> {
+    const row = await this.prisma.vehicle.update({ where: { id }, data: patch });
+    return this.toDomain(row);
+  }
+
+  async remove(id: string): Promise<void> {
+    // Los cambios y las lecturas caen por onDelete: Cascade del esquema.
+    await this.prisma.vehicle.delete({ where: { id } });
+  }
+
   async updateCycleMirror(id: string, mirror: CycleMirror): Promise<void> {
     await this.prisma.vehicle.update({ where: { id }, data: mirror });
   }

@@ -46,6 +46,23 @@ export class InMemoryVehicleRepository implements VehicleRepository {
     return row;
   }
 
+  async update(
+    id: string,
+    patch: Partial<Omit<NewVehicle, 'userId'>> & {
+      kmPerDaySource?: KmRateSource;
+    },
+  ): Promise<Vehicle> {
+    const actual = this.rows.get(id);
+    if (!actual) throw new Error(`vehículo inexistente: ${id}`);
+    const row = { ...actual, ...patch };
+    this.rows.set(id, row);
+    return row;
+  }
+
+  async remove(id: string): Promise<void> {
+    this.rows.delete(id);
+  }
+
   async updateCycleMirror(id: string, mirror: CycleMirror): Promise<void> {
     const row = this.rows.get(id);
     if (row) this.rows.set(id, { ...row, ...mirror });

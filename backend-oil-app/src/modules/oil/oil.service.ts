@@ -94,6 +94,32 @@ export class OilService {
     };
   }
 
+  /**
+   * Edita la ficha. NO toca el espejo del ciclo ni el historial: eso se cambia
+   * registrando o corrigiendo un cambio de aceite, no editando la ficha.
+   */
+  async updateVehicle(
+    userId: string,
+    vehicleId: string,
+    patch: Partial<Omit<NewVehicle, 'userId'>>,
+  ): Promise<Vehicle> {
+    await this.getOwnedVehicle(userId, vehicleId);
+    return this.vehicles.update(vehicleId, {
+      ...patch,
+      // Si pisó el ritmo a mano, la fuente vuelve a declarada: el usuario está
+      // sobrescribiendo lo medido a propósito, y el próximo ciclo medido lo
+      // recalibra solo.
+      ...(patch.kmPerDay !== undefined
+        ? { kmPerDaySource: 'DECLARED' as const }
+        : {}),
+    });
+  }
+
+  async removeVehicle(userId: string, vehicleId: string): Promise<void> {
+    await this.getOwnedVehicle(userId, vehicleId);
+    await this.vehicles.remove(vehicleId);
+  }
+
   async listVehicles(userId: string): Promise<Vehicle[]> {
     return this.vehicles.findByUser(userId);
   }

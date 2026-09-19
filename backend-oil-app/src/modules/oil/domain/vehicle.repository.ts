@@ -51,6 +51,11 @@ export interface VehicleRepository {
   findByPlate(userId: string, plate: string): Promise<Vehicle | null>;
   /** Solo lo llama OilCycleService. Ver la regla del escritor único. */
   updateCycleMirror(id: string, mirror: CycleMirror): Promise<void>;
+  update(
+    id: string,
+    patch: Partial<Omit<NewVehicle, 'userId'>> & { kmPerDaySource?: KmRateSource },
+  ): Promise<Vehicle>;
+  remove(id: string): Promise<void>;
   updateKmRate(
     id: string,
     kmPerDay: number,

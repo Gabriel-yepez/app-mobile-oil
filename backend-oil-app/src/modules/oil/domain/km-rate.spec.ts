@@ -8,8 +8,8 @@ const cambios = (...pares: [string, number][]): RateSample[] =>
 
 describe('computeKmPerDay', () => {
   it('sin ciclos medibles devuelve el valor declarado', () => {
-    expect(computeKmPerDay(cambios(['2026-06-04T00:00:00Z', 45_000]), 30)).toBe(
-      30,
+    expect(computeKmPerDay(cambios(['2026-06-04T00:00:00Z', 45_000]), 30)).toEqual(
+      { kmPerDay: 30, medido: false },
     );
   });
 
@@ -22,7 +22,8 @@ describe('computeKmPerDay', () => {
       ),
       99,
     );
-    expect(r).toBeCloseTo(30, 2);
+    expect(r.kmPerDay).toBeCloseTo(30, 2);
+    expect(r.medido).toBe(true);
   });
 
   it('promedia los tres ciclos más recientes y descarta los viejos', () => {
@@ -36,7 +37,7 @@ describe('computeKmPerDay', () => {
       ),
       99,
     );
-    expect(r).toBeCloseTo(30, 0); // (40 + 20 + 30) / 3
+    expect(r.kmPerDay).toBeCloseTo(30, 0); // (40 + 20 + 30) / 3
   });
 
   it('descarta el ciclo con ritmo imposible por dedazo', () => {
@@ -49,7 +50,7 @@ describe('computeKmPerDay', () => {
       ),
       99,
     );
-    expect(r).toBeCloseTo(30, 0);
+    expect(r.kmPerDay).toBeCloseTo(30, 0);
   });
 
   it('descarta el ciclo del vehículo que estuvo parado', () => {
@@ -62,7 +63,7 @@ describe('computeKmPerDay', () => {
       ),
       99,
     );
-    expect(r).toBeCloseTo(30, 0);
+    expect(r.kmPerDay).toBeCloseTo(30, 0);
   });
 
   it('si TODOS los ciclos son inválidos cae al valor declarado', () => {
@@ -73,7 +74,7 @@ describe('computeKmPerDay', () => {
       ),
       37,
     );
-    expect(r).toBe(37);
+    expect(r).toEqual({ kmPerDay: 37, medido: false });
   });
 
   it('ignora dos cambios del mismo día en vez de dividir por cero', () => {
@@ -84,6 +85,6 @@ describe('computeKmPerDay', () => {
       ),
       25,
     );
-    expect(r).toBe(25);
+    expect(r).toEqual({ kmPerDay: 25, medido: false });
   });
 });

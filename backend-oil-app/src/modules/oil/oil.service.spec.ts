@@ -116,3 +116,95 @@ describe('crear vehículo con id del cliente', () => {
     expect(v.plate).toBe(nuevoVehiculo.plate);
   });
 });
+
+describe('editar y borrar vehículo', () => {
+  let service: OilService;
+
+  const cambio = (km: number, fecha: string) => ({
+    changedAt: new Date(fecha),
+    km,
+    intervalKm: 5_000,
+    intervalMonths: 6,
+    oilBrand: 'Pennzoil',
+    oilTag: 'Platinum',
+    oilViscosity: '5W-30',
+    oilSynthetic: true,
+    shop: null,
+    costUsd: null,
+  });
+
+  beforeEach(() => {
+    const vehicles = new InMemoryVehicleRepository();
+    const changes = new InMemoryOilChangeRepository();
+    const odometer = new InMemoryOdometerRepository();
+    service = new OilService(
+      vehicles,
+      changes,
+      odometer,
+      new OilCycleService(vehicles, changes),
+    );
+  });
+
+  it('edita la ficha', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+    const r = await service.updateVehicle('u1', v.id, { color: '#FF0000' });
+    expect(r.color).toBe('#FF0000');
+  });
+
+  it('cambiar kmPerDay a mano devuelve la fuente a DECLARED', async () => {
+    // El usuario está pisando lo medido a propósito. El próximo ciclo medido
+    // lo vuelve a calibrar solo.
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+    await service.registerOilChange(
+      'u1',
+      v.id,
+      cambio(42_000, '2026-02-24T00:00:00Z'),
+    );
+    await service.registerOilChange(
+      'u1',
+      v.id,
+      cambio(45_000, '2026-06-04T00:00:00Z'),
+    );
+    expect((await service.getOwnedVehicle('u1', v.id)).kmPerDaySource).toBe(
+      'MEASURED',
+    );
+
+    const r = await service.updateVehicle('u1', v.id, { kmPerDay: 80 });
+    expect(r.kmPerDay).toBe(80);
+    expect(r.kmPerDaySource).toBe('DECLARED');
+  });
+
+  it('editar la ficha NO toca el espejo del ciclo', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+    await service.registerOilChange(
+      'u1',
+      v.id,
+      cambio(45_000, '2026-06-04T00:00:00Z'),
+    );
+    await service.updateVehicle('u1', v.id, { color: '#FF0000' });
+
+    const r = await service.getOwnedVehicle('u1', v.id);
+    expect(r.lastChangeKm).toBe(45_000);
+    expect(r.nextChangeKm).toBe(50_000);
+  });
+
+  it('no deja editar el vehículo de otro', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+    await expect(
+      service.updateVehicle('u2', v.id, { color: '#FF0000' }),
+    ).rejects.toMatchObject({ response: { error: 'VEHICLE_NOT_FOUND' } });
+  });
+
+  it('borra el vehículo', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+    await service.removeVehicle('u1', v.id);
+    expect(await service.listVehicles('u1')).toHaveLength(0);
+  });
+
+  it('no deja borrar el vehículo de otro', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+    await expect(service.removeVehicle('u2', v.id)).rejects.toMatchObject({
+      response: { error: 'VEHICLE_NOT_FOUND' },
+    });
+  });
+});

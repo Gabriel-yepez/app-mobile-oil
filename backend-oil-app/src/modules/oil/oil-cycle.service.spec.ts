@@ -127,6 +127,15 @@ describe('espejo del ciclo vigente', () => {
     await esperarEspejoCoherente();
   });
 
+  it('con un solo cambio el ritmo sigue DECLARED: no hay nada medido', async () => {
+    await changes.create(cambio('2026-06-04T00:00:00Z', 45_000));
+    await service.syncVehicleCycle(vehicleId);
+
+    const v = (await vehicles.findById(vehicleId))!;
+    expect(v.kmPerDaySource).toBe('DECLARED');
+    expect(v.kmPerDay).toBe(30);
+  });
+
   it('recomputeAllCycles repara todos los vehículos', async () => {
     await changes.create(cambio('2026-06-04T00:00:00Z', 45_000));
     // Nadie llamó a sync: el espejo está desincronizado a propósito.

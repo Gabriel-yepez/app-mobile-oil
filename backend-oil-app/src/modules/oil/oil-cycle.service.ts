@@ -68,9 +68,17 @@ export class OilCycleService {
     const vehicle = await this.vehicles.findById(vehicleId);
     if (!vehicle) return;
 
+    // Mientras no haya un ciclo medible se deja el ritmo declarado como está:
+    // pisarlo con el mismo número pero marcado MEASURED sería decirle al
+    // usuario que medimos algo que no medimos.
     const ritmo = computeKmPerDay(recientes, vehicle.kmPerDay);
-    if (ritmo !== vehicle.kmPerDay) {
-      await this.vehicles.updateKmRate(vehicleId, ritmo, 'MEASURED');
+    if (!ritmo.medido) return;
+
+    if (
+      ritmo.kmPerDay !== vehicle.kmPerDay ||
+      vehicle.kmPerDaySource === 'DECLARED'
+    ) {
+      await this.vehicles.updateKmRate(vehicleId, ritmo.kmPerDay, 'MEASURED');
     }
   }
 
