@@ -3,6 +3,10 @@
 // HTTP y el calculador solo hace aritmética.
 import { Inject, Injectable } from '@nestjs/common';
 import { Errors } from '../../common/errors';
+import { daysBetween } from './domain/dates';
+import { computeOilStatus } from './domain/oil-status.calculator';
+import { KM_PER_DAY_MAX } from './domain/oil-status';
+import type { OilStatusResponseDto } from './dto/oil-status-response.dto';
 import { OilCycleService } from './oil-cycle.service';
 import {
   OIL_CHANGE_REPOSITORY,
@@ -108,5 +112,97 @@ export class OilService {
 
     await this.changes.remove(changeId);
     await this.cycle.syncVehicleCycle(existente.vehicleId);
+  }
+
+  /**
+   * El bloque entero del inicio en una sola llamada.
+   *
+   * @param now solo para tests. En producción no se pasa: probar "el 2 de
+   *            diciembre esto está en rojo" no puede depender del reloj del
+   *            proceso.
+   */
+  async getOilStatus(
+    userId: string,
+    vehicleId: string,
+    now: Date = new Date(),
+  ): Promise<OilStatusResponseDto> {
+    const vehicle = await this.getOwnedVehicle(userId, vehicleId);
+    const ultimo = await this.changes.findLatest(vehicleId);
+    const lectura = await this.odometer.findLatest(vehicleId);
+
+    const status = computeOilStatus({
+      now,
+      kmPerDay: vehicle.kmPerDay,
+      lastReading: lectura ? { km: lectura.km, readAt: lectura.readAt } : null,
+      cycle: ultimo
+        ? {
+            km: ultimo.km,
+            changedAt: ultimo.changedAt,
+            intervalKm: ultimo.intervalKm,
+            intervalMonths: ultimo.intervalMonths,
+          }
+        : null,
+    });
+
+    return {
+      vehicleId,
+      computedAt: status.computedAt,
+      gauge: status.gauge,
+      odometer: status.odometer,
+      // Los límites del ciclo salen del espejo del vehículo: es exactamente
+      // para esto que se persisten en vez de derivarse acá.
+      cycle: ultimo
+        ? {
+            lastChangeKm: vehicle.lastChangeKm,
+            lastChangeAt: vehicle.lastChangeAt,
+            nextChangeKm: vehicle.nextChangeKm,
+            nextChangeDueAt: vehicle.nextChangeDueAt,
+            intervalKm: ultimo.intervalKm,
+            intervalMonths: ultimo.intervalMonths,
+          }
+        : null,
+      oil: ultimo
+        ? {
+            brand: ultimo.oilBrand,
+            tag: ultimo.oilTag,
+            viscosity: ultimo.oilViscosity,
+            synthetic: ultimo.oilSynthetic,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * La lectura manual: la puerta que le dejamos abierta al usuario para el día
+   * que SÍ mire el tablero. No se la exigimos —ese es justo el dato que no
+   * tiene a mano—, pero cuando llega, la estimación deja de acumular error.
+   */
+  async reportOdometer(
+    userId: string,
+    vehicleId: string,
+    km: number,
+    now: Date = new Date(),
+  ): Promise<OilStatusResponseDto> {
+    await this.getOwnedVehicle(userId, vehicleId);
+
+    const anterior = await this.odometer.findLatest(vehicleId);
+    if (anterior) {
+      if (km < anterior.km) throw Errors.odometerBackwards();
+
+      // El piso de una hora evita que dos lecturas seguidas den una división
+      // cercana a cero y disparen IMPLAUSIBLE por un salto normal.
+      const dias = Math.max(daysBetween(anterior.readAt, now), 1 / 24);
+      if ((km - anterior.km) / dias > KM_PER_DAY_MAX) {
+        throw Errors.odometerImplausible();
+      }
+    }
+
+    await this.odometer.create({
+      vehicleId,
+      km,
+      readAt: now,
+      source: 'MANUAL',
+    });
+    return this.getOilStatus(userId, vehicleId, now);
   }
 }

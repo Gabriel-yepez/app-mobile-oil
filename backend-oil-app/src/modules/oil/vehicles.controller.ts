@@ -27,7 +27,9 @@ import {
   CreateOilChangeDto,
   UpdateOilChangeDto,
 } from './dto/create-oil-change.dto';
+import { CreateOdometerReadingDto } from './dto/create-odometer-reading.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { OilStatusResponseDto } from './dto/oil-status-response.dto';
 import {
   toVehicleResponse,
   VehicleResponseDto,
@@ -63,6 +65,48 @@ export class VehiclesController {
     @Body() dto: CreateVehicleDto,
   ): Promise<VehicleResponseDto> {
     return toVehicleResponse(await this.oil.createVehicle(user.id, dto));
+  }
+
+  @ApiOperation({
+    summary: 'Estado del aceite del vehículo',
+    description: [
+      'Devuelve el bloque completo del inicio en una sola llamada: medidor,',
+      'odómetro (real o estimado), ciclo vigente y aceite montado.',
+      '',
+      'El odómetro se **proyecta** desde la última lectura real con el ritmo de',
+      'km/día del vehículo cuando no hay una lectura de hoy — porque el',
+      'odómetro solo existe sentado en el auto y entre cambio y cambio nadie lo',
+      'reporta. `odometer.source` dice cuál de los dos casos es.',
+      '',
+      'La vida del aceite corre por dos ejes, km y tiempo, y vale el peor:',
+      'el "5.000 km o 6 meses, lo que ocurra primero" del manual.',
+      '`gauge.limitedBy` dice cuál de los dos manda.',
+    ].join('\n'),
+  })
+  @ApiOkResponse({ type: OilStatusResponseDto })
+  @Get(':id/oil-status')
+  async oilStatus(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OilStatusResponseDto> {
+    return this.oil.getOilStatus(user.id, id);
+  }
+
+  @ApiOperation({
+    summary: 'Reportar una lectura del odómetro',
+    description: [
+      'Reancla la estimación a la realidad y devuelve el bloque de estado ya',
+      'recalculado, así la app no necesita una segunda llamada.',
+    ].join(' '),
+  })
+  @ApiCreatedResponse({ type: OilStatusResponseDto })
+  @Post(':id/odometer')
+  async reportOdometer(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateOdometerReadingDto,
+  ): Promise<OilStatusResponseDto> {
+    return this.oil.reportOdometer(user.id, id, dto.km);
   }
 
   @ApiOperation({
