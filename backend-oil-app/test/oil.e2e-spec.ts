@@ -244,6 +244,18 @@ describe('Estado del aceite (e2e)', () => {
     expect(page).toHaveProperty('nextCursor');
   });
 
+  it('la lista trae el gauge de cada vehículo', async () => {
+    const r = await http()
+      .get('/api/v1/vehicles')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const lista = r.body as { id: string; gauge: unknown }[];
+    const elNuestro = lista.find((v) => v.id === vehiculoId)!;
+    expect(elNuestro).toHaveProperty('gauge');
+    expect(elNuestro.gauge).not.toBeNull();
+  });
+
   it('sin token responde 401', async () => {
     await http()
       .get(`/api/v1/vehicles/${vehiculoId}/oil-status`)

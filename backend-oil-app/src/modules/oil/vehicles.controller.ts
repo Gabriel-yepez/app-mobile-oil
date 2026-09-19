@@ -51,12 +51,15 @@ import { OilService } from './oil.service';
 export class VehiclesController {
   constructor(private readonly oil: OilService) {}
 
-  @ApiOperation({ summary: 'Listar los vehículos del usuario' })
+  @ApiOperation({
+    summary: 'Listar los vehículos del usuario',
+    description:
+      'Cada vehículo viene con su `gauge` y su `odometer` ya calculados, para que la pantalla de la flota sea una sola llamada.',
+  })
   @ApiOkResponse({ type: [VehicleResponseDto] })
   @Get()
   async list(@CurrentUser() user: User): Promise<VehicleResponseDto[]> {
-    const vehicles = await this.oil.listVehicles(user.id);
-    return vehicles.map(toVehicleResponse);
+    return this.oil.listVehiclesWithStatus(user.id);
   }
 
   @ApiOperation({

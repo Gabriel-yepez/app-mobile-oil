@@ -7,6 +7,10 @@ import { daysBetween } from './domain/dates';
 import { computeOilStatus } from './domain/oil-status.calculator';
 import { KM_PER_DAY_MAX } from './domain/oil-status';
 import type { OilStatusResponseDto } from './dto/oil-status-response.dto';
+import {
+  toVehicleResponse,
+  type VehicleResponseDto,
+} from './dto/vehicle-response.dto';
 import { OilCycleService } from './oil-cycle.service';
 import {
   OIL_CHANGE_REPOSITORY,
@@ -199,6 +203,48 @@ export class OilService {
 
     await this.changes.remove(changeId);
     await this.cycle.syncVehicleCycle(existente.vehicleId);
+  }
+
+  /**
+   * La lista con el estado de cada vehículo.
+   *
+   * Existe para que la pantalla de la flota sea UNA llamada y no una por
+   * vehículo: con cinco vehículos, la diferencia entre abrir al instante y
+   * abrir con cinco peticiones en vuelo.
+   */
+  async listVehiclesWithStatus(
+    userId: string,
+    now: Date = new Date(),
+  ): Promise<VehicleResponseDto[]> {
+    const vehiculos = await this.vehicles.findByUser(userId);
+
+    return Promise.all(
+      vehiculos.map(async (v) => {
+        const ultimo = await this.changes.findLatest(v.id);
+        const lectura = await this.odometer.findLatest(v.id);
+        const status = computeOilStatus({
+          now,
+          kmPerDay: v.kmPerDay,
+          lastReading: lectura
+            ? { km: lectura.km, readAt: lectura.readAt }
+            : null,
+          cycle: ultimo
+            ? {
+                km: ultimo.km,
+                changedAt: ultimo.changedAt,
+                intervalKm: ultimo.intervalKm,
+                intervalMonths: ultimo.intervalMonths,
+              }
+            : null,
+        });
+
+        return {
+          ...toVehicleResponse(v),
+          gauge: status.gauge,
+          odometer: status.odometer,
+        };
+      }),
+    );
   }
 
   /** Historial del vehículo, del más nuevo al más viejo. */

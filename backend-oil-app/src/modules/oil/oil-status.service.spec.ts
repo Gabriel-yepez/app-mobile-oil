@@ -176,3 +176,83 @@ describe('reportar el odómetro', () => {
     ).rejects.toMatchObject({ response: { error: 'VEHICLE_NOT_FOUND' } });
   });
 });
+
+describe('lista de vehículos con estado', () => {
+  let service: OilService;
+
+  beforeEach(() => {
+    const vehicles = new InMemoryVehicleRepository();
+    const changes = new InMemoryOilChangeRepository();
+    const odometer = new InMemoryOdometerRepository();
+    service = new OilService(
+      vehicles,
+      changes,
+      odometer,
+      new OilCycleService(vehicles, changes),
+    );
+  });
+
+  const ficha = (plate: string) => ({
+    kind: 'CAR' as const,
+    brand: 'Toyota',
+    model: 'Corolla',
+    year: 2019,
+    plate,
+    color: '#111111',
+    kmPerDay: 30,
+  });
+
+  it('cada vehículo trae su gauge', async () => {
+    const v = await service.createVehicle('u1', ficha('AB123CD'));
+    await service.registerOilChange(
+      'u1',
+      v.id,
+      cambio(45_000, '2026-06-04T00:00:00Z'),
+    );
+
+    const lista = await service.listVehiclesWithStatus(
+      'u1',
+      utc('2026-07-04T00:00:00Z'),
+    );
+    expect(lista[0].gauge).toMatchObject({ status: 'ok', limitedBy: 'km' });
+    expect(lista[0].odometer?.source).toBe('estimated');
+  });
+
+  it('un vehículo sin ciclo trae gauge en null y no rompe la lista', async () => {
+    await service.createVehicle('u1', ficha('AB123CD'));
+    const lista = await service.listVehiclesWithStatus(
+      'u1',
+      utc('2026-07-04T00:00:00Z'),
+    );
+    expect(lista[0].gauge).toBeNull();
+    expect(lista[0].odometer).toBeNull();
+  });
+
+  it('mezcla vehículos con y sin ciclo en la misma lista', async () => {
+    const con = await service.createVehicle('u1', ficha('AB123CD'));
+    await service.createVehicle('u1', ficha('XY999ZZ'));
+    await service.registerOilChange(
+      'u1',
+      con.id,
+      cambio(45_000, '2026-06-04T00:00:00Z'),
+    );
+
+    const lista = await service.listVehiclesWithStatus(
+      'u1',
+      utc('2026-07-04T00:00:00Z'),
+    );
+    expect(lista).toHaveLength(2);
+    expect(lista.filter((v) => v.gauge !== null)).toHaveLength(1);
+  });
+
+  it('no incluye vehículos de otro usuario', async () => {
+    await service.createVehicle('u1', ficha('AB123CD'));
+    await service.createVehicle('u2', ficha('XY999ZZ'));
+
+    const lista = await service.listVehiclesWithStatus(
+      'u1',
+      utc('2026-07-04T00:00:00Z'),
+    );
+    expect(lista).toHaveLength(1);
+  });
+});

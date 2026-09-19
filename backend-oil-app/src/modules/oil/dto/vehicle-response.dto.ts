@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type { Vehicle } from '../domain/vehicle.repository';
+import { GaugeDto, OdometerDto } from './oil-status-response.dto';
 
 export class VehicleResponseDto {
   @ApiProperty() id!: string;
@@ -22,6 +23,14 @@ export class VehicleResponseDto {
 
   @ApiProperty({ nullable: true }) lastChangeKm!: number | null;
   @ApiProperty({ nullable: true }) nextChangeKm!: number | null;
+
+  // El estado viaja con la lista para que la pantalla de la flota sea UNA
+  // llamada y no una por vehículo. `null` mientras no haya ningún cambio.
+  @ApiProperty({ type: GaugeDto, nullable: true })
+  gauge!: GaugeDto | null;
+
+  @ApiProperty({ type: OdometerDto, nullable: true })
+  odometer!: OdometerDto | null;
 }
 
 /** El userId no sale: el cliente ya sabe de quién es, y exponerlo solo da
@@ -39,5 +48,8 @@ export function toVehicleResponse(v: Vehicle): VehicleResponseDto {
     kmPerDaySource: v.kmPerDaySource,
     lastChangeKm: v.lastChangeKm,
     nextChangeKm: v.nextChangeKm,
+    // Los rellena listVehiclesWithStatus; la ficha sola no los conoce.
+    gauge: null,
+    odometer: null,
   };
 }
