@@ -1,14 +1,14 @@
 import { useAuth } from '../auth';
-import { authApi } from '../../api/auth';
+import { authController } from '../../api/controllers/auth.controller';
 import { tokenStorage } from '../../api/tokens';
-import { ApiError } from '../../api/client';
+import { ApiError } from '../../api/base';
 
-jest.mock('../../api/auth');
+jest.mock('../../api/controllers/auth.controller');
 jest.mock('../../api/tokens', () => ({
   tokenStorage: { get: jest.fn(), save: jest.fn(), clear: jest.fn() },
 }));
 
-const api = authApi as jest.Mocked<typeof authApi>;
+const api = authController as jest.Mocked<typeof authController>;
 const storage = tokenStorage as jest.Mocked<typeof tokenStorage>;
 
 const usuario = {

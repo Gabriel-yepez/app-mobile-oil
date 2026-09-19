@@ -44,8 +44,7 @@
     "extra": {
       "eas": {
         "projectId": "d44dca15-f396-4837-bc2c-f0579a4e322a"
-      },
-      "apiUrl": "http://localhost:3000/api/v1"
+      }
     }
   }
 }

@@ -12,7 +12,7 @@ import { Btn, Card, Checkbox, Field, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { useSession } from '../store/session';
 import { useAuth } from '../store/auth';
-import { ApiError } from '../api/client';
+import { ApiError } from '../api/base';
 import { isEmail } from '../utils/validate';
 import { RootScreenProps } from '../navigation/types';
 

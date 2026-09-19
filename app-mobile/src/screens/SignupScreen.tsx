@@ -9,7 +9,7 @@ import { AuthHero } from '../components/AuthHero';
 import { Btn, Card, Checkbox, Field, IconBtn, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../store/auth';
-import { ApiError } from '../api/client';
+import { ApiError } from '../api/base';
 import { isEmail } from '../utils/validate';
 import { RootScreenProps } from '../navigation/types';
 

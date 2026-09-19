@@ -14,7 +14,7 @@ import {
   Vehicle,
   VehicleStatus,
 } from '../data/mock';
-import type { ApiUser as AuthUser } from '../api/auth';
+import type { ApiUser as AuthUser } from '../api/controllers/auth.controller';
 
 // Computed selectors del README
 export const kmLeft = (v: Vehicle) => v.nextChange - v.km;

@@ -1,8 +1,12 @@
 // Sesión real. Distinto de `session.ts`, que solo recuerda el correo del
 // "Recordarme" y sigue siendo una comodidad de UI, no una credencial.
 import { create } from 'zustand';
-import { authApi, type ApiUser, type RegisterInput } from '../api/auth';
-import { ApiError, setOnSessionExpired } from '../api/client';
+import { ApiClient, ApiError } from '../api/base';
+import {
+  authController,
+  type ApiUser,
+  type RegisterInput,
+} from '../api/controllers/auth.controller';
 import { tokenStorage } from '../api/tokens';
 
 type Estado = 'loading' | 'authed' | 'guest';
@@ -38,7 +42,7 @@ export const useAuth = create<AuthStore>((set) => ({
     try {
       // Tener el token guardado no basta: pudo revocarse desde otro
       // dispositivo. Solo /me confirma que la sesión sigue viva.
-      const { user } = await authApi.me();
+      const { user } = await authController.me();
       set({ user, status: 'authed', error: null });
     } catch {
       await tokenStorage.clear();
@@ -49,7 +53,7 @@ export const useAuth = create<AuthStore>((set) => ({
   signIn: async (email, password) => {
     set({ error: null });
     try {
-      const { user, accessToken, refreshToken } = await authApi.login(email, password);
+      const { user, accessToken, refreshToken } = await authController.login(email, password);
       await tokenStorage.save({ accessToken, refreshToken });
       set({ user, status: 'authed' });
     } catch (e) {
@@ -61,7 +65,7 @@ export const useAuth = create<AuthStore>((set) => ({
   signUp: async (input) => {
     set({ error: null });
     try {
-      const { user, accessToken, refreshToken } = await authApi.register(input);
+      const { user, accessToken, refreshToken } = await authController.register(input);
       await tokenStorage.save({ accessToken, refreshToken });
       set({ user, status: 'authed' });
     } catch (e) {
@@ -73,7 +77,7 @@ export const useAuth = create<AuthStore>((set) => ({
   signOut: async () => {
     const tokens = await tokenStorage.get();
     try {
-      if (tokens) await authApi.logout(tokens.refreshToken);
+      if (tokens) await authController.logout(tokens.refreshToken);
     } catch {
       // Sin red el servidor no se entera, pero la sesión local se cierra
       // igual: dejar al usuario dentro por falta de internet sería peor.
@@ -85,4 +89,6 @@ export const useAuth = create<AuthStore>((set) => ({
 
 // Si el refresco falla en cualquier petición, la sesión cae sola y la
 // navegación reacciona: no hace falta que cada pantalla lo compruebe.
-setOnSessionExpired(() => useAuth.setState({ user: null, status: 'guest' }));
+ApiClient.setOnSessionExpired(() =>
+  useAuth.setState({ user: null, status: 'guest' }),
+);
