@@ -3,6 +3,7 @@
 // silencioso y en producción.
 import { plainToInstance, Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -44,6 +45,14 @@ export class EnvVars {
   @IsOptional()
   @IsString()
   CORS_ORIGINS: string = '';
+
+  // Publica la documentación interactiva en /docs. Encendida por defecto,
+  // porque en desarrollo es justo lo que se quiere; en producción se apaga
+  // poniendo "false", sin tocar código.
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value !== 'false' && value !== false)
+  SWAGGER_ENABLED: boolean = true;
 
   // Intentos de registro/login por minuto y por IP. Configurable porque los
   // tests e2e crean más cuentas que eso en segundos: sin esta palanca, la

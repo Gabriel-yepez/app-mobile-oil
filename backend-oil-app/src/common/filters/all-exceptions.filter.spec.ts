@@ -1,4 +1,8 @@
-import { ArgumentsHost, BadRequestException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 import { Errors } from '../errors';
 
@@ -35,6 +39,46 @@ describe('AllExceptionsFilter', () => {
       expect.objectContaining({
         error: 'VALIDATION_ERROR',
         details: ['email debe ser un correo'],
+      }),
+    );
+  });
+
+  // El guard de Passport no pasa por Errors: su 401 llega como
+  // UnauthorizedException pelada, y antes caía en la rama genérica con el
+  // texto de error interno, que no le dice nada al usuario.
+  it('traduce el 401 del guard a UNAUTHORIZED con un mensaje entendible', () => {
+    const { host, status, json } = hostFalso();
+    filtro.catch(new UnauthorizedException(), host);
+
+    expect(status).toHaveBeenCalledWith(401);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 401,
+        error: 'UNAUTHORIZED',
+        message: 'Acceso no autorizado, falta token',
+      }),
+    );
+  });
+
+  // La rama nueva va DESPUÉS de la de AppError, y tiene que quedarse ahí: si
+  // se adelantara, se tragaría los 401 de negocio y la app perdería la
+  // diferencia entre "credenciales malas" y "sesión vencida".
+  it('no pisa los 401 de negocio, que conservan su código propio', () => {
+    const credenciales = hostFalso();
+    filtro.catch(Errors.invalidCredentials(), credenciales.host);
+    expect(credenciales.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 401,
+        error: 'INVALID_CREDENTIALS',
+      }),
+    );
+
+    const refresh = hostFalso();
+    filtro.catch(Errors.invalidRefreshToken(), refresh.host);
+    expect(refresh.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 401,
+        error: 'INVALID_REFRESH_TOKEN',
       }),
     );
   });

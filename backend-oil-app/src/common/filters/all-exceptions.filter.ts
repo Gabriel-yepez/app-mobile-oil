@@ -42,6 +42,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         error = 'VALIDATION_ERROR';
         message = 'Revisa los datos enviados.';
         details = Array.isArray(c.message) ? c.message : [String(c.message)];
+      } else if (status === HttpStatus.UNAUTHORIZED) {
+        // Lo lanza el guard de Passport, que no pasa por Errors: sin esta
+        // rama caía en la genérica de abajo y el usuario veía "Ocurrió un
+        // error inesperado" cuando lo único que pasaba es que no mandó token.
+        // Los 401 de negocio (INVALID_CREDENTIALS, INVALID_REFRESH_TOKEN) son
+        // AppError y ya salieron por la primera rama con su código propio.
+        error = 'UNAUTHORIZED';
+        message = 'Acceso no autorizado, falta token';
       } else if (status === HttpStatus.TOO_MANY_REQUESTS) {
         error = 'TOO_MANY_REQUESTS';
         message = 'Demasiados intentos. Espera un momento.';
