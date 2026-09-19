@@ -59,6 +59,32 @@ describe('useAuth', () => {
     expect(storage.clear).toHaveBeenCalled();
   });
 
+  // Encontrado probando a mano: el backend se reinició justo cuando la app
+  // arrancaba, /me falló por red, y la sesión se borró aunque el token era
+  // válido. En la vida real eso es abrir la app en el metro y quedarte fuera.
+  it('ante un fallo de RED conserva los tokens y no cierra la sesión', async () => {
+    storage.get.mockResolvedValue({ accessToken: 'a', refreshToken: 'r' });
+    api.me.mockRejectedValue(
+      new ApiError(0, 'NETWORK_ERROR', 'No pudimos conectar.'),
+    );
+
+    await useAuth.getState().bootstrap();
+
+    expect(useAuth.getState().status).toBe('guest');
+    // Lo que importa: el token sobrevive, así que el próximo arranque con
+    // conexión entra solo.
+    expect(storage.clear).not.toHaveBeenCalled();
+  });
+
+  it('ante un TIMEOUT tampoco borra los tokens', async () => {
+    storage.get.mockResolvedValue({ accessToken: 'a', refreshToken: 'r' });
+    api.me.mockRejectedValue(new ApiError(0, 'TIMEOUT', 'Tardó demasiado.'));
+
+    await useAuth.getState().bootstrap();
+
+    expect(storage.clear).not.toHaveBeenCalled();
+  });
+
   it('signIn guarda los tokens y deja la sesión abierta', async () => {
     api.login.mockResolvedValue({ user: usuario, accessToken: 'a', refreshToken: 'r' });
 
@@ -91,6 +117,9 @@ describe('useAuth', () => {
       cedula: 'V-25.481.073',
       email: 'luis@correo.com',
       phone: '+58 414 528 9012',
+      state: 'Distrito Capital',
+      city: 'Caracas',
+      currency: 'BOTH',
       password: 'contrasena1',
     });
 

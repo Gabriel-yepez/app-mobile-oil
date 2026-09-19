@@ -21,6 +21,10 @@ export type RegisterInput = {
   cedula: string;
   email: string;
   phone: string;
+  /** El registro los pide obligatoriamente: el perfil nace completo. */
+  state: string;
+  city: string;
+  currency: ApiUser['currency'];
   password: string;
 };
 

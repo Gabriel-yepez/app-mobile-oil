@@ -44,8 +44,16 @@ export const useAuth = create<AuthStore>((set) => ({
       // dispositivo. Solo /me confirma que la sesión sigue viva.
       const { user } = await authController.me();
       set({ user, status: 'authed', error: null });
-    } catch {
-      await tokenStorage.clear();
+    } catch (e) {
+      // Los tokens SOLO se borran si el servidor dijo que no valen. Ante un
+      // fallo de red o un timeout no sabemos nada del token: borrarlo echaría
+      // de su cuenta a quien abrió la app sin cobertura, con una credencial
+      // que seguía siendo buena. Conservándolos, el siguiente arranque con
+      // conexión recupera la sesión solo.
+      const loRechazoElServidor =
+        e instanceof ApiError && (e.status === 401 || e.status === 403);
+      if (loRechazoElServidor) await tokenStorage.clear();
+
       set({ status: 'guest', user: null });
     }
   },

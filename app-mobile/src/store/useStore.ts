@@ -58,8 +58,10 @@ export const useStore = create<Store>((set, get) => ({
 
   updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
 
-  // El registro no pide estado ni ciudad, así que llegan nulos: se conserva lo
-  // que ya hubiera en vez de borrarlo con un vacío.
+  // El registro ya pide estado y ciudad, así que para las cuentas nuevas
+  // siempre vienen. Las creadas antes los tienen en null, y ahí se muestra
+  // vacío a propósito: rellenar el hueco con el mock hacía que el usuario
+  // leyera una ciudad que nunca escribió, como si fuera suya.
   setProfileFromUser: (u) =>
     set((s) => ({
       profile: {
@@ -68,8 +70,8 @@ export const useStore = create<Store>((set, get) => ({
         cedula: u.cedula,
         email: u.email,
         phone: u.phone,
-        state: u.state ?? s.profile.state,
-        city: u.city ?? s.profile.city,
+        state: u.state ?? '',
+        city: u.city ?? '',
         currency: u.currency,
       },
     })),

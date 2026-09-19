@@ -150,6 +150,9 @@ describe('ApiClient (axios)', () => {
           cedula: 'V1',
           email: 'a@b.c',
           phone: '1',
+          state: 'Zulia',
+          city: 'Maracaibo',
+          currency: 'BOTH',
           password: 'x',
         })
       ).rejects.toMatchObject({
