@@ -134,3 +134,73 @@ describe('registrar un cambio de aceite', () => {
     });
   });
 });
+
+describe('registrar un cambio con id del cliente', () => {
+  let service: OilService;
+  let changes: InMemoryOilChangeRepository;
+  let odometer: InMemoryOdometerRepository;
+  let vehicleId: string;
+  const ID = '3f1c2b4a-0000-4000-8000-0000000000aa';
+
+  beforeEach(async () => {
+    const vehicles = new InMemoryVehicleRepository();
+    changes = new InMemoryOilChangeRepository();
+    odometer = new InMemoryOdometerRepository();
+    service = new OilService(
+      vehicles,
+      changes,
+      odometer,
+      new OilCycleService(vehicles, changes),
+    );
+    const v = await service.createVehicle('u1', {
+      kind: 'CAR',
+      brand: 'Toyota',
+      model: 'Corolla',
+      year: 2019,
+      plate: 'AB123CD',
+      color: '#111111',
+      kmPerDay: 30,
+    });
+    vehicleId = v.id;
+  });
+
+  it('usa el id que manda la app', async () => {
+    const c = await service.registerOilChange('u1', vehicleId, {
+      ...cambio(45_000, '2026-06-04T00:00:00Z'),
+      id: ID,
+    });
+    expect(c.id).toBe(ID);
+  });
+
+  it('el reintento NO abre un ciclo nuevo', async () => {
+    // Registrar dos veces el mismo cambio significaría reiniciar la barra sin
+    // que el usuario haya hecho nada: el peor síntoma de un reintento mal
+    // manejado.
+    const datos = { ...cambio(45_000, '2026-06-04T00:00:00Z'), id: ID };
+    await service.registerOilChange('u1', vehicleId, datos);
+    await service.registerOilChange('u1', vehicleId, datos);
+
+    expect(await changes.findByVehicle(vehicleId)).toHaveLength(1);
+  });
+
+  it('el reintento tampoco duplica la lectura de odómetro', async () => {
+    const datos = { ...cambio(45_000, '2026-06-04T00:00:00Z'), id: ID };
+    await service.registerOilChange('u1', vehicleId, datos);
+    await service.registerOilChange('u1', vehicleId, datos);
+
+    const estado = await service.getOilStatus(
+      'u1',
+      vehicleId,
+      new Date('2026-06-04T00:00:00Z'),
+    );
+    expect(estado.odometer?.km).toBe(45_000);
+  });
+
+  it('el cambio de un vehículo ajeno responde VEHICLE_NOT_FOUND', async () => {
+    const datos = { ...cambio(45_000, '2026-06-04T00:00:00Z'), id: ID };
+    await service.registerOilChange('u1', vehicleId, datos);
+    await expect(
+      service.registerOilChange('u2', vehicleId, datos),
+    ).rejects.toMatchObject({ response: { error: 'VEHICLE_NOT_FOUND' } });
+  });
+});

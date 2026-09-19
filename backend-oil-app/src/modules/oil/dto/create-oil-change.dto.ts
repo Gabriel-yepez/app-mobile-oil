@@ -7,12 +7,25 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Max,
   Min,
 } from 'class-validator';
 
 export class CreateOilChangeDto {
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: [
+      'Id generado por la app. Hace la creación **idempotente**: reenviar el',
+      'mismo id devuelve el cambio ya registrado en vez de abrir un ciclo',
+      'nuevo y reiniciar la barra sin motivo.',
+    ].join(' '),
+  })
+  @IsOptional()
+  @IsUUID('4')
+  id?: string;
+
   @ApiProperty({
     example: '2026-06-04T00:00:00.000Z',
     description:

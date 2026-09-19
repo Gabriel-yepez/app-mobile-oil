@@ -109,9 +109,30 @@ export class OilService {
   async registerOilChange(
     userId: string,
     vehicleId: string,
-    data: Omit<NewOilChange, 'vehicleId'>,
+    data: Omit<NewOilChange, 'vehicleId'> & { id?: string },
   ): Promise<OilChangeRecord> {
+    return (await this.registerOilChangeIdempotent(userId, vehicleId, data))
+      .change;
+  }
+
+  /** Igual, pero dice si registró o reusó, para que el controlador elija
+   *  entre 201 y 200. Ver createVehicleIdempotent. */
+  async registerOilChangeIdempotent(
+    userId: string,
+    vehicleId: string,
+    data: Omit<NewOilChange, 'vehicleId'> & { id?: string },
+  ): Promise<{ change: OilChangeRecord; created: boolean }> {
     await this.getOwnedVehicle(userId, vehicleId);
+
+    // Mismo motivo que en createVehicle, pero acá el duplicado es peor: serían
+    // dos ciclos abiertos y la barra reiniciada sin que el usuario tocara nada.
+    if (data.id) {
+      const existente = await this.changes.findById(data.id);
+      if (existente) {
+        await this.getOwnedVehicle(userId, existente.vehicleId);
+        return { change: existente, created: false };
+      }
+    }
 
     const anterior = await this.changes.findLatest(vehicleId);
     if (anterior && data.km < anterior.km) throw Errors.oilChangeBackwards();
@@ -124,7 +145,7 @@ export class OilService {
       source: 'OIL_CHANGE',
     });
     await this.cycle.syncVehicleCycle(vehicleId);
-    return creado;
+    return { change: creado, created: true };
   }
 
   /** El caso real: puso 48.000 y eran 45.000. */

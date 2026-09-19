@@ -133,17 +133,24 @@ export class VehiclesController {
     ].join(' '),
   })
   @ApiCreatedResponse({ description: 'El cambio registrado.' })
+  @ApiOkResponse({
+    description:
+      'El `id` ya existía: se devuelve el cambio tal cual. Es un reintento de la cola, no un ciclo nuevo.',
+  })
   @Post(':id/oil-changes')
   async registerChange(
     @CurrentUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateOilChangeDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.oil.registerOilChange(user.id, id, {
-      ...dto,
-      shop: dto.shop ?? null,
-      costUsd: dto.costUsd ?? null,
-    });
+    const { change, created } = await this.oil.registerOilChangeIdempotent(
+      user.id,
+      id,
+      { ...dto, shop: dto.shop ?? null, costUsd: dto.costUsd ?? null },
+    );
+    res.status(created ? HttpStatus.CREATED : HttpStatus.OK);
+    return change;
   }
 
   @ApiOperation({

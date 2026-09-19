@@ -34,8 +34,8 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
     return this.rows.get(id) ?? null;
   }
 
-  async create(data: NewOilChange): Promise<OilChangeRecord> {
-    const row: OilChangeRecord = { ...data, id: `oc${++this.seq}` };
+  async create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord> {
+    const row: OilChangeRecord = { ...data, id: data.id ?? `oc${++this.seq}` };
     this.rows.set(row.id, row);
     return row;
   }

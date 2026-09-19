@@ -55,7 +55,7 @@ export class PrismaOilChangeRepository implements OilChangeRepository {
     return row ? this.toDomain(row) : null;
   }
 
-  async create(data: NewOilChange): Promise<OilChangeRecord> {
+  async create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord> {
     const row = await this.prisma.oilChange.create({ data });
     return this.toDomain(row);
   }

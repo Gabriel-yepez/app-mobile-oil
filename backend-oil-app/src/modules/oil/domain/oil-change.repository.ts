@@ -22,7 +22,8 @@ export interface OilChangeRepository {
   findByVehicle(vehicleId: string, limit?: number): Promise<OilChangeRecord[]>;
   findLatest(vehicleId: string): Promise<OilChangeRecord | null>;
   findById(id: string): Promise<OilChangeRecord | null>;
-  create(data: NewOilChange): Promise<OilChangeRecord>;
+  /** `id` opcional: lo genera la app para poder registrar sin señal. */
+  create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord>;
   update(id: string, patch: Partial<NewOilChange>): Promise<OilChangeRecord>;
   remove(id: string): Promise<void>;
 }
