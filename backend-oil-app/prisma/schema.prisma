@@ -29,6 +29,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   refreshTokens RefreshToken[]
+  vehicles      Vehicle[]
 }
 
 model RefreshToken {
@@ -46,4 +47,99 @@ model RefreshToken {
   createdAt  DateTime  @default(now())
 
   @@index([userId])
+}
+
+enum VehicleKind {
+  CAR
+  MOTO
+}
+
+enum KmRateSource {
+  DECLARED
+  MEASURED
+}
+
+enum ReadingSource {
+  OIL_CHANGE
+  MANUAL
+}
+
+model Vehicle {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind  VehicleKind
+  brand String
+  model String
+  year  Int
+  plate String
+  color String
+
+  // Ritmo de uso: la base de la proyección del odómetro. Arranca declarado por
+  // el usuario y se recalibra solo con cada ciclo medido. Es un hecho del
+  // vehículo, no un estado derivado.
+  kmPerDay       Decimal      @db.Decimal(6, 2)
+  kmPerDaySource KmRateSource @default(DECLARED)
+
+  // Espejo del ciclo vigente. Derivable de la última fila de OilChange, se
+  // persiste para tener el ciclo actual en la ficha. OilCycleService es el
+  // ÚNICO que escribe estas cuatro: ni controladores, ni seeds.
+  lastChangeKm    Int?
+  lastChangeAt    DateTime?
+  nextChangeKm    Int?
+  nextChangeDueAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  oilChanges       OilChange[]
+  odometerReadings OdometerReading[]
+
+  @@unique([userId, plate])
+  @@index([userId])
+}
+
+model OilChange {
+  id        String  @id @default(uuid()) @db.Uuid
+  vehicleId String  @db.Uuid
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // Fecha real del cambio, que no es createdAt: se puede registrar hoy un
+  // cambio hecho la semana pasada.
+  changedAt DateTime
+  km        Int
+
+  // Los dos ejes del ciclo. Los escribe el usuario.
+  intervalKm     Int
+  intervalMonths Int
+
+  oilBrand     String
+  oilTag       String
+  oilViscosity String
+  oilSynthetic Boolean
+
+  shop    String?
+  costUsd Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId, changedAt(sort: Desc)])
+}
+
+model OdometerReading {
+  // La base de la proyección: cada cambio de aceite escribe también una de
+  // estas, así la estimación siempre parte de la última lectura real que
+  // existe, sin importar de dónde vino.
+  id        String  @id @default(uuid()) @db.Uuid
+  vehicleId String  @db.Uuid
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  km     Int
+  readAt DateTime
+  source ReadingSource
+
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId, readAt(sort: Desc)])
 }
