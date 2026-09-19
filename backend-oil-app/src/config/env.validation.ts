@@ -44,6 +44,14 @@ export class EnvVars {
   @IsOptional()
   @IsString()
   CORS_ORIGINS: string = '';
+
+  // Intentos de registro/login por minuto y por IP. Configurable porque los
+  // tests e2e crean más cuentas que eso en segundos: sin esta palanca, la
+  // única salida sería relajar el límite real o espaciar los tests.
+  @IsOptional()
+  @IsInt()
+  @Transform(({ value }) => Number(value ?? 5))
+  THROTTLE_AUTH_LIMIT: number = 5;
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvVars {

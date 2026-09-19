@@ -34,8 +34,12 @@ describe('PrismaUserRepository (integración)', () => {
     expect(creado.id).toBeTruthy();
     expect(creado.currency).toBe('BOTH');
     expect(creado.createdAt).toBeInstanceOf(Date);
-    await expect(repo.findByEmail(data.email)).resolves.toMatchObject({ id: creado.id });
-    await expect(repo.findById(creado.id)).resolves.toMatchObject({ email: data.email });
+    await expect(repo.findByEmail(data.email)).resolves.toMatchObject({
+      id: creado.id,
+    });
+    await expect(repo.findById(creado.id)).resolves.toMatchObject({
+      email: data.email,
+    });
   });
 
   it('devuelve null cuando no existe', async () => {

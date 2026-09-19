@@ -8,7 +8,10 @@ import { PASSWORD_HASHER, type PasswordHasher } from './domain/password-hasher';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
 import { toUserResponse, type UserResponse } from './dto/user-response.dto';
-import type { TokenPair, TokenService } from './token.service';
+// TokenService va como import de VALOR, no `import type`: la inyección de
+// dependencias necesita la clase en tiempo de ejecución y `import type` se
+// borra al compilar. TokenPair sí es solo un tipo.
+import { TokenService, type TokenPair } from './token.service';
 
 export type AuthResult = { user: UserResponse } & TokenPair;
 
