@@ -8,6 +8,9 @@ import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { AuthHero } from '../components/AuthHero';
 import { Btn, Card, Checkbox, Field, IconBtn, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
+import { useAuth } from '../store/auth';
+import { ApiError } from '../api/client';
+import { isEmail } from '../utils/validate';
 import { RootScreenProps } from '../navigation/types';
 
 export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
@@ -19,7 +22,36 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [accepted, setAccepted] = useState(true);
+  // Arranca SIN marcar: darlo por aceptado da por leído algo que el usuario
+  // no ha leído.
+  const [accepted, setAccepted] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const signUp = useAuth((s) => s.signUp);
+
+  const submit = async () => {
+    setError(null);
+
+    if (fullName.trim().length < 2) return setError('Escribe tu nombre completo.');
+    if (cedula.replace(/\D/g, '').length < 6) return setError('Escribe tu cédula.');
+    if (!isEmail(email)) return setError('Escribe un correo válido.');
+    if (phone.trim().length < 7) return setError('Escribe tu teléfono.');
+    if (password.length < 8)
+      return setError('La contraseña debe tener al menos 8 caracteres.');
+
+    setEnviando(true);
+    try {
+      // El "V-" es el prefijo visual del campo; se envía junto porque el
+      // backend normaliza igual "V-25.481.073" que "25481073".
+      await signUp({ fullName, cedula: `V-${cedula}`, email, phone, password });
+      navigation.replace('Tabs');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No pudimos conectar. Revisa tu conexión.');
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -101,14 +133,21 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
               </Txt>
             </Row>
 
+            {error ? (
+              <Txt fos={13} tone="danger" mt={2}>
+                {error}
+              </Txt>
+            ) : null}
+
             <Btn
               kind="primary"
               size="lg"
               style={{ marginTop: 6 }}
               iconRight={<Icon name="arrow" color={c.solidInk} size={20} />}
-              onPress={() => navigation.replace('Tabs')}
+              disabled={enviando || !accepted}
+              onPress={() => void submit()}
             >
-              Crear cuenta
+              {enviando ? 'Creando…' : 'Crear cuenta'}
             </Btn>
           </Card>
         </Box>
