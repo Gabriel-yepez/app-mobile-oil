@@ -14,6 +14,7 @@ import {
   Vehicle,
   VehicleStatus,
 } from '../data/mock';
+import type { ApiUser as AuthUser } from '../api/auth';
 
 // Computed selectors del README
 export const kmLeft = (v: Vehicle) => v.nextChange - v.km;
@@ -36,6 +37,8 @@ type Store = {
   addOilChange: (c: Omit<OilChange, 'id'>) => void;
   /** Parcial a propósito: la pantalla de editar manda solo lo que tocó. */
   updateProfile: (patch: Partial<Profile>) => void;
+  /** Vuelca el usuario autenticado sobre el perfil, al arrancar la sesión. */
+  setProfileFromUser: (u: AuthUser) => void;
   /** Editar un vehículo. No toca `oil` ni el historial: eso se cambia
    *  registrando un cambio de aceite, no editando la ficha. */
   updateVehicle: (id: string, patch: Partial<Omit<Vehicle, 'id'>>) => void;
@@ -54,6 +57,22 @@ export const useStore = create<Store>((set, get) => ({
   setActiveVehicle: (id) => set({ activeVehicleId: id }),
 
   updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
+
+  // El registro no pide estado ni ciudad, así que llegan nulos: se conserva lo
+  // que ya hubiera en vez de borrarlo con un vacío.
+  setProfileFromUser: (u) =>
+    set((s) => ({
+      profile: {
+        ...s.profile,
+        fullName: u.fullName,
+        cedula: u.cedula,
+        email: u.email,
+        phone: u.phone,
+        state: u.state ?? s.profile.state,
+        city: u.city ?? s.profile.city,
+        currency: u.currency,
+      },
+    })),
 
   updateVehicle: (id, patch) =>
     set((s) => ({ vehicles: s.vehicles.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),

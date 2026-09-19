@@ -1,5 +1,5 @@
 // Ruédalo — entry point: fuentes + tema del sistema + navegación
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,6 +11,8 @@ import config from './tamagui.config';
 import { useColorScheme, useNativeAppearance } from './src/ui';
 import { useThemePref } from './src/store/themePref';
 import { AppNavigator } from './src/navigation';
+import { useAuth } from './src/store/auth';
+import { useStore } from './src/store/useStore';
 import { useNotificationResponse, useNotificationsSync } from './src/notifications';
 
 export default function App() {
@@ -30,6 +32,21 @@ export default function App() {
   useNotificationsSync();
   useNotificationResponse();
 
+  // Sesión: lee el token del almacenamiento seguro y lo confirma contra /me.
+  // Va antes del return temprano por fuentes, como el resto de hooks.
+  const authStatus = useAuth((s) => s.status);
+  const user = useAuth((s) => s.user);
+  const bootstrap = useAuth((s) => s.bootstrap);
+  const setProfileFromUser = useStore((s) => s.setProfileFromUser);
+
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
+
+  useEffect(() => {
+    if (user) setProfileFromUser(user);
+  }, [user, setProfileFromUser]);
+
   const [fontsLoaded] = useFonts({
     Inter_500Medium,
     Inter_600SemiBold,
@@ -42,7 +59,10 @@ export default function App() {
   // Se espera también al tema guardado: si no, quien tenga "oscuro" ve un
   // destello claro en cada arranque. Es gratis — las fuentes tardan más que
   // leer una clave del almacenamiento.
-  if (!fontsLoaded || !themeHydrated) return null;
+  // Se espera también a la sesión, por el mismo motivo que al tema: decidir
+  // la ruta antes de saber si hay token haría que quien ya entró viera un
+  // destello del Login antes de saltar a Tabs.
+  if (!fontsLoaded || !themeHydrated || authStatus === 'loading') return null;
 
   return (
     // Raíz de gestos: por fuera de todo. Si falta, los gestos de
@@ -52,7 +72,7 @@ export default function App() {
         <Theme name={scheme}>
           <SafeAreaProvider>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <AppNavigator scheme={scheme} />
+            <AppNavigator scheme={scheme} authed={authStatus === 'authed'} />
           </SafeAreaProvider>
         </Theme>
       </TamaguiProvider>

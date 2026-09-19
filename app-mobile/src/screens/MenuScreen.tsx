@@ -11,6 +11,7 @@ import { Icon, IconName } from '../components/Icon';
 import { useStore, usePlan } from '../store/useStore';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { THEME_LABEL, useThemePref } from '../store/themePref';
+import { useAuth } from '../store/auth';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -40,6 +41,7 @@ export function MenuScreen() {
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
   const profile = useStore((s) => s.profile);
+  const signOut = useAuth((s) => s.signOut);
   const notifEnabled = useNotifPrefs((s) => s.prefs.enabled);
   const themePref = useThemePref((s) => s.pref);
   const plan = usePlan();
@@ -163,7 +165,14 @@ export function MenuScreen() {
             ser un destino raíz, el menú es el lugar donde se lo busca. */}
         <Box px="$lg" pt={18}>
           <Touchable
-            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
+            onPress={() => {
+              // Primero se cierra la sesión —revoca el refresh en el servidor
+              // y borra los tokens del dispositivo— y después se navega. Al
+              // revés, el Login aparecería con la sesión todavía viva.
+              void signOut().then(() =>
+                navigation.reset({ index: 0, routes: [{ name: 'Login' }] }),
+              );
+            }}
             transition="quick"
             h={48}
             fd="row"

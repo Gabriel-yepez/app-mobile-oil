@@ -117,3 +117,29 @@ src/
   las preferencias de notificación)
 - Push remoto (`getExpoPushTokenAsync` + backend) — requiere development build y EAS
 - Animaciones con `react-native-reanimated`
+
+## Backend
+
+La app necesita el backend corriendo (`../backend-oil-app`):
+
+```bash
+cd ../backend-oil-app
+docker compose up -d     # PostgreSQL (publica el 5433, no el 5432)
+pnpm start:dev
+```
+
+La URL sale de `app.json` → `expo.extra.apiUrl`.
+
+En **dispositivo físico** `localhost` es el propio teléfono, no tu Mac: hay que
+poner la IP de la red local (`ipconfig getifaddr en0`), por ejemplo
+`http://192.168.0.107:3000/api/v1`. En el simulador de iOS `localhost` sí
+funciona.
+
+### Sesión
+
+Los tokens viven en Keychain/Keystore vía `expo-secure-store` — un módulo
+nativo, así que tras instalarlo hace falta **rebuild del development build**
+(`npx expo run:ios` / `npx expo run:android`); no basta con recargar.
+
+`src/store/auth.ts` es la sesión real; `src/store/session.ts` sigue siendo solo
+el correo recordado del "Recordarme", nunca una credencial.
