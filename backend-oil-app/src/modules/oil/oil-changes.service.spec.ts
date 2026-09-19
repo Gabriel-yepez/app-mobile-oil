@@ -204,3 +204,75 @@ describe('registrar un cambio con id del cliente', () => {
     ).rejects.toMatchObject({ response: { error: 'VEHICLE_NOT_FOUND' } });
   });
 });
+
+describe('historial del vehículo', () => {
+  let service: OilService;
+  let vehicleId: string;
+
+  beforeEach(async () => {
+    const vehicles = new InMemoryVehicleRepository();
+    const changes = new InMemoryOilChangeRepository();
+    const odometer = new InMemoryOdometerRepository();
+    service = new OilService(
+      vehicles,
+      changes,
+      odometer,
+      new OilCycleService(vehicles, changes),
+    );
+    const v = await service.createVehicle('u1', {
+      kind: 'CAR',
+      brand: 'Toyota',
+      model: 'Corolla',
+      year: 2019,
+      plate: 'AB123CD',
+      color: '#111111',
+      kmPerDay: 30,
+    });
+    vehicleId = v.id;
+
+    for (const [fecha, km] of [
+      ['2025-06-04T00:00:00Z', 35_000],
+      ['2025-12-04T00:00:00Z', 40_000],
+      ['2026-06-04T00:00:00Z', 45_000],
+    ] as [string, number][]) {
+      await service.registerOilChange('u1', vehicleId, cambio(km, fecha));
+    }
+  });
+
+  it('devuelve del más nuevo al más viejo', async () => {
+    const { items } = await service.listOilChanges('u1', vehicleId);
+    expect(items.map((c) => c.km)).toEqual([45_000, 40_000, 35_000]);
+  });
+
+  it('sin más páginas, nextCursor es null', async () => {
+    const { nextCursor } = await service.listOilChanges('u1', vehicleId);
+    expect(nextCursor).toBeNull();
+  });
+
+  it('pagina con cursor', async () => {
+    const p1 = await service.listOilChanges('u1', vehicleId, { limit: 2 });
+    expect(p1.items.map((c) => c.km)).toEqual([45_000, 40_000]);
+    expect(p1.nextCursor).not.toBeNull();
+
+    const p2 = await service.listOilChanges('u1', vehicleId, {
+      limit: 2,
+      cursor: p1.nextCursor!,
+    });
+    expect(p2.items.map((c) => c.km)).toEqual([35_000]);
+    // La última página no ofrece otra: sin esto la app pagina para siempre.
+    expect(p2.nextCursor).toBeNull();
+  });
+
+  it('recorta un limit desmedido en vez de bajar la tabla entera', async () => {
+    const { items } = await service.listOilChanges('u1', vehicleId, {
+      limit: 100_000,
+    });
+    expect(items).toHaveLength(3);
+  });
+
+  it('no devuelve el historial de un vehículo ajeno', async () => {
+    await expect(service.listOilChanges('u2', vehicleId)).rejects.toMatchObject(
+      { response: { error: 'VEHICLE_NOT_FOUND' } },
+    );
+  });
+});

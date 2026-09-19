@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Query,
   Patch,
   Post,
   Res,
@@ -30,6 +31,10 @@ import {
   UpdateOilChangeDto,
 } from './dto/create-oil-change.dto';
 import { CreateOdometerReadingDto } from './dto/create-odometer-reading.dto';
+import {
+  ListOilChangesQueryDto,
+  OilChangePageDto,
+} from './dto/oil-change-response.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { OilStatusResponseDto } from './dto/oil-status-response.dto';
 import {
@@ -151,6 +156,21 @@ export class VehiclesController {
     );
     res.status(created ? HttpStatus.CREATED : HttpStatus.OK);
     return change;
+  }
+
+  @ApiOperation({
+    summary: 'Historial de cambios del vehículo',
+    description:
+      'Del más nuevo al más viejo, paginado por cursor. `nextCursor` en `null` significa que no hay más páginas.',
+  })
+  @ApiOkResponse({ type: OilChangePageDto })
+  @Get(':id/oil-changes')
+  async listChanges(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListOilChangesQueryDto,
+  ): Promise<OilChangePageDto> {
+    return this.oil.listOilChanges(user.id, id, query);
   }
 
   @ApiOperation({

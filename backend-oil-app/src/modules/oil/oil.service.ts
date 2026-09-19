@@ -11,6 +11,7 @@ import { OilCycleService } from './oil-cycle.service';
 import {
   OIL_CHANGE_REPOSITORY,
   type NewOilChange,
+  type OilChangePage,
   type OilChangeRecord,
   type OilChangeRepository,
 } from './domain/oil-change.repository';
@@ -172,6 +173,19 @@ export class OilService {
 
     await this.changes.remove(changeId);
     await this.cycle.syncVehicleCycle(existente.vehicleId);
+  }
+
+  /** Historial del vehículo, del más nuevo al más viejo. */
+  async listOilChanges(
+    userId: string,
+    vehicleId: string,
+    opts: { cursor?: string; limit?: number } = {},
+  ): Promise<OilChangePage> {
+    await this.getOwnedVehicle(userId, vehicleId);
+    // Tope duro: sin esto, un `limit=100000` es una descarga de toda la tabla
+    // disfrazada de consulta normal.
+    const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
+    return this.changes.findPage(vehicleId, { cursor: opts.cursor, limit });
   }
 
   /**

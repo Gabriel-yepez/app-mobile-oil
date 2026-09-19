@@ -17,10 +17,20 @@ export type OilChangeRecord = {
 
 export type NewOilChange = Omit<OilChangeRecord, 'id'>;
 
+export type OilChangePage = {
+  items: OilChangeRecord[];
+  /** Id del último elemento devuelto, o null si no hay más páginas. */
+  nextCursor: string | null;
+};
+
 export interface OilChangeRepository {
   /** Del más nuevo al más viejo. `limit` acota lo que baja de la base. */
   findByVehicle(vehicleId: string, limit?: number): Promise<OilChangeRecord[]>;
   findLatest(vehicleId: string): Promise<OilChangeRecord | null>;
+  findPage(
+    vehicleId: string,
+    opts: { cursor?: string; limit: number },
+  ): Promise<OilChangePage>;
   findById(id: string): Promise<OilChangeRecord | null>;
   /** `id` opcional: lo genera la app para poder registrar sin señal. */
   create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord>;

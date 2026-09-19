@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import type { OilChange as PrismaOilChange } from '@prisma/client';
 import type {
   NewOilChange,
+  OilChangePage,
   OilChangeRecord,
   OilChangeRepository,
 } from '../../modules/oil/domain/oil-change.repository';
@@ -48,6 +49,34 @@ export class PrismaOilChangeRepository implements OilChangeRepository {
       orderBy: { changedAt: 'desc' },
     });
     return row ? this.toDomain(row) : null;
+  }
+
+  /**
+   * Paginado por cursor. Se piden `limit + 1` filas a propósito: si vuelven de
+   * más, hay otra página — y así se evita un COUNT aparte sobre una tabla que
+   * crece con cada cambio registrado.
+   */
+  async findPage(
+    vehicleId: string,
+    opts: { cursor?: string; limit: number },
+  ): Promise<OilChangePage> {
+    const rows = await this.prisma.oilChange.findMany({
+      where: { vehicleId },
+      orderBy: { changedAt: 'desc' },
+      take: opts.limit + 1,
+      ...(opts.cursor
+        ? { cursor: { id: opts.cursor }, skip: 1 }
+        : {}),
+    });
+
+    const hayMas = rows.length > opts.limit;
+    const items = (hayMas ? rows.slice(0, opts.limit) : rows).map((r) =>
+      this.toDomain(r),
+    );
+    return {
+      items,
+      nextCursor: hayMas ? (items.at(-1)?.id ?? null) : null,
+    };
   }
 
   async findById(id: string): Promise<OilChangeRecord | null> {

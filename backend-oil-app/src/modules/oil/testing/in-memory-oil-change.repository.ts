@@ -1,5 +1,6 @@
 import type {
   NewOilChange,
+  OilChangePage,
   OilChangeRecord,
   OilChangeRepository,
 } from '../domain/oil-change.repository';
@@ -28,6 +29,22 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
 
   async findLatest(vehicleId: string): Promise<OilChangeRecord | null> {
     return this.ordenados(vehicleId)[0] ?? null;
+  }
+
+  async findPage(
+    vehicleId: string,
+    opts: { cursor?: string; limit: number },
+  ): Promise<OilChangePage> {
+    const todos = this.ordenados(vehicleId);
+    // El cursor es EXCLUSIVO, igual que en Prisma con skip: 1.
+    const desde = opts.cursor
+      ? todos.findIndex((r) => r.id === opts.cursor) + 1
+      : 0;
+    const ventana = todos.slice(desde, desde + opts.limit + 1);
+
+    const hayMas = ventana.length > opts.limit;
+    const items = hayMas ? ventana.slice(0, opts.limit) : ventana;
+    return { items, nextCursor: hayMas ? (items.at(-1)?.id ?? null) : null };
   }
 
   async findById(id: string): Promise<OilChangeRecord | null> {
