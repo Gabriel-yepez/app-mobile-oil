@@ -16,6 +16,9 @@ const registro = (over: Partial<RegisterDto> = {}): RegisterDto => ({
   cedula: 'V25481073',
   email: 'luis@correo.com',
   phone: '+58 414 528 9012',
+  state: 'Distrito Capital',
+  city: 'Caracas',
+  currency: 'BOTH',
   password: 'contrasena1',
   ...over,
 });
@@ -57,6 +60,30 @@ describe('AuthService', () => {
       await service.register(registro());
       const guardado = await users.findByEmail('luis@correo.com');
       expect(guardado?.passwordHash).toBe('hash:contrasena1');
+    });
+
+    // Antes el servicio escribía null/null/'BOTH' a pelo, así que el perfil
+    // nacía incompleto y la app tapaba el hueco con datos del mock: por eso un
+    // usuario recién registrado veía una ciudad que nunca había escrito.
+    it('guarda estado, ciudad y moneda tal como llegan del registro', async () => {
+      await service.register(
+        registro({ state: 'Zulia', city: 'Maracaibo', currency: 'USD' }),
+      );
+
+      const guardado = await users.findByEmail('luis@correo.com');
+      expect(guardado).toMatchObject({
+        state: 'Zulia',
+        city: 'Maracaibo',
+        currency: 'USD',
+      });
+    });
+
+    it('los devuelve en la respuesta, sin obligar a la app a pedir /me', async () => {
+      const r = await service.register(
+        registro({ state: 'Lara', city: 'Barquisimeto' }),
+      );
+
+      expect(r.user).toMatchObject({ state: 'Lara', city: 'Barquisimeto' });
     });
 
     it('rechaza correo duplicado con EMAIL_TAKEN', async () => {

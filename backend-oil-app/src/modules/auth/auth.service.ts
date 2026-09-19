@@ -49,9 +49,9 @@ export class AuthService {
       fullName: dto.fullName,
       phone: dto.phone,
       passwordHash: await this.hasher.hash(dto.password),
-      state: null,
-      city: null,
-      currency: 'BOTH',
+      state: dto.state,
+      city: dto.city,
+      currency: dto.currency,
     });
 
     return {

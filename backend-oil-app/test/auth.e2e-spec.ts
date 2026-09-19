@@ -10,12 +10,15 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
+import { PrismaService } from '../src/infra/prisma/prisma.service';
 
 const nuevo = () => ({
   fullName: 'Luis Guerrero',
   cedula: `V${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
   email: `luis-${Date.now()}-${Math.floor(Math.random() * 1e6)}@correo.com`,
   phone: '+58 414 528 9012',
+  state: 'Distrito Capital',
+  city: 'Caracas',
   password: 'contrasena1',
 });
 
@@ -23,7 +26,15 @@ const nuevo = () => ({
 // los tests, se tipan las dos formas de respuesta: así el test documenta el
 // contrato y un cambio de forma sale como error de tipos.
 type CuerpoAuth = {
-  user: { id: string; email: string; fullName: string; cedula: string };
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    cedula: string;
+    state: string | null;
+    city: string | null;
+    currency: 'USD' | 'BS' | 'BOTH';
+  };
   accessToken: string;
   refreshToken: string;
 };
@@ -34,6 +45,7 @@ const err = (r: request.Response): CuerpoError => r.body as CuerpoError;
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
+  let prisma: PrismaService;
   const http = () =>
     request(app.getHttpServer() as Parameters<typeof request>[0]);
 
@@ -52,6 +64,7 @@ describe('Auth (e2e)', () => {
     );
     app.useGlobalFilters(new AllExceptionsFilter());
     await app.init();
+    prisma = app.get(PrismaService);
   });
 
   afterAll(async () => {
@@ -196,7 +209,38 @@ describe('Auth (e2e)', () => {
       .expect((r) => expect(err(r).error).toBe('CEDULA_TAKEN'));
   });
 
-  it('/me sin token da 401', async () => {
-    await http().get('/api/v1/auth/me').expect(401);
+  it('/me sin token da 401 con UNAUTHORIZED', async () => {
+    await http()
+      .get('/api/v1/auth/me')
+      .expect(401)
+      .expect((r) => expect(err(r).error).toBe('UNAUTHORIZED'));
+  });
+
+  // Este es el único sitio donde se puede comprobar que el AppError lanzado
+  // DENTRO de JwtStrategy.validate atraviesa el guard de Passport sin que lo
+  // reemplacen por un 401 pelado. El test unitario de la estrategia la llama
+  // directo y nunca pasa por el guard, así que no vería una regresión acá.
+  it('token válido de una cuenta borrada da ACCOUNT_NOT_FOUND, no UNAUTHORIZED', async () => {
+    const reg = await http()
+      .post('/api/v1/auth/register')
+      .send(nuevo())
+      .expect(201);
+
+    // El token sigue firmado y sin vencer; lo que desaparece es la cuenta.
+    await prisma.user.delete({ where: { id: auth(reg).user.id } });
+
+    await http()
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${auth(reg).accessToken}`)
+      .expect(401)
+      .expect((r) => expect(err(r).error).toBe('ACCOUNT_NOT_FOUND'));
+
+    // Y refrescar tampoco sirve: los refresh cayeron en cascada con el
+    // usuario. Justo por eso la app necesita distinguir los dos códigos.
+    await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: auth(reg).refreshToken })
+      .expect(401)
+      .expect((r) => expect(err(r).error).toBe('INVALID_REFRESH_TOKEN'));
   });
 });
