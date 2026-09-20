@@ -46,28 +46,16 @@ export class BrandsService {
     const name = normalizarNombre(input.name);
     const nameKey = claveDeMarca(name);
 
-    // Idempotencia 1: la marca ya está en el catálogo. Es el caso más común —
-    // dos usuarios que manejan un Chery. No consume cupo porque no aporta
-    // ninguna fila nueva.
-    const porClave = await this.brands.findByKindAndKey(input.kind, nameKey);
-    if (porClave) return { brand: porClave, created: false };
+    // Las dos idempotencias —por nombre y por id— y el cupo se resuelven
+    // dentro del alta, en una sola operación atómica. Comprobarlas acá y
+    // después insertar dejaría un hueco entre la comprobación y el insert por
+    // el que se cuelan las peticiones simultáneas.
+    const r = await this.brands.createIfAbsent(
+      { id: input.id, kind: input.kind, name, nameKey, createdBy: userId },
+      { desde: new Date(now.getTime() - VENTANA_MS), tope: TOPE_DIARIO },
+    );
 
-    // Idempotencia 2: este id ya se envió. Es un reintento de la cola.
-    if (input.id) {
-      const porId = await this.brands.findById(input.id);
-      if (porId) return { brand: porId, created: false };
-    }
-
-    const desde = new Date(now.getTime() - VENTANA_MS);
-    const creadasHoy = await this.brands.countCreatedBy(userId, desde);
-    if (creadasHoy >= TOPE_DIARIO) throw Errors.brandLimitReached();
-
-    return this.brands.createIfAbsent({
-      id: input.id,
-      kind: input.kind,
-      name,
-      nameKey,
-      createdBy: userId,
-    });
+    if ('limiteAlcanzado' in r) throw Errors.brandLimitReached();
+    return r;
   }
 }

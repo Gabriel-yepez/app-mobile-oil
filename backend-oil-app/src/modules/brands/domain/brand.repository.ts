@@ -22,20 +22,26 @@ export type NewBrand = {
   createdBy: string;
 };
 
+/** Cuántas puede aportar el usuario y desde cuándo se cuenta. Lo decide el
+ *  servicio; el repositorio solo lo aplica sin que nada se cuele en el medio. */
+export type Cupo = { desde: Date; tope: number };
+
+export type ResultadoAlta =
+  | { brand: Brand; created: boolean }
+  | { limiteAlcanzado: true };
+
 export interface BrandRepository {
   /** Ordenadas por `name`. */
   findByKind(kind: VehicleKind): Promise<Brand[]>;
-  findById(id: string): Promise<Brand | null>;
-  findByKindAndKey(kind: VehicleKind, nameKey: string): Promise<Brand | null>;
-  /** Cuántas creó ese usuario desde `desde`. Para el tope diario. */
-  countCreatedBy(userId: string, desde: Date): Promise<number>;
+
   /**
-   * Inserta, o devuelve la que ya estaba si otra petición ganó la carrera.
+   * Crea la marca, salvo que ya exista o que el usuario haya agotado su cupo.
    *
-   * La carrera es real: dos usuarios agregando "Chery" a la vez pasan los dos
-   * el chequeo previo del servicio. Que se resuelva acá y no en el servicio es
-   * a propósito — atrapar la violación del índice único requiere conocer el
-   * código de error del motor, y eso no puede salir de la frontera.
+   * Las tres cosas —comprobar el nombre, comprobar el id, contar el cupo— van
+   * en la MISMA operación atómica que el insert. Separarlas deja un hueco:
+   * dos peticiones simultáneas cuentan cuatro cada una, las dos concluyen que
+   * hay lugar y las dos insertan. El tope se saltaría con un bucle en
+   * paralelo, que es exactamente contra lo que existe.
    */
-  createIfAbsent(data: NewBrand): Promise<{ brand: Brand; created: boolean }>;
+  createIfAbsent(data: NewBrand, cupo: Cupo): Promise<ResultadoAlta>;
 }

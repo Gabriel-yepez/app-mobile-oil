@@ -157,6 +157,34 @@ describe('Catálogo de marcas (e2e)', () => {
     expect(r.body).toMatchObject({ error: 'BRAND_NAME_INVALID' });
   });
 
+  // Regresión del TOCTOU: antes, contar el cupo y después insertar eran dos
+  // operaciones separadas, así que diez peticiones simultáneas contaban cero
+  // cada una y las diez insertaban. El tope se saltaba con un bucle en
+  // paralelo. Con el lock por usuario, exactamente cinco entran.
+  it('el tope aguanta diez peticiones simultáneas', async () => {
+    const token = await registrar();
+
+    const respuestas = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        http()
+          .post('/api/v1/brands')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ kind: 'CAR', name: `Rafaga${i}${sufijo}` }),
+      ),
+    );
+
+    const creadas = respuestas.filter((r) => r.status === 201).length;
+    const rechazadas = respuestas.filter((r) => r.status === 429).length;
+
+    expect(creadas).toBe(5);
+    expect(rechazadas).toBe(5);
+
+    const enBase = await prisma.brand.count({
+      where: { name: { startsWith: 'Rafaga' } },
+    });
+    expect(enBase).toBe(5);
+  });
+
   it('corta al sexto aporte del día', async () => {
     const token = await registrar();
     for (let i = 0; i < 5; i++) {
