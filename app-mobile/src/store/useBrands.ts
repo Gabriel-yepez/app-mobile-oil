@@ -22,7 +22,9 @@ import {
   leerMarcas,
   type MarcasPorTipo,
 } from '../data/local/store';
+import { avisoDeAlta, avisoDeFallo, type Aviso } from '../data/marcas/aviso';
 import { claveDeMarca, normalizarNombre } from '../data/marcas/nombre';
+import { toast } from './toast';
 import { encolar } from '../data/sync/queue';
 import type { QueueEntry } from '../data/sync/queue';
 import { drenar } from '../data/sync/runner';
@@ -72,6 +74,10 @@ export function unirMarcas(
     a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }),
   );
 }
+
+const mostrar = (aviso: Aviso) => {
+  if (aviso) toast[aviso.kind](aviso.text);
+};
 
 type Estado = {
   marcas: MarcasPorTipo;
@@ -162,7 +168,22 @@ export const useBrands = create<Estado>((set, get) => ({
         }));
       },
       api: {
-        crearMarca: brandsController.crearMarca.bind(brandsController),
+        // El aviso se engancha ACÁ y no en el runner: es feedback propio de
+        // las marcas y el runner no tiene por qué saber de toasts. Sale
+        // cuando el servidor contesta, que es el único momento en que se sabe
+        // si la marca se creó o si ya estaba.
+        crearMarca: async (id, kind, name) => {
+          try {
+            const r = await brandsController.crearMarca(id, kind, name);
+            mostrar(avisoDeAlta(r));
+            return r;
+          } catch (e) {
+            mostrar(avisoDeFallo(e));
+            // Se relanza: el runner decide qué hacer con la operación, y esa
+            // decisión no cambia porque hayamos avisado.
+            throw e;
+          }
+        },
       },
     });
 

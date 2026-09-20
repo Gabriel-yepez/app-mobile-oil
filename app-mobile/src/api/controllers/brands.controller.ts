@@ -11,7 +11,11 @@ export type ApiBrand = {
   nameKey: string;
 };
 
+/** Lo que devuelve el alta: la marca más si esta petición la creó. */
+export type ApiBrandCreada = ApiBrand & { created: boolean };
+
 type MarcaCruda = Omit<ApiBrand, 'kind'> & { kind: 'CAR' | 'MOTO' };
+type MarcaCreadaCruda = MarcaCruda & { created: boolean };
 
 const aDominio = (b: MarcaCruda): ApiBrand => ({
   ...b,
@@ -43,13 +47,12 @@ class BrandsController extends ApiClient {
     id: string,
     kind: VehicleKind,
     name: string,
-  ): Promise<ApiBrand> {
-    return aDominio(
-      await this.post<MarcaCruda>('', {
-        auth: true,
-        body: { id, kind: aBackend(kind), name },
-      }),
-    );
+  ): Promise<ApiBrandCreada> {
+    const cruda = await this.post<MarcaCreadaCruda>('', {
+      auth: true,
+      body: { id, kind: aBackend(kind), name },
+    });
+    return { ...aDominio(cruda), created: cruda.created };
   }
 }
 
