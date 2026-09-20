@@ -55,15 +55,37 @@ export function VehiclesScreen() {
         />
       </Row>
 
-      <Box mb="$lg" px="$xl">
-        <FilterChips chips={chips} value={filter} onChange={setFilter} />
-      </Box>
+      {/* Con el garaje vacío los tres chips marcan 0 y no hay nada que filtrar:
+          son ruido justo encima del mensaje que explica por qué no hay lista. */}
+      {vehicles.length > 0 ? (
+        <Box mb="$lg" px="$xl">
+          <FilterChips chips={chips} value={filter} onChange={setFilter} />
+        </Box>
+      ) : null}
 
       <Scroll
         bg="$bg3"
         contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Sin esto la lista vacía es una pantalla en blanco y parece que algo
+            falló. Se separa el garaje vacío del filtro sin resultados: son dos
+            situaciones distintas y no se arreglan con lo mismo. */}
+        {filtered.length === 0 ? (
+          <Col ai="center" py="$2xl">
+            <Row gap={8} br="$pill" bw={1} bc="$line" bg="$surfaceDim" px={14} py={8}>
+              <Icon name={filter === 'moto' ? 'moto' : 'car'} color={c.muted2} size={16} />
+              <Txt font="semi" fos={13} tone="muted">
+                {vehicles.length === 0
+                  ? 'Aún no tienes vehículos registrados'
+                  : filter === 'car'
+                    ? 'Aún no tienes carros registrados'
+                    : 'Aún no tienes motos registradas'}
+              </Txt>
+            </Row>
+          </Col>
+        ) : null}
+
         {filtered.map((v) => {
           // El estado lo calcula el backend y viaja con la lista: una sola
           // definición para toda la app, en vez de una por pantalla.
