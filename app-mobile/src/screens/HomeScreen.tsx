@@ -11,7 +11,8 @@ import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Avatar, VehicleThumb } from '../components/primitives';
 import { HeroSurface } from '../components/HeroSurface';
 import { Icon } from '../components/Icon';
-import { useActiveVehicle, useOpenAlerts, useStore } from '../store/useStore';
+import { useStore } from '../store/useStore';
+import { useActiveVehicle, useOpenAlerts, useVehicles } from '../store/useVehicles';
 import { useHomeLayout } from '../store/homeLayout';
 import { visibleWidgets } from '../home/layout';
 import { HOME_WIDGETS } from '../home/registry';
@@ -23,9 +24,9 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
-  const vehicles = useStore((s) => s.vehicles);
+  const vehicles = useVehicles((s) => s.vehicles);
   const profile = useStore((s) => s.profile);
-  const setActiveVehicle = useStore((s) => s.setActiveVehicle);
+  const setActiveVehicle = useVehicles((s) => s.setActiveVehicle);
   const active = useActiveVehicle();
   const openAlerts = useOpenAlerts();
   const layout = useHomeLayout((s) => s.layout);
@@ -121,13 +122,22 @@ export function HomeScreen() {
           px="$md"
           py={10}
         >
-          <VehicleThumb kind={active.kind} color={active.color} size={36} />
+          {/* Cuenta nueva sin vehículos: con data mock este caso no existía
+              —siempre había tres— pero con backend real es el primer estado
+              que ve todo usuario. */}
+          <VehicleThumb
+            kind={active?.kind ?? 'car'}
+            color={active?.color ?? '#1E3A8A'}
+            size={36}
+          />
           <Col f={1}>
             <Txt font="bold" fos={14} tone="onDark">
-              {active.brand} {active.model}
+              {active ? `${active.brand} ${active.model}` : 'Agregar vehículo'}
             </Txt>
             <Txt font="monoMed" fos={11} col="rgba(255,255,255,0.65)">
-              {active.plate} · {active.year}
+              {active
+                ? `${active.plate} · ${active.year}`
+                : 'Todavía no tienes ninguno'}
             </Txt>
           </Col>
           <Icon name="chevD" color="rgba(255,255,255,0.7)" size={20} />
@@ -281,7 +291,7 @@ export function HomeScreen() {
                           {item.plate} · {item.year}
                         </Txt>
                       </Col>
-                      {item.id === active.id ? <Icon name="check" color={c.accent} size={18} /> : null}
+                      {item.id === active?.id ? <Icon name="check" color={c.accent} size={18} /> : null}
                     </Touchable>
                   )}
                   ListEmptyComponent={

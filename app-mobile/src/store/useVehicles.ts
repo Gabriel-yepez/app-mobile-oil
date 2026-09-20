@@ -56,6 +56,7 @@ const fichaLocal = (id: string, input: NewVehicleInput): ApiVehicle => ({
   ...input,
   kmPerDaySource: 'DECLARED',
   lastChangeKm: null,
+  lastChangeAt: null,
   nextChangeKm: null,
   // Sin ciclo todavía: la tarjeta muestra el CTA de registrar el primer cambio.
   gauge: null,
@@ -132,6 +133,7 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
             ? {
                 ...v,
                 lastChangeKm: input.km,
+                lastChangeAt: input.changedAt,
                 nextChangeKm: input.km + input.intervalKm,
                 odometer: {
                   km: input.km,
@@ -203,6 +205,15 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
     },
   };
 });
+
+/** Cuántos vehículos necesitan atención, según el estado que calcula el
+ *  backend. Un vehículo sin ciclo no cuenta: no hay nada que vencer todavía. */
+export const useOpenAlerts = (): number =>
+  useVehicles(
+    (s) =>
+      s.vehicles.filter((v) => v.gauge !== null && v.gauge.status !== 'ok')
+        .length,
+  );
 
 /** El vehículo activo, o null mientras no haya ninguno. */
 export const useActiveVehicle = (): ApiVehicle | null =>

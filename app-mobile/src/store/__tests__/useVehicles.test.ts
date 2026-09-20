@@ -38,6 +38,7 @@ const remoto = (id: string, plate = 'AB123CD'): ApiVehicle => ({
   plate,
   kmPerDaySource: 'MEASURED',
   lastChangeKm: 45_000,
+  lastChangeAt: '2026-06-04T00:00:00.000Z',
   nextChangeKm: 50_000,
   gauge: {
     pct: 62,

@@ -19,6 +19,7 @@ export type ApiVehicle = {
   kmPerDay: number;
   kmPerDaySource: 'DECLARED' | 'MEASURED';
   lastChangeKm: number | null;
+  lastChangeAt: string | null;
   nextChangeKm: number | null;
   /** Viene con la lista para que la flota sea una sola llamada. */
   gauge: Gauge | null;

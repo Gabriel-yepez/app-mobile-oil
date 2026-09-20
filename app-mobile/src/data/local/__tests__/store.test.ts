@@ -20,6 +20,7 @@ const vehiculo = (id: string): ApiVehicle => ({
   kmPerDay: 30,
   kmPerDaySource: 'DECLARED',
   lastChangeKm: 45_000,
+  lastChangeAt: '2026-06-04T00:00:00.000Z',
   nextChangeKm: 50_000,
   gauge: null,
   odometer: null,

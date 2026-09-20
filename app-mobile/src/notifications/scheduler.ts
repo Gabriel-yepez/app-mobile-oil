@@ -5,7 +5,7 @@
 // de más es inofensivo.
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { useStore } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { ensureChannel } from './channels';
 import { isPermissionGranted } from './permissions';
@@ -61,7 +61,7 @@ export async function syncNotifications(): Promise<SyncResult> {
   await ensureChannel();
 
   const planned = buildSchedule({
-    vehicles: useStore.getState().vehicles,
+    vehicles: useVehicles.getState().vehicles,
     prefs: useNotifPrefs.getState().prefs,
     permissionGranted: await isPermissionGranted(),
     now: new Date(),

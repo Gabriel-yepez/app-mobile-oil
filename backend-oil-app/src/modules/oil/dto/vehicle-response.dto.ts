@@ -22,6 +22,12 @@ export class VehicleResponseDto {
   kmPerDaySource!: 'DECLARED' | 'MEASURED';
 
   @ApiProperty({ nullable: true }) lastChangeKm!: number | null;
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Fecha del último cambio. La app deriva de acá los "días desde el último cambio" en vez de mantener un contador propio.',
+  })
+  lastChangeAt!: Date | null;
   @ApiProperty({ nullable: true }) nextChangeKm!: number | null;
 
   // El estado viaja con la lista para que la pantalla de la flota sea UNA
@@ -47,6 +53,7 @@ export function toVehicleResponse(v: Vehicle): VehicleResponseDto {
     kmPerDay: v.kmPerDay,
     kmPerDaySource: v.kmPerDaySource,
     lastChangeKm: v.lastChangeKm,
+    lastChangeAt: v.lastChangeAt,
     nextChangeKm: v.nextChangeKm,
     // Los rellena listVehiclesWithStatus; la ficha sola no los conoce.
     gauge: null,
