@@ -313,11 +313,47 @@ type SelectProps = {
   placeholder?: string;
   options: string[];
   onChange?: (value: string) => void;
+  /** Campo de búsqueda arriba de la lista. Para catálogos que crecen. */
+  searchable?: boolean;
+  /**
+   * Habilita la fila "+ Agregar «X»" al final, cuando lo escrito no calza
+   * exacto con ninguna opción. `Select` NO sabe qué es lo que se agrega: la
+   * pantalla que lo usa decide qué hacer con el texto.
+   */
+  onAddNew?: (texto: string) => void;
 };
 
-export function Select({ value, placeholder = 'Seleccionar', options, onChange }: SelectProps) {
+export function Select({
+  value,
+  placeholder = 'Seleccionar',
+  options,
+  onChange,
+  searchable = false,
+  onAddNew,
+}: SelectProps) {
   const [open, setOpen] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const c = useAppColors();
+
+  const escrito = busqueda.trim();
+  const enMinuscula = escrito.toLocaleLowerCase('es');
+
+  const visibles = escrito
+    ? options.filter((o) => o.toLocaleLowerCase('es').includes(enMinuscula))
+    : options;
+
+  // Solo se ofrece agregar si lo escrito no es ya una opción. La comparación
+  // es laxa (sin mayúsculas ni espacios de más) para no ofrecer "Agregar
+  // «toyota»" cuando Toyota está tres filas más arriba.
+  const yaExiste = options.some(
+    (o) => o.trim().toLocaleLowerCase('es') === enMinuscula,
+  );
+  const puedeAgregar = Boolean(onAddNew) && escrito.length > 0 && !yaExiste;
+
+  const cerrar = () => {
+    setBusqueda('');
+    setOpen(false);
+  };
 
   return (
     <>
@@ -340,8 +376,8 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
         <Icon name="chevD" color={c.muted} size={20} />
       </Touchable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={cerrar}>
+        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={cerrar}>
           <Box
             maxHeight={420}
             borderTopLeftRadius="$xl"
@@ -351,9 +387,42 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
             transition="bouncy"
             enterStyle={{ y: 40, opacity: 0 }}
           >
+            {searchable ? (
+              <Box px="$2xl" pb="$sm">
+                <Input
+                  value={busqueda}
+                  onChangeText={setBusqueda}
+                  placeholder="Buscar"
+                  autoCapitalize="words"
+                />
+              </Box>
+            ) : null}
+
             <FlatList
-              data={options}
+              data={visibles}
               keyExtractor={(o) => o}
+              keyboardShouldPersistTaps="handled"
+              ListFooterComponent={
+                puedeAgregar ? (
+                  <Touchable
+                    fd="row"
+                    ai="center"
+                    gap="$sm"
+                    px="$2xl"
+                    py={15}
+                    pressStyle={{ bg: '$bg2' }}
+                    onPress={() => {
+                      onAddNew?.(escrito);
+                      cerrar();
+                    }}
+                  >
+                    <Icon name="plus" color={c.accent} size={18} />
+                    <Txt f={1} fos={15} font="semi" tone="accent">
+                      Agregar «{escrito}»
+                    </Txt>
+                  </Touchable>
+                ) : null
+              }
               renderItem={({ item }) => {
                 const selected = item === value;
                 return (
@@ -365,7 +434,7 @@ export function Select({ value, placeholder = 'Seleccionar', options, onChange }
                     pressStyle={{ bg: '$bg2' }}
                     onPress={() => {
                       onChange?.(item);
-                      setOpen(false);
+                      cerrar();
                     }}
                   >
                     <Txt f={1} fos={15} font={selected ? 'bold' : 'sans'} tone={selected ? 'accent' : 'ink'}>
