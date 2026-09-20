@@ -62,6 +62,14 @@ describe('BrandsService.create', () => {
     ).rejects.toMatchObject({ response: { error: 'BRAND_NAME_INVALID' } });
   });
 
+  it('rechaza un nombre con una grosería', async () => {
+    const { repo, service } = armar();
+    await expect(
+      service.create(USUARIO, { kind: 'CAR', name: 'Toyota Mierda' }, AHORA),
+    ).rejects.toMatchObject({ response: { error: 'BRAND_NAME_INVALID' } });
+    expect(repo.filas).toHaveLength(0);
+  });
+
   it('deja pasar la quinta del día y rechaza la sexta', async () => {
     const { service } = armar();
     for (const n of ['Chery', 'JAC', 'BYD', 'Dongfeng', 'Foton']) {

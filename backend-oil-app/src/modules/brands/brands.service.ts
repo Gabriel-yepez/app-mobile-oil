@@ -6,6 +6,7 @@ import {
   nombreValido,
   normalizarNombre,
 } from './domain/brand-name';
+import { contieneGroseria } from './domain/palabras-vetadas';
 import {
   BRAND_REPOSITORY,
   type Brand,
@@ -42,6 +43,11 @@ export class BrandsService {
     now: Date = new Date(),
   ): Promise<{ brand: Brand; created: boolean }> {
     if (!nombreValido(input.name)) throw Errors.brandNameInvalid();
+
+    // Mismo error que el charset, a propósito: la app no necesita distinguir
+    // los dos casos, y quien esté tanteando el filtro no se entera de cuál de
+    // las dos reglas le pegó, así que no puede iterar contra esta en concreto.
+    if (contieneGroseria(input.name)) throw Errors.brandNameInvalid();
 
     const name = normalizarNombre(input.name);
     const nameKey = claveDeMarca(name);

@@ -185,6 +185,23 @@ describe('Catálogo de marcas (e2e)', () => {
     expect(enBase).toBe(5);
   });
 
+  it('rechaza una grosería y no la deja en el catálogo', async () => {
+    const token = await registrar();
+    const sucia = `Mierda${sufijo}`;
+
+    const r = await http()
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ kind: 'CAR', name: sucia })
+      .expect(422);
+
+    // Mismo código que el charset: no se le dice cuál regla le pegó.
+    expect(r.body).toMatchObject({ error: 'BRAND_NAME_INVALID' });
+
+    const enBase = await prisma.brand.count({ where: { name: sucia } });
+    expect(enBase).toBe(0);
+  });
+
   it('corta al sexto aporte del día', async () => {
     const token = await registrar();
     for (let i = 0; i < 5; i++) {
