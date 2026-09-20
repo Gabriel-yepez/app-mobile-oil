@@ -143,3 +143,40 @@ describe('esperaMs', () => {
     expect(esperaMs(10)).toBe(60_000);
   });
 });
+
+describe('CREATE_BRAND', () => {
+  const marca = (id: string, name: string): QueueOp => ({
+    op: 'CREATE_BRAND',
+    id,
+    kind: 'car',
+    payload: { name },
+  });
+
+  it('se agrega al final sin colapsar con nada', () => {
+    let cola = encolar([], marca('m1', 'Chery'));
+    cola = encolar(cola, marca('m2', 'JAC'));
+
+    expect(cola).toHaveLength(2);
+    expect(cola.map((e) => e.op.op)).toEqual(['CREATE_BRAND', 'CREATE_BRAND']);
+  });
+
+  it('sobrevive el ida y vuelta sin perder el kind ni el nombre', () => {
+    const cola = encolar([], marca('m1', 'Chery'));
+    expect(cola[0].op).toMatchObject({
+      op: 'CREATE_BRAND',
+      id: 'm1',
+      kind: 'car',
+      payload: { name: 'Chery' },
+    });
+  });
+
+  // `encolar` descarta entradas "del vehículo" al borrarlo, y esDelVehiculo
+  // mira `'vehicleId' in op` y los ids de CREATE/UPDATE_VEHICLE. Una marca no
+  // debe caer nunca en ese filtro.
+  it('borrar un vehículo no se lleva marcas pendientes por delante', () => {
+    let cola = encolar([], marca('m1', 'Chery'));
+    cola = encolar(cola, { op: 'DELETE_VEHICLE', id: 'v1' });
+
+    expect(cola.some((e) => e.op.op === 'CREATE_BRAND')).toBe(true);
+  });
+});
