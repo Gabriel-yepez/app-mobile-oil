@@ -3,7 +3,10 @@
 import { Injectable } from '@nestjs/common';
 import type { User as PrismaUser } from '@prisma/client';
 import type { NewUser, User } from '../../modules/users/domain/user';
-import type { UserRepository } from '../../modules/users/domain/user.repository';
+import type {
+  UserProfilePatch,
+  UserRepository,
+} from '../../modules/users/domain/user.repository';
 import { PrismaService } from './prisma.service';
 
 @Injectable()
@@ -46,5 +49,14 @@ export class PrismaUserRepository implements UserRepository {
 
   async create(data: NewUser): Promise<User> {
     return this.toDomain(await this.prisma.user.create({ data }));
+  }
+
+  // `data` recibe el patch tal cual: Prisma solo escribe las claves presentes,
+  // así que las que el usuario no tocó ni se mencionan en el UPDATE. El
+  // `updatedAt` lo mueve el @updatedAt del esquema.
+  async update(id: string, patch: UserProfilePatch): Promise<User> {
+    return this.toDomain(
+      await this.prisma.user.update({ where: { id }, data: patch }),
+    );
   }
 }

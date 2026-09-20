@@ -51,3 +51,33 @@ export class MeResponseDto {
   @ApiProperty({ type: UserResponseDto })
   user!: UserResponseDto;
 }
+
+/**
+ * `PATCH /auth/me`: el usuario ya actualizado, más un acuse legible.
+ *
+ * El `message` viaja en el ÉXITO y no solo en los errores porque es lo que la
+ * app enseña en el toast. Sin él, cada cliente redactaría su propio "Guardado"
+ * y el mismo backend hablaría distinto en Android, en iOS y en la web; y el
+ * caso de "guardé sin tocar nada" —que no es un error, pero tampoco un
+ * cambio— no tendría cómo contarse.
+ */
+export class UpdateMeResponseDto extends MeResponseDto {
+  @ApiProperty({
+    example: 'Listo, tus datos quedaron actualizados.',
+    description:
+      'Texto para mostrarle al usuario tal cual. Puede cambiar de redacción ' +
+      'sin previo aviso: para decidir en código, mira `changed`.',
+  })
+  message!: string;
+
+  @ApiProperty({
+    type: [String],
+    example: ['phone', 'city'],
+    description:
+      'Los campos que cambiaron de verdad, ya normalizados. Viene **vacío** ' +
+      'si el cuerpo no traía ninguna diferencia: la app puede mandar el ' +
+      'formulario entero sin saber qué tocó el usuario, y el servidor no ' +
+      'escribe nada en ese caso.',
+  })
+  changed!: string[];
+}

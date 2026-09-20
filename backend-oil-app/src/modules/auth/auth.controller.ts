@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -24,11 +25,14 @@ import {
   ERRORES_COMUNES,
 } from '../../common/swagger/api-error-response.decorator';
 import type { User } from '../users/domain/user';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto';
+import { ProfileService } from '../users/profile.service';
 import { AuthService } from './auth.service';
 import {
   AuthResponseDto,
   MeResponseDto,
   TokenPairDto,
+  UpdateMeResponseDto,
 } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -45,7 +49,10 @@ import type { TokenPair } from './token.service';
 @ApiTags('Autenticación')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly profile: ProfileService,
+  ) {}
 
   @ApiOperation({
     summary: 'Crear una cuenta',
@@ -396,5 +403,118 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: User): { user: UserResponse } {
     return { user: toUserResponse(user) };
+  }
+
+  @ApiOperation({
+    summary: 'Editar el perfil de la sesión actual',
+    description: [
+      'Cambia los datos de la cuenta propia. **Es un PATCH**: manda solo lo',
+      'que quieras cambiar y lo que no venga se queda como está. Un cuerpo',
+      'vacío es válido y no escribe nada.',
+      '',
+      'Va en `/auth/me` y no en una ruta aparte porque es el MISMO recurso',
+      'que devuelve el `GET`: el usuario de la sesión. Por eso responde con',
+      'la misma forma —`{ "user": ... }`— y la app puede reusar el mismo',
+      'lector para las dos.',
+      '',
+      '**Qué se puede cambiar:** nombre, correo, teléfono, estado, ciudad y',
+      'moneda. **Qué no:** la cédula, porque identifica la cuenta y cambiarla',
+      'es un trámite de verificación; y la contraseña, que necesita la',
+      'anterior por delante y cierre de sesiones por detrás. Mandar',
+      'cualquiera de las dos rebota con 400: el cuerpo se valida por lista',
+      'blanca, así que un campo de más es un error y no algo que se ignore en',
+      'silencio.',
+      '',
+      'El estado, la ciudad y el correo **se normalizan igual que en el',
+      'registro** —mayúscula inicial por palabra, minúsculas en el correo— y',
+      'lo que vuelve en `user` es el valor ya guardado, que puede no ser',
+      'literalmente el que mandaste. Píntalo de vuelta en el formulario.',
+      '',
+      'Solo se escriben los campos que **cambian de verdad**. La pantalla no',
+      'tiene por qué saber cuáles tocó el usuario, así que puede mandar el',
+      'formulario completo: reenviar tu propio correo sin modificarlo no es',
+      'un conflicto, es un cambio vacío. `changed` dice qué se movió.',
+      '',
+      '`message` es texto listo para enseñarle al usuario —la app lo saca en',
+      'un toast—. Distingue el guardado real del guardado sin cambios, que',
+      'para el usuario no son lo mismo aunque los dos sean un 200.',
+      '',
+      '**Límite:** se salta el limitador estricto; solo aplica el general.',
+    ].join('\n'),
+  })
+  @ApiBearerAuth('access-token')
+  @ApiBody({ type: UpdateProfileDto })
+  @ApiOkResponse({
+    description:
+      'Perfil guardado. Viene el usuario completo ya actualizado, no solo ' +
+      'los campos que mandaste.',
+    type: UpdateMeResponseDto,
+  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'El cuerpo no pasó la validación, o traía un campo que no se puede ' +
+      'editar (`cedula`, `password`).',
+    {
+      formato: {
+        resumen: 'algún campo no cumple su regla',
+        error: 'VALIDATION_ERROR',
+        message: 'Revisa los datos enviados.',
+        details: ['El teléfono no tiene un formato válido'],
+      },
+      camposDeMas: ERRORES_COMUNES.camposDeMas,
+    },
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNAUTHORIZED,
+    'Los mismos cuatro motivos que el `GET`: ante `TOKEN_EXPIRED` refresca y ' +
+      'reintenta; ante los otros tres, al login.',
+    {
+      vencido: ERRORES_COMUNES.vencido,
+      sinToken: ERRORES_COMUNES.sinToken,
+      malFirmado: ERRORES_COMUNES.malFirmado,
+      cuentaBorrada: ERRORES_COMUNES.cuentaBorrada,
+    },
+  )
+  @ApiErrorResponse(
+    HttpStatus.CONFLICT,
+    'El correo nuevo ya tiene cuenta. **Mandar el tuyo propio sin cambiarlo ' +
+      'no entra acá**: se descarta antes por no ser un cambio.',
+    {
+      correo: {
+        resumen: 'ese correo es de otra cuenta',
+        error: 'EMAIL_TAKEN',
+        message: 'Ese correo ya tiene una cuenta.',
+      },
+    },
+  )
+  @ApiErrorResponse(
+    HttpStatus.TOO_MANY_REQUESTS,
+    'Se pasó del límite general de 100 peticiones por minuto y por IP.',
+    { limite: ERRORES_COMUNES.limite },
+  )
+  @ApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, 'Falla inesperada.', {
+    interno: ERRORES_COMUNES.interno,
+  })
+  @SkipThrottle({ auth: true })
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  async updateMe(
+    @CurrentUser() user: User,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<UpdateMeResponseDto> {
+    const { user: actualizado, changed } = await this.profile.updateProfile(
+      user,
+      dto,
+    );
+
+    return {
+      user: toUserResponse(actualizado),
+      changed,
+      // El texto se arma acá y no en el servicio: es presentación, y el
+      // servicio no debería saber que existe una pantalla.
+      message: changed.length
+        ? 'Listo, tus datos quedaron actualizados.'
+        : 'No había nada que cambiar.',
+    };
   }
 }

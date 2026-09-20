@@ -6,7 +6,10 @@
 // y el fallo sale en `tsc`, no en una ejecución de tests a medias.
 import { randomUUID } from 'node:crypto';
 import type { NewUser, User } from '../domain/user';
-import type { UserRepository } from '../domain/user.repository';
+import type {
+  UserProfilePatch,
+  UserRepository,
+} from '../domain/user.repository';
 
 export class InMemoryUserRepository implements UserRepository {
   private readonly users = new Map<string, User>();
@@ -42,5 +45,17 @@ export class InMemoryUserRepository implements UserRepository {
     };
     this.users.set(user.id, user);
     return Promise.resolve(user);
+  }
+
+  update(id: string, patch: UserProfilePatch): Promise<User> {
+    const actual = this.users.get(id);
+    // El servicio comprueba la existencia antes de llamar, así que llegar acá
+    // sin usuario es un fallo de programación, no un caso de negocio: se
+    // revienta en vez de devolver null y arrastrar el problema más lejos.
+    if (!actual) throw new Error(`No existe el usuario ${id}`);
+
+    const actualizado: User = { ...actual, ...patch, updatedAt: new Date() };
+    this.users.set(id, actualizado);
+    return Promise.resolve(actualizado);
   }
 }
