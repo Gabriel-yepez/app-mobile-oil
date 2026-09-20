@@ -38,6 +38,7 @@ import Sparkles from 'lucide-react-native/icons/sparkles';
 import SunMoon from 'lucide-react-native/icons/sun-moon';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import Trash from 'lucide-react-native/icons/trash';
+import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import User from 'lucide-react-native/icons/user';
 import X from 'lucide-react-native/icons/x';
 import type { LucideIcon } from 'lucide-react-native';
@@ -75,6 +76,7 @@ export type IconName =
   | 'sliders'
   | 'grip'
   | 'help'
+  | 'alert'
   | 'theme';
 
 export const ICONS: Record<IconName, LucideIcon> = {
@@ -110,6 +112,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   sliders: SlidersHorizontal,
   grip: GripVertical,
   help: CircleQuestionMark,
+  alert: TriangleAlert,
   theme: SunMoon,
 };
 

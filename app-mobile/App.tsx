@@ -11,6 +11,7 @@ import config from './tamagui.config';
 import { useColorScheme, useNativeAppearance } from './src/ui';
 import { useThemePref } from './src/store/themePref';
 import { AppNavigator } from './src/navigation';
+import { ToastHost } from './src/components/Toast';
 import { useAuth } from './src/store/auth';
 import { useStore } from './src/store/useStore';
 import { useVehicles } from './src/store/useVehicles';
@@ -111,6 +112,9 @@ export default function App() {
           <SafeAreaProvider>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <AppNavigator scheme={scheme} authed={authStatus === 'authed'} />
+            {/* Después del navegador y dentro del SafeAreaProvider: así se
+                pinta por encima de cualquier pantalla y conoce el notch. */}
+            <ToastHost />
           </SafeAreaProvider>
         </Theme>
       </TamaguiProvider>
