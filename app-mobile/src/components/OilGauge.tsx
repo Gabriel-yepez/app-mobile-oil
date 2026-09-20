@@ -14,17 +14,37 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 type Props = {
   pct?: number;
   kmLeft?: number;
+  /** Días restantes por el eje de tiempo. Se muestra cuando ese eje manda. */
+  daysLeft?: number;
+  /**
+   * Qué eje está por vencerse. Decide QUÉ número va en el centro: a un carro
+   * parado al que se le vence el aceite por tiempo, mostrarle los km que le
+   * sobran es tranquilizarlo con el número equivocado.
+   */
+  limitedBy?: 'km' | 'time';
+  /**
+   * El estado lo calcula el backend y llega por prop. Antes se derivaba acá
+   * de `pct`, con un corte distinto al del store: el mismo vehículo al 10% se
+   * pintaba amarillo en la lista y rojo acá.
+   */
+  status?: VehicleStatus;
   size?: number;
 };
 
-export function OilGauge({ pct = 70, kmLeft = 1840, size = 220 }: Props) {
+export function OilGauge({
+  pct = 70,
+  kmLeft = 1840,
+  daysLeft = 0,
+  limitedBy = 'km',
+  status = 'ok',
+  size = 220,
+}: Props) {
   const start = -225;
   const total = 270;
   const r = (size - 28) / 2;
   const cx = size / 2;
   const cy = size / 2;
   const clamped = Math.max(0, Math.min(1, pct / 100));
-  const status: VehicleStatus = pct > 40 ? 'ok' : pct > 15 ? 'warn' : 'danger';
   // El medidor vive sobre el hero navy, que es oscuro en ambos temas; aun así
   // los colores de estado salen del tema activo para no desentonar con el resto.
   const c = useAppColors();
@@ -131,10 +151,10 @@ export function OilGauge({ pct = 70, kmLeft = 1840, size = 220 }: Props) {
           transition="gauge"
           enterStyle={{ opacity: 0, scale: 0.92 }}
         >
-          {fmtKm(kmLeft)}
+          {limitedBy === 'km' ? fmtKm(kmLeft) : String(daysLeft)}
         </Txt>
         <Txt fos={13} col="rgba(255,255,255,0.6)" mt={2}>
-          km restantes
+          {limitedBy === 'km' ? 'km restantes' : 'días restantes'}
         </Txt>
         <Box mt={10}>
           <StatusPill status={status} label={status === 'ok' ? 'AL DÍA' : status === 'warn' ? 'PRÓXIMO' : 'VENCIDO'} />

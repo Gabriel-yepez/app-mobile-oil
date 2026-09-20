@@ -26,6 +26,7 @@ import { VehicleDetailScreen } from '../screens/VehicleDetailScreen';
 import { AddVehicleTypeScreen } from '../screens/AddVehicleTypeScreen';
 import { AddVehicleFormScreen } from '../screens/AddVehicleFormScreen';
 import { AddOilScreen } from '../screens/AddOilScreen';
+import { ReportOdometerScreen } from '../screens/ReportOdometerScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { CustomizeHomeScreen } from '../screens/CustomizeHomeScreen';
@@ -108,6 +109,7 @@ export function AppNavigator({
         <Stack.Screen name="AddVehicleType" component={AddVehicleTypeScreen} />
         <Stack.Screen name="AddVehicleForm" component={AddVehicleFormScreen} />
         <Stack.Screen name="AddOil" component={AddOilScreen} />
+        <Stack.Screen name="ReportOdometer" component={ReportOdometerScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Alerts" component={AlertsScreen} />

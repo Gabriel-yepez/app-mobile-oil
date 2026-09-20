@@ -154,14 +154,18 @@ describe('reconcile', () => {
   });
 });
 
-// El bloque fijo son los cuatro widgets del núcleo: siempre arriba, en este
-// orden, siempre visibles. Lo que sigue es el contrato que lo sostiene.
+// El bloque fijo es el núcleo del inicio: siempre arriba, en este orden,
+// siempre visible. Lo que sigue es el contrato que lo sostiene.
 describe('bloque fijo', () => {
   const fijos = ['a', 'b'] as unknown as WidgetId[];
 
-  it('el default arranca con los cuatro fijos en el orden pedido', () => {
-    expect(PINNED_WIDGETS).toEqual(['gauge', 'techReadout', 'quickActions', 'kpis']);
-    expect(WIDGET_ORDER.slice(0, 4)).toEqual(PINNED_WIDGETS);
+  it('el default arranca con los fijos, en el orden pedido', () => {
+    expect(PINNED_WIDGETS).toEqual(['oilStatus', 'quickActions', 'kpis']);
+    // Derivado de la lista y no un 4 escrito a mano: así el día que entre o
+    // salga un widget fijo, el test sigue diciendo la verdad.
+    expect(WIDGET_ORDER.slice(0, PINNED_WIDGETS.length)).toEqual(
+      PINNED_WIDGETS,
+    );
   });
 
   it('ninguno de los fijos nace oculto, y todos los demás sí', () => {
@@ -217,14 +221,38 @@ describe('bloque fijo', () => {
   });
 
   it('un layout guardado con el orden viejo se normaliza al bloque fijo actual', () => {
-    const viejo = { order: ['gauge', 'techReadout', 'kpis', 'quickActions', 'recentHistory', 'openAlerts'], hidden: ['openAlerts'] };
+    const viejo = { order: ['oilStatus', 'kpis', 'quickActions', 'recentHistory', 'openAlerts'], hidden: ['openAlerts'] };
     expect(reconcile(viejo).order).toEqual(WIDGET_ORDER);
   });
 
   it('conserva el orden que el usuario le dio a los libres', () => {
-    const guardado = { order: ['kpis', 'openAlerts', 'gauge', 'recentHistory', 'techReadout', 'quickActions'], hidden: [] };
+    const guardado = { order: ['kpis', 'openAlerts', 'oilStatus', 'recentHistory', 'quickActions'], hidden: [] };
     expect(reconcile(guardado).order).toEqual([
-      'gauge', 'techReadout', 'quickActions', 'kpis', 'openAlerts', 'recentHistory',
+      'oilStatus', 'quickActions', 'kpis', 'openAlerts', 'recentHistory',
     ]);
+  });
+});
+
+describe('fusión de gauge y techReadout en oilStatus', () => {
+  it('un layout guardado con los dos viejos queda con oilStatus arriba', () => {
+    // No hace falta código de migración: reconcile ya descarta los ids que no
+    // conoce, y oilStatus entra primero por ser fijo.
+    const guardado = {
+      order: ['gauge', 'techReadout', 'quickActions', 'kpis', 'recentHistory'],
+      hidden: ['recentHistory'],
+    };
+
+    const r = reconcile(guardado);
+
+    expect(r.order).not.toContain('gauge');
+    expect(r.order).not.toContain('techReadout');
+    expect(r.order[0]).toBe('oilStatus');
+    // Lo que el usuario había ocultado se respeta.
+    expect(r.hidden).toContain('recentHistory');
+  });
+
+  it('oilStatus no se puede apagar: es fijo', () => {
+    const r = toggleWidget(DEFAULT_LAYOUT, 'oilStatus');
+    expect(r.hidden).not.toContain('oilStatus');
   });
 });

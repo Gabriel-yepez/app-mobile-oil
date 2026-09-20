@@ -7,34 +7,53 @@ import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitiv
 import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
 import { SHOPS_VE, VE_OILS, VISCOSITIES } from '../data/mock';
-import { fmtKm } from '../utils/format';
-import { useStore } from '../store/useStore';
+import { fmtFecha, fmtKm, parseFecha } from '../utils/format';
+import { useVehicles } from '../store/useVehicles';
+import { useOilStatus } from '../hooks/useOilStatus';
+
 import { RootScreenProps } from '../navigation/types';
 
 const INTERVALS = [3000, 5000, 7500, 10000];
+/** El otro eje del ciclo: "5.000 km o 6 meses, lo que ocurra primero". */
+const MESES = [3, 6, 9, 12];
 
 export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
   const insets = useSafeAreaInsets();
   const c = useAppColors();
   const sh = useShadows();
   const { vehicleId, draft } = route.params ?? {};
-  const vehicles = useStore((s) => s.vehicles);
-  const addVehicle = useStore((s) => s.addVehicle);
-  const addOilChange = useStore((s) => s.addOilChange);
+  const vehicles = useVehicles((s) => s.vehicles);
+  const addVehicle = useVehicles((s) => s.addVehicle);
+  const registrarCambio = useVehicles((s) => s.registrarCambio);
 
-  const vehicle = vehicleId ? vehicles.find((v) => v.id === vehicleId) : undefined;
-  const baseKm = draft?.km ?? vehicle?.km ?? 0;
+  const vehicle = vehicleId
+    ? vehicles.find((v) => v.id === vehicleId)
+    : undefined;
+  const { data: estado } = useOilStatus(vehicleId ?? null);
+  // El odómetro del vehículo ya no es un campo suyo: se toma la última lectura
+  // conocida, que es lo que el usuario va a ver hoy en el tablero.
+  const baseKm = draft?.km ?? estado?.odometer?.km ?? 0;
 
   const [oilName, setOilName] = useState('Pennzoil Platinum');
   const [viscosity, setViscosity] = useState('5W-30');
   const [oilType, setOilType] = useState('Sintético');
   const [changeKm, setChangeKm] = useState(String(baseKm));
   const [intervalIdx, setIntervalIdx] = useState(1);
-  const [date, setDate] = useState('09 jun 2026');
+  // Los dos ejes los elige el usuario. Se precargan con lo que ÉL mismo usó
+  // en el ciclo anterior de este vehículo: no es una sugerencia inventada,
+  // es su propio número.
+  const [mesesIdx, setMesesIdx] = useState(() => {
+    const previo = estado?.cycle?.intervalMonths;
+    const i = previo ? MESES.indexOf(previo) : -1;
+    return i === -1 ? 1 : i;
+  });
+  const [date, setDate] = useState(fmtFecha(new Date().toISOString()));
+  const [errorFecha, setErrorFecha] = useState<string | null>(null);
   const [cost, setCost] = useState('32.00');
   const [shop, setShop] = useState(SHOPS_VE[0]);
 
   const interval = INTERVALS[intervalIdx];
+  const meses = MESES[mesesIdx];
   const nextKm = useMemo(() => (parseInt(changeKm, 10) || 0) + interval, [changeKm, interval]);
 
   const oilOptions = VE_OILS.map((o) => `${o.brand} ${o.tag}`);
@@ -45,25 +64,39 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
       : '';
 
   const save = () => {
+    const changedAt = parseFecha(date);
+    if (!changedAt) {
+      setErrorFecha('Escríbela como "08 feb 2026".');
+      return;
+    }
+
     const km = parseInt(changeKm, 10) || 0;
     const [brand, ...tagParts] = oilName.split(' ');
-    const oil = { brand, tag: tagParts.join(' '), viscosity };
     const costUsd = parseFloat(cost.replace(',', '.')) || 0;
 
+    const cambio = {
+      changedAt,
+      km,
+      intervalKm: interval,
+      intervalMonths: meses,
+      oilBrand: brand,
+      oilTag: tagParts.join(' '),
+      oilViscosity: viscosity,
+      oilSynthetic: oilType === 'Sintético',
+      shop,
+      costUsd,
+    };
+
     if (draft) {
-      // Paso 3 del flujo agregar vehículo: crea el vehículo + primer registro
-      const id = addVehicle({
-        ...draft,
-        km: Math.max(draft.km, km),
-        oil: { ...oil, synthetic: oilType === 'Sintético' },
-        lastChange: km,
-        nextChange: km + interval,
-        daysSince: 0,
-      });
-      addOilChange({ vehicleId: id, date, km, oil, shop, costUsd });
+      // Paso 3 del flujo agregar vehículo: crea el vehículo y su primer ciclo.
+      // Las dos escrituras van a la cola en orden, así que el cambio llega
+      // después del vehículo aunque no haya señal en este momento.
+      const { km: _kmInicial, ...ficha } = draft;
+      const id = addVehicle(ficha);
+      registrarCambio(id, cambio);
       navigation.popToTop();
     } else if (vehicle) {
-      addOilChange({ vehicleId: vehicle.id, date, km, oil, shop, costUsd });
+      registrarCambio(vehicle.id, cambio);
       navigation.goBack();
     }
   };
@@ -203,14 +236,57 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                   ))}
                 </Row>
               </Col>
+
+              {/* El segundo eje. Vale el que se cumpla primero: al que maneja
+                  poco se le vence por meses mucho antes que por kilómetros. */}
+              <Col>
+                <Row mb="$sm" jc="space-between">
+                  <Txt font="semi" fos={12} tone="muted">
+                    O cada
+                  </Txt>
+                  <Txt font="mono" fos={13}>{meses} meses</Txt>
+                </Row>
+                <Row gap="$sm">
+                  {MESES.map((m, i) => (
+                    <Touchable
+                      key={m}
+                      f={1}
+                      onPress={() => setMesesIdx(i)}
+                      fade
+                      ai="center"
+                      py={8}
+                      br="$md"
+                      bw={1}
+                      bc={i === mesesIdx ? '$accent' : '$line'}
+                      bg={i === mesesIdx ? '$accentSoft' : 'transparent'}
+                    >
+                      <Txt
+                        font="monoMed"
+                        fos={12}
+                        tone={i === mesesIdx ? 'accent' : 'muted2'}
+                      >
+                        {m}m
+                      </Txt>
+                    </Touchable>
+                  ))}
+                </Row>
+              </Col>
             </Card>
 
             {/* Card 3 — Detalles */}
             <Card gap={14}>
               <Row gap="$md" ai="flex-start">
                 <Box f={1}>
-                  <Field label="Fecha">
-                    <Input value={date} onChangeText={setDate} mono />
+                  <Field label="Fecha" error={errorFecha ?? ''}>
+                    <Input
+                      value={date}
+                      onChangeText={(t) => {
+                        setDate(t);
+                        setErrorFecha(null);
+                      }}
+                      mono
+                      invalid={!!errorFecha}
+                    />
                   </Field>
                 </Box>
                 <Box f={1}>

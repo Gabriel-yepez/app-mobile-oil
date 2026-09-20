@@ -17,7 +17,7 @@ import {
 import { encolar } from '../data/sync/queue';
 import type { QueueEntry, QueueOp } from '../data/sync/queue';
 import { drenar } from '../data/sync/runner';
-import type { NewVehicleInput } from '../data/types';
+import type { NewOilChangeInput, NewVehicleInput } from '../data/types';
 import {
   vehiclesController,
   type ApiVehicle,
@@ -42,6 +42,9 @@ type VehiclesStore = {
   /** Una lectura del tablero. El odómetro no es un campo del vehículo sino un
    *  hecho fechado, así que se reporta, no se edita. */
   reportOdometer: (vehicleId: string, km: number) => void;
+  /** Registra un cambio. Devuelve su id: la pantalla puede navegar sin
+   *  esperar a la red. */
+  registrarCambio: (vehicleId: string, input: NewOilChangeInput) => string;
   removeVehicle: (id: string) => void;
   setActiveVehicle: (id: string) => void;
   sincronizar: () => Promise<void>;
@@ -116,6 +119,30 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
         { op: 'UPDATE_VEHICLE', id, payload: patch },
         get().vehicles.map((v) => (v.id === id ? { ...v, ...patch } : v)),
       );
+    },
+
+    registrarCambio: (vehicleId, input) => {
+      const id = nuevoId();
+      encolarOp(
+        { op: 'CREATE_OIL_CHANGE', id, vehicleId, payload: input },
+        // El ciclo nuevo se refleja de una: el medidor vuelve a lleno sin
+        // esperar la red, que es lo que el usuario espera ver al guardar.
+        get().vehicles.map((v) =>
+          v.id === vehicleId
+            ? {
+                ...v,
+                lastChangeKm: input.km,
+                nextChangeKm: input.km + input.intervalKm,
+                odometer: {
+                  km: input.km,
+                  source: 'reported',
+                  asOf: input.changedAt,
+                },
+              }
+            : v,
+        ),
+      );
+      return id;
     },
 
     reportOdometer: (vehicleId, km) => {
