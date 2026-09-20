@@ -1,4 +1,5 @@
-// Data mock — espejo de MY_FLEET / VE_BRANDS / VE_OILS / SHOPS_VE del handoff.
+// Data mock — espejo de MY_FLEET / VE_OILS / SHOPS_VE del handoff. Las marcas
+// ya no viven acá: son un catálogo del backend (ver src/store/useBrands.ts).
 // Más adelante esto se reemplaza por el backend.
 
 export type VehicleStatus = 'ok' | 'warn' | 'danger';
@@ -108,8 +109,9 @@ export const MOCK_SUBSCRIPTION: Subscription = {
   changesThisMonth: 3,
 };
 
-export const VE_BRANDS_CAR = ['Toyota', 'Chevrolet', 'Ford', 'Hyundai', 'Kia', 'Renault', 'Fiat', 'Jeep', 'Nissan', 'Mitsubishi'];
-export const VE_BRANDS_MOTO = ['Bera', 'Empire Keeway', 'MD', 'Yamaha', 'Suzuki', 'Honda', 'AVA', 'Skygo'];
+// Las marcas ya no viven acá: son un catálogo del backend que los usuarios
+// enriquecen. Ver `src/store/useBrands.ts`, que además conserva estas 18 como
+// valor inicial para que una instalación nueva sin señal no abra vacía.
 
 export const VE_OILS = [
   { brand: 'Pennzoil', tag: 'Platinum', viscosity: '5W-30', synthetic: true },

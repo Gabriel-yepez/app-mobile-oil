@@ -1,12 +1,13 @@
 // Agregar vehículo — Paso 2/3: marca, modelo, año, color, placa, km actual
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
-import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
+import { useBrands, useMarcasDe } from '../store/useBrands';
+import { nombreValido, sugerirParecida } from '../data/marcas/nombre';
 import { RootScreenProps } from '../navigation/types';
 
 const COLORS: { name: string; hex: string }[] = [
@@ -22,7 +23,8 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
   const insets = useSafeAreaInsets();
   const c = useAppColors();
   const { kind } = route.params;
-  const brands = kind === 'car' ? VE_BRANDS_CAR : VE_BRANDS_MOTO;
+  const brands = useMarcasDe(kind);
+  const agregarMarca = useBrands((s) => s.agregar);
 
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -34,6 +36,35 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
   const [kmMes, setKmMes] = useState('1200');
 
   const color = COLORS[colorIdx];
+
+  const pedirMarcaNueva = (texto: string) => {
+    if (!nombreValido(texto)) {
+      Alert.alert(
+        'Ese nombre no sirve',
+        'Usa letras, números, espacios, punto o guion. Máximo 40 caracteres.',
+      );
+      return;
+    }
+
+    const parecida = sugerirParecida(texto, brands);
+    if (parecida) {
+      Alert.alert(`¿Quisiste decir ${parecida}?`, `Escribiste «${texto}».`, [
+        { text: `Usar ${parecida}`, onPress: () => setBrand(parecida) },
+        {
+          text: `Crear «${texto}»`,
+          style: 'destructive',
+          onPress: () => {
+            agregarMarca(kind, texto);
+            setBrand(texto);
+          },
+        },
+      ]);
+      return;
+    }
+
+    agregarMarca(kind, texto);
+    setBrand(texto);
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -53,7 +84,14 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
           <Box px="$xl" pt="$xl">
             <Card gap={14}>
               <Field label="Marca">
-                <Select value={brand} placeholder="Selecciona la marca" options={brands} onChange={setBrand} />
+                <Select
+                  value={brand}
+                  placeholder="Selecciona la marca"
+                  options={brands}
+                  onChange={setBrand}
+                  searchable
+                  onAddNew={pedirMarcaNueva}
+                />
               </Field>
               <Field label="Modelo">
                 <Input value={model} onChangeText={setModel} placeholder="Corolla XEI" />
