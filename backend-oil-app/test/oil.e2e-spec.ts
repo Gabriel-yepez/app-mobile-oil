@@ -9,11 +9,13 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
+import { PrismaService } from '../src/infra/prisma/prisma.service';
+import { emailE2E, limpiarUsuariosE2E } from './support/e2e-db';
 
 const nuevoUsuario = () => ({
   fullName: 'Luis Guerrero',
   cedula: `V${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
-  email: `oil-${Date.now()}-${Math.floor(Math.random() * 1e6)}@correo.com`,
+  email: emailE2E('oil'),
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
@@ -58,6 +60,7 @@ describe('Estado del aceite (e2e)', () => {
   const http = () =>
     request(app.getHttpServer() as Parameters<typeof request>[0]);
 
+  let prisma: PrismaService;
   let token: string;
   let vehiculoId: string;
 
@@ -84,6 +87,7 @@ describe('Estado del aceite (e2e)', () => {
     );
     app.useGlobalFilters(new AllExceptionsFilter());
     await app.init();
+    prisma = app.get(PrismaService);
 
     token = await registrar();
     const v = await http()
@@ -95,6 +99,7 @@ describe('Estado del aceite (e2e)', () => {
   });
 
   afterAll(async () => {
+    await limpiarUsuariosE2E(prisma);
     await app.close();
   });
 

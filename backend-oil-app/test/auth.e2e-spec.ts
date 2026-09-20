@@ -11,11 +11,12 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { PrismaService } from '../src/infra/prisma/prisma.service';
+import { emailE2E, limpiarUsuariosE2E } from './support/e2e-db';
 
 const nuevo = () => ({
   fullName: 'Luis Guerrero',
   cedula: `V${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
-  email: `luis-${Date.now()}-${Math.floor(Math.random() * 1e6)}@correo.com`,
+  email: emailE2E('luis'),
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
@@ -68,6 +69,7 @@ describe('Auth (e2e)', () => {
   });
 
   afterAll(async () => {
+    await limpiarUsuariosE2E(prisma);
     await app.close();
   });
 

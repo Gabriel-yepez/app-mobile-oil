@@ -6,9 +6,10 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../src/infra/prisma/prisma.service';
 import { PrismaUserRepository } from '../src/infra/prisma/prisma-user.repository';
 import type { NewUser } from '../src/modules/users/domain/user';
+import { emailE2E, limpiarUsuariosE2E } from './support/e2e-db';
 
 const nuevo = (over: Partial<NewUser> = {}): NewUser => ({
-  email: `luis-${Date.now()}-${Math.random().toString(36).slice(2)}@correo.com`,
+  email: emailE2E('luis'),
   cedula: `V${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
   passwordHash: 'hash',
   fullName: 'Luis Guerrero',
@@ -24,6 +25,7 @@ describe('PrismaUserRepository (integración)', () => {
   const repo = new PrismaUserRepository(prisma);
 
   afterAll(async () => {
+    await limpiarUsuariosE2E(prisma);
     await prisma.$disconnect();
   });
 
