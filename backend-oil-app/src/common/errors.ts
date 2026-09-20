@@ -114,4 +114,21 @@ export const Errors = {
       'PLATE_TAKEN',
       'Ya tienes un vehículo con esa placa.',
     ),
+
+  brandNameInvalid: () =>
+    new AppError(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'BRAND_NAME_INVALID',
+      'Ese nombre de marca no es válido. Usa letras, números, espacios, punto o guion.',
+    ),
+
+  // El tope existe porque una marca nueva la ve TODO el mundo de inmediato.
+  // Un usuario honesto agrega una cada varios meses; cinco en un día es o un
+  // error o alguien probando hasta dónde llega.
+  brandLimitReached: () =>
+    new AppError(
+      HttpStatus.TOO_MANY_REQUESTS,
+      'BRAND_LIMIT_REACHED',
+      'Agregaste muchas marcas hoy. Intenta de nuevo mañana.',
+    ),
 };
