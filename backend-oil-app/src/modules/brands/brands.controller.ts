@@ -22,7 +22,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { User } from '../users/domain/user';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto, ListBrandsQueryDto } from './dto/create-brand.dto';
-import { BrandResponseDto, toBrandResponse } from './dto/brand-response.dto';
+import {
+  BrandResponseDto,
+  CreateBrandResponseDto,
+  toBrandResponse,
+  toCreateBrandResponse,
+} from './dto/brand-response.dto';
 
 @ApiTags('Marcas')
 @ApiBearerAuth()
@@ -48,9 +53,9 @@ export class BrandsController {
     description:
       'Queda visible para todos los usuarios de inmediato. Si el nombre ya existe (comparando normalizado), devuelve la que estaba sin crear nada.',
   })
-  @ApiCreatedResponse({ type: BrandResponseDto })
+  @ApiCreatedResponse({ type: CreateBrandResponseDto })
   @ApiOkResponse({
-    type: BrandResponseDto,
+    type: CreateBrandResponseDto,
     description:
       'La marca ya existía, por nombre o por id. Se devuelve la guardada; no es un error.',
   })
@@ -59,9 +64,9 @@ export class BrandsController {
     @CurrentUser() user: User,
     @Body() dto: CreateBrandDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<BrandResponseDto> {
+  ): Promise<CreateBrandResponseDto> {
     const { brand, created } = await this.brands.create(user.id, dto);
     res.status(created ? HttpStatus.CREATED : HttpStatus.OK);
-    return toBrandResponse(brand);
+    return toCreateBrandResponse(brand, created);
   }
 }

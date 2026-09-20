@@ -21,7 +21,13 @@ const nuevoUsuario = () => ({
   password: 'contrasena1',
 });
 
-type CuerpoMarca = { id: string; kind: string; name: string; nameKey: string };
+type CuerpoMarca = {
+  id: string;
+  kind: string;
+  name: string;
+  nameKey: string;
+  created?: boolean;
+};
 const marca = (r: request.Response) => r.body as CuerpoMarca;
 const lista = (r: request.Response) => r.body as CuerpoMarca[];
 
@@ -100,6 +106,37 @@ describe('Catálogo de marcas (e2e)', () => {
       .expect(200);
 
     expect(lista(vistaPorB).map((b) => b.name)).toContain(MARCA_NUEVA);
+  });
+
+  // La app decide qué avisarle al usuario con este campo: "agregada" o "ya
+  // estaba". Sin él tendría que leer el código HTTP, que el cliente descarta.
+  it('dice created:true al crearla y created:false cuando ya estaba', async () => {
+    const token = await registrar();
+    const nombre = `Haval${sufijo}`;
+
+    const primera = await http()
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ kind: 'CAR', name: nombre })
+      .expect(201);
+    expect(marca(primera).created).toBe(true);
+
+    const repetida = await http()
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ kind: 'CAR', name: nombre })
+      .expect(200);
+    expect(repetida.body).toMatchObject({ created: false, name: nombre });
+  });
+
+  it('el listado NO trae created: ahí no significaría nada', async () => {
+    const token = await registrar();
+    const r = await http()
+      .get('/api/v1/brands?kind=CAR')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(lista(r)[0]).not.toHaveProperty('created');
   });
 
   it('dos usuarios creando la misma marca terminan con una sola fila', async () => {
