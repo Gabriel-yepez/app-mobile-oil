@@ -1,8 +1,7 @@
 // Motor de planificación — PURO. No importa expo-notifications ni React.
 // Recibe estado, devuelve la lista exacta de notificaciones que deberían
 // existir. Toda la lógica de negocio del subsistema vive aquí.
-import { Vehicle } from '../data/mock';
-import { kmLeft } from '../store/useStore';
+import type { ApiVehicle } from '../api/controllers/vehicles.controller';
 import { fmtKm } from '../utils/format';
 import { NOTIF_PREFIX, NotifPrefs, PlannedNotification, PlannedTrigger } from './types';
 
@@ -24,10 +23,10 @@ export function nextOccurrence(now: Date, hour: number, minute = 0): number {
 const sigOf = (title: string, body: string, trigger: PlannedTrigger) =>
   `${title}|${body}|${JSON.stringify(trigger)}`;
 
-const label = (v: Vehicle) => `${v.brand} ${v.model}`;
+const label = (v: ApiVehicle) => `${v.brand} ${v.model}`;
 
 export function buildSchedule(input: {
-  vehicles: Vehicle[];
+  vehicles: ApiVehicle[];
   prefs: NotifPrefs;
   permissionGranted: boolean;
   now: Date;
@@ -42,7 +41,11 @@ export function buildSchedule(input: {
   const trigger: PlannedTrigger = { type: 'date', date: nextOccurrence(now, REMINDER_HOUR) };
 
   for (const v of vehicles) {
-    const left = kmLeft(v);
+    // El km restante lo calcula el backend y viaja con el vehículo. Antes
+    // salía de kmLeft(), que era una segunda definición del mismo número.
+    // Un vehículo sin ciclo no genera avisos: no hay nada que vencer.
+    if (!v.gauge) continue;
+    const left = v.gauge.kmLeft;
 
     // Vencido y próximo son mutuamente excluyentes: un vehículo nunca genera
     // los dos avisos.

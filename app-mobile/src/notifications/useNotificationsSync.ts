@@ -2,7 +2,7 @@
 // función idempotente con debounce.
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { useStore } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { syncNotifications } from './scheduler';
 
@@ -30,9 +30,10 @@ export function useNotificationsSync(): void {
       if (s === 'active') run();
     });
 
-    // Cambios de datos: addOilChange, addVehicle, switches de preferencias y
-    // el flag `hydrated` cuando termina de leerse el almacenamiento.
-    const unsubVehicles = useStore.subscribe(run);
+    // Cambios de datos: registrar un cambio, agregar un vehículo, refrescar
+    // desde el backend, los switches de preferencias y el flag `hydrated`
+    // cuando termina de leerse el almacenamiento.
+    const unsubVehicles = useVehicles.subscribe(run);
     const unsubPrefs = useNotifPrefs.subscribe(run);
 
     return () => {

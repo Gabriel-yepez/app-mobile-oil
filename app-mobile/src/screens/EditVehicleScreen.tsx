@@ -13,7 +13,8 @@ import { Box, Col, Row, Screen, Scroll, Touchable, Txt, useAppColors } from '../
 import { Btn, Card, Field, IconBtn, Input, Select, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
-import { useStore } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
+import { useOilStatus } from '../hooks/useOilStatus';
 import { RootScreenProps } from '../navigation/types';
 
 /** La misma paleta que ofrece el alta: si acá hubiera otra, un vehículo podría
@@ -32,9 +33,13 @@ const AHORA = new Date().getFullYear();
 export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVehicle'>) {
   const insets = useSafeAreaInsets();
   const c = useAppColors();
-  const vehicle = useStore((s) => s.vehicles.find((v) => v.id === route.params.vehicleId));
-  const updateVehicle = useStore((s) => s.updateVehicle);
-  const removeVehicle = useStore((s) => s.removeVehicle);
+  const vehicle = useVehicles((s) =>
+    s.vehicles.find((v) => v.id === route.params.vehicleId),
+  );
+  const updateVehicle = useVehicles((s) => s.updateVehicle);
+  const removeVehicle = useVehicles((s) => s.removeVehicle);
+  const reportOdometer = useVehicles((s) => s.reportOdometer);
+  const { data: estado } = useOilStatus(route.params.vehicleId);
 
   // El vehículo puede haber desaparecido (lo borró esta misma pantalla y el
   // render corre antes de que la navegación saque la escena).
@@ -43,8 +48,10 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
     model: vehicle?.model ?? '',
     year: String(vehicle?.year ?? ''),
     plate: vehicle?.plate ?? '',
-    km: String(vehicle?.km ?? ''),
+    km: '',
     color: vehicle?.color ?? COLORS[0].hex,
+    // Se muestra en km/mes, que es como la gente sabe cuánto maneja.
+    kmMes: String(Math.round((vehicle?.kmPerDay ?? 40) * 30)),
   });
   const [intento, setIntento] = useState(false);
 
@@ -59,6 +66,8 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
 
   const año = parseInt(form.year, 10);
   const km = parseInt(form.km, 10);
+  const kmMesNum = parseInt(form.kmMes, 10);
+  const ultimaLectura = estado?.odometer?.km ?? null;
 
   const errores = {
     model: form.model.trim() ? '' : 'Poné el modelo',
@@ -68,15 +77,20 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
         ? `Un año entre 1950 y ${AHORA + 1}`
         : '',
     plate: form.plate.trim() ? '' : 'Poné la placa',
-    // El odómetro no puede retroceder por debajo del último cambio: si no, el
-    // "restan X km" del inicio da negativo y el medidor se pinta al revés.
+    // El odómetro es opcional acá: es una LECTURA, no un campo de la ficha.
+    // Se deja en blanco si el usuario no lo tiene a mano —que es el caso
+    // normal— y solo se valida si escribió algo.
     km: !form.km.trim()
-      ? 'Poné el kilometraje'
+      ? ''
       : Number.isNaN(km) || km < 0
         ? 'Un número de kilómetros'
-        : km < vehicle.lastChange
-          ? `No puede ser menor al último cambio (${vehicle.lastChange} km)`
+        : ultimaLectura !== null && km < ultimaLectura
+          ? `No puede ser menor a la última lectura (${ultimaLectura} km)`
           : '',
+    kmMes:
+      Number.isNaN(kmMesNum) || kmMesNum < 30 || kmMesNum > 15_000
+        ? 'Entre 30 y 15.000 km al mes'
+        : '',
   };
   const hayError = Object.values(errores).some(Boolean);
   const err = (k: keyof typeof errores) => (intento ? errores[k] : '');
@@ -90,11 +104,18 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
       year: año,
       plate: form.plate.trim().toUpperCase(),
       color: form.color,
-      km,
-      // `lastChange`/`nextChange` no se tocan: el próximo cambio se mide contra
-      // el último cambio real, que esta pantalla no edita. Subir el odómetro
-      // acerca el próximo cambio solo, porque la cuenta es nextChange − km.
+      // Pisar el ritmo a mano devuelve kmPerDaySource a DECLARED en el
+      // backend; el próximo ciclo medido lo recalibra solo.
+      kmPerDay:
+        Math.round((Math.min(15_000, Math.max(30, kmMesNum)) / 30) * 100) / 100,
     });
+
+    // El odómetro va por su propio camino: es un hecho fechado, no un campo de
+    // la ficha, y el backend lo guarda como lectura para anclar la proyección.
+    if (form.km.trim() && !Number.isNaN(km)) {
+      reportOdometer(vehicle.id, km);
+    }
+
     navigation.goBack();
   };
 
@@ -218,11 +239,37 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
                   />
                 </Field>
 
+                {/* Cuánto maneja: la base con la que se proyecta el
+                    odómetro entre cambio y cambio. */}
                 <Field
-                  label="Kilometraje actual"
+                  label="¿Cuánto manejas normalmente?"
+                  suffix="km al mes"
+                  error={err('kmMes')}
+                  hint="Con esto estimamos el odómetro entre cambios"
+                >
+                  <Input
+                    value={form.kmMes}
+                    onChangeText={(v) => set('kmMes', v)}
+                    placeholder="1200"
+                    mono
+                    keyboardType="number-pad"
+                    invalid={!!err('kmMes')}
+                    right={<Txt font="monoMed" fos={12} tone="muted">km/mes</Txt>}
+                  />
+                </Field>
+
+                {/* Opcional a propósito: es una LECTURA del tablero, no un
+                    campo de la ficha. Si no lo tiene a mano, se deja vacío y
+                    la estimación sigue como está. */}
+                <Field
+                  label="Kilometraje de hoy (opcional)"
                   suffix="km"
                   error={err('km')}
-                  hint="Subirlo acerca el próximo cambio"
+                  hint={
+                    ultimaLectura !== null
+                      ? `Última lectura: ${ultimaLectura} km`
+                      : 'Solo si lo tienes a la vista'
+                  }
                 >
                   <Input
                     value={form.km}

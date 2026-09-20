@@ -7,7 +7,7 @@ import { Box, Col, Touchable, Txt, useAppColors } from '../../ui';
 import { Card, SectionHead, StatusPill, VehicleThumb } from '../../components/primitives';
 import { Icon } from '../../components/Icon';
 import { fmtKm } from '../../utils/format';
-import { kmLeft, useStore, vehicleStatus } from '../../store/useStore';
+import { useVehicles } from '../../store/useVehicles';
 import { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -15,12 +15,12 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function OpenAlertsWidget() {
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
-  const vehicles = useStore((s) => s.vehicles);
+  const vehicles = useVehicles((s) => s.vehicles);
 
   // Vencidos primero, después los que se acercan.
   const abiertos = vehicles
-    .filter((v) => vehicleStatus(v) !== 'ok')
-    .sort((a, b) => kmLeft(a) - kmLeft(b))
+    .filter((v) => v.gauge !== null && v.gauge.status !== 'ok')
+    .sort((a, b) => (a.gauge?.kmLeft ?? 0) - (b.gauge?.kmLeft ?? 0))
     .slice(0, 3);
 
   // Sin alertas no se pinta nada: una card de "todo en orden" sería ruido fijo.
@@ -52,12 +52,12 @@ export function OpenAlertsWidget() {
             <Col f={1}>
               <Txt font="bold" fos={14}>{v.brand} {v.model}</Txt>
               <Txt fos={12} tone="muted" mt={1}>
-                {kmLeft(v) > 0
-                  ? `Faltan ${fmtKm(kmLeft(v))} km`
-                  : `Vencido por ${fmtKm(Math.abs(kmLeft(v)))} km`}
+                {(v.gauge?.kmLeft ?? 0) > 0
+                  ? `Faltan ${fmtKm(v.gauge?.kmLeft ?? 0)} km`
+                  : `Vencido por ${fmtKm(Math.abs(v.gauge?.kmLeft ?? 0))} km`}
               </Txt>
             </Col>
-            <StatusPill status={vehicleStatus(v)} />
+            <StatusPill status={v.gauge?.status ?? 'ok'} />
             <Icon name="chevR" color={c.muted2} size={20} />
           </Card>
         ))}

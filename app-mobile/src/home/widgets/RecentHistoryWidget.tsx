@@ -6,7 +6,9 @@ import { Box, Col, Touchable, Txt, useAppColors } from '../../ui';
 import { Card, SectionHead } from '../../components/primitives';
 import { Icon } from '../../components/Icon';
 import { fmtKm, fmtUsd } from '../../utils/format';
-import { useStore } from '../../store/useStore';
+import { useVehicles } from '../../store/useVehicles';
+import { useAllOilChanges } from '../../hooks/useAllOilChanges';
+import { fmtFecha } from '../../utils/format';
 import { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -14,8 +16,8 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function RecentHistoryWidget() {
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
-  const vehicles = useStore((s) => s.vehicles);
-  const changes = useStore((s) => s.changes);
+  const vehicles = useVehicles((s) => s.vehicles);
+  const { items: changes } = useAllOilChanges(3);
 
   const recent = changes.slice(0, 3);
   const vehicleName = (id: string) => {
@@ -43,11 +45,11 @@ export function RecentHistoryWidget() {
             <Col f={1}>
               <Txt font="bold" fos={14}>{vehicleName(h.vehicleId)}</Txt>
               <Txt fos={12} tone="muted" mt={1}>
-                {h.date} · <Txt font="monoMed" fos={12} tone="muted">{fmtKm(h.km)}</Txt> km · {h.oil.brand} {h.oil.viscosity}
+                {fmtFecha(h.changedAt)} · <Txt font="monoMed" fos={12} tone="muted">{fmtKm(h.km)}</Txt> km · {h.oilBrand} {h.oilViscosity}
               </Txt>
             </Col>
             <Col ai="flex-end">
-              <Txt font="mono" fos={14}>{fmtUsd(h.costUsd)}</Txt>
+              <Txt font="mono" fos={14}>{fmtUsd(h.costUsd ?? 0)}</Txt>
               <Txt fos={10} tone="muted2">USD</Txt>
             </Col>
           </Card>

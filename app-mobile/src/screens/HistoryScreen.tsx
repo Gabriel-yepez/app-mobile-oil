@@ -7,9 +7,10 @@ import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
 import { radius } from '../theme';
 import { Card, FilterChip, FilterChips, IconBtn, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
-import { fmtKm, fmtUsd } from '../utils/format';
+import { fmtKm, fmtUsd, fmtFecha } from '../utils/format';
 import { BS_RATE, SPEND_BARS } from '../data/mock';
-import { useStore } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
+import { useAllOilChanges } from '../hooks/useAllOilChanges';
 
 // El filtro tiene DOS niveles y no una sola fila larga de chips: con un chip
 // por vehículo, una flota de seis ya no entra en pantalla. Primero se elige el
@@ -22,8 +23,8 @@ export function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const c = useAppColors();
-  const changes = useStore((s) => s.changes);
-  const vehicles = useStore((s) => s.vehicles);
+  const { items: changes } = useAllOilChanges();
+  const vehicles = useVehicles((s) => s.vehicles);
   const [kind, setKind] = useState<Kind>('all');
   const [elegido, setElegido] = useState<string>('all');
 
@@ -73,7 +74,7 @@ export function HistoryScreen() {
 
   // El total sigue al filtro: un "invertido" que incluye carros encima de una
   // lista de solo motos no se entiende.
-  const totalUsd = filtered.reduce((sum, ch) => sum + ch.costUsd, 0);
+  const totalUsd = filtered.reduce((sum, ch) => sum + (ch.costUsd ?? 0), 0);
   const maxBar = Math.max(...SPEND_BARS);
 
   return (
@@ -176,15 +177,15 @@ export function HistoryScreen() {
                     {v ? `${v.brand} ${v.model}` : 'Vehículo'}
                   </Txt>
                   <Txt fos={12} tone="muted" mt={1}>
-                    <Txt font="monoMed" fos={12} tone="muted">{h.date}</Txt> ·{' '}
+                    <Txt font="monoMed" fos={12} tone="muted">{fmtFecha(h.changedAt)}</Txt> ·{' '}
                     <Txt font="monoMed" fos={12} tone="muted">{fmtKm(h.km)}</Txt> km
                   </Txt>
                   <Txt fos={12} tone="muted2" mt={1}>
-                    {h.oil.brand} {h.oil.tag} {h.oil.viscosity}
+                    {h.oilBrand} {h.oilTag} {h.oilViscosity}
                   </Txt>
                 </Col>
                 <Col ai="flex-end">
-                  <Txt font="mono" fos={14}>{fmtUsd(h.costUsd)}</Txt>
+                  <Txt font="mono" fos={14}>{fmtUsd(h.costUsd ?? 0)}</Txt>
                   <Txt fos={10} tone="muted2">USD</Txt>
                 </Col>
               </Card>

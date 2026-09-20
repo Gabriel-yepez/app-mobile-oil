@@ -5,8 +5,7 @@
 import React, { ReactNode } from 'react';
 import { IconName } from '../components/Icon';
 import { WidgetId } from './layout';
-import { GaugeWidget } from './widgets/GaugeWidget';
-import { TechReadoutWidget } from './widgets/TechReadoutWidget';
+import { OilStatusWidget } from './widgets/OilStatusWidget';
 import { KpisWidget } from './widgets/KpisWidget';
 import { RecentHistoryWidget } from './widgets/RecentHistoryWidget';
 import { QuickActionsWidget } from './widgets/QuickActionsWidget';
@@ -22,17 +21,11 @@ export type WidgetDef = {
 };
 
 export const HOME_WIDGETS: Record<WidgetId, WidgetDef> = {
-  gauge: {
-    label: 'Nivel de aceite',
-    description: 'Medidor del vehículo activo',
+  oilStatus: {
+    label: 'Estado del aceite',
+    description: 'Medidor, odómetro, próximo cambio y aceite',
     icon: 'gauge',
-    render: () => <GaugeWidget />,
-  },
-  techReadout: {
-    label: 'Datos técnicos',
-    description: 'Odómetro, próximo cambio y aceite',
-    icon: 'oil',
-    render: () => <TechReadoutWidget />,
+    render: () => <OilStatusWidget />,
   },
   kpis: {
     label: 'Resumen',

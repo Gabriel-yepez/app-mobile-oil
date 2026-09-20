@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Col, Row, Touchable, Txt, useAppColors } from '../../ui';
 import { Icon, IconName } from '../../components/Icon';
-import { useActiveVehicle } from '../../store/useStore';
+import { useActiveVehicle } from '../../store/useVehicles';
 import { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -19,7 +19,7 @@ export function QuickActionsWidget() {
     {
       label: 'Registrar cambio',
       icon: 'drop',
-      onPress: () => navigation.navigate('AddOil', { vehicleId: active.id }),
+      onPress: () => active && navigation.navigate('AddOil', { vehicleId: active.id }),
     },
     {
       label: 'Agregar vehículo',

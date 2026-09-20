@@ -30,6 +30,8 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
   const [colorIdx, setColorIdx] = useState(0);
   const [plate, setPlate] = useState('');
   const [km, setKm] = useState('');
+  // Default de 1.200 km/mes: 40 km/día, el uso urbano típico en Venezuela.
+  const [kmMes, setKmMes] = useState('1200');
 
   const color = COLORS[colorIdx];
 
@@ -108,6 +110,19 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   right={<Txt font="monoMed" fos={12} tone="muted">km</Txt>}
                 />
               </Field>
+              {/* Sin esto la barra se congelaría entre cambio y cambio: el
+                  odómetro solo existe sentado en el auto, así que se proyecta
+                  con este ritmo y se corrige cuando el usuario lo reporta. */}
+              <Field label="¿Cuánto manejas normalmente?" suffix="km al mes">
+                <Input
+                  value={kmMes}
+                  onChangeText={setKmMes}
+                  placeholder="1200"
+                  mono
+                  keyboardType="number-pad"
+                  right={<Txt font="monoMed" fos={12} tone="muted">km/mes</Txt>}
+                />
+              </Field>
             </Card>
           </Box>
         </Scroll>
@@ -127,6 +142,13 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   plate: plate || '—',
                   color: color.hex,
                   km: parseInt(km, 10) || 0,
+                  // Cuánto maneja, para que la barra baje sola entre cambios.
+                  // Se pregunta en km/mes, que es como la gente sabe cuánto
+                  // maneja; el backend piensa en km/día.
+                  kmPerDay: Math.min(
+                    500,
+                    Math.max(1, Math.round(((parseInt(kmMes, 10) || 1200) / 30) * 100) / 100),
+                  ),
                 },
               })
             }

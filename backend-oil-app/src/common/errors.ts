@@ -73,4 +73,45 @@ export const Errors = {
       'CEDULA_TAKEN',
       'Esa cédula ya tiene una cuenta.',
     ),
+
+  // 404 y no 403 a propósito: un 403 confirmaría que ese id existe y es de
+  // otro. Para quien pregunta por un vehículo ajeno, no existe y punto.
+  vehicleNotFound: () =>
+    new AppError(
+      HttpStatus.NOT_FOUND,
+      'VEHICLE_NOT_FOUND',
+      'Ese vehículo no está en tu garaje.',
+    ),
+
+  odometerBackwards: () =>
+    new AppError(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'ODOMETER_BACKWARDS',
+      'El odómetro no puede ser menor que la última lectura registrada.',
+    ),
+
+  // El salto imposible casi siempre es un dígito de más. Rechazarlo acá evita
+  // que entre a la base y envenene la estimación de los ciclos siguientes.
+  odometerImplausible: () =>
+    new AppError(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'ODOMETER_IMPLAUSIBLE',
+      'Ese kilometraje es demasiado alto para el tiempo transcurrido. Revísalo.',
+    ),
+
+  oilChangeBackwards: () =>
+    new AppError(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'OIL_CHANGE_BACKWARDS',
+      'El kilometraje del cambio no puede ser menor que el del cambio anterior.',
+    ),
+
+  // Por usuario, no global: dos personas distintas pueden tener la misma placa
+  // mal escrita, y no es asunto de una que la otra exista.
+  plateTaken: () =>
+    new AppError(
+      HttpStatus.CONFLICT,
+      'PLATE_TAKEN',
+      'Ya tienes un vehículo con esa placa.',
+    ),
 };

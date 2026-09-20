@@ -8,7 +8,7 @@ import { Box, Col, Row, Scroll, Txt, useAppColors, useIsDark, useShadows } from 
 import { Btn, Card, IconBtn, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm } from '../utils/format';
-import { kmLeft, useStore, vehicleStatus } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -25,10 +25,10 @@ export function AlertsScreen() {
   const c = useAppColors();
   const sh = useShadows();
   const isDark = useIsDark();
-  const vehicles = useStore((s) => s.vehicles);
+  const vehicles = useVehicles((s) => s.vehicles);
 
-  const overdue = vehicles.filter((v) => vehicleStatus(v) === 'danger');
-  const soon = vehicles.filter((v) => vehicleStatus(v) === 'warn');
+  const overdue = vehicles.filter((v) => v.gauge?.status === 'danger');
+  const soon = vehicles.filter((v) => v.gauge?.status === 'warn');
   const open = overdue.length + soon.length;
 
   // En claro el ámbar oscuro del handoff; en oscuro sería ilegible, así que
@@ -97,7 +97,7 @@ export function AlertsScreen() {
               </Row>
               <Txt fos={13} lh={19.5} tone="muted">
                 Has superado el kilometraje recomendado. Excedido por{' '}
-                <Txt font="mono" fos={13} tone="danger">+{fmtKm(Math.abs(kmLeft(v)))} km</Txt>.
+                <Txt font="mono" fos={13} tone="danger">+{fmtKm(Math.abs(v.gauge?.kmLeft ?? 0))} km</Txt>.
               </Txt>
               <Row mt="$md" gap="$sm">
                 <Btn
@@ -143,7 +143,7 @@ export function AlertsScreen() {
                 </Col>
               </Row>
               <Txt fos={13} lh={19.5} tone="muted">
-                Restan <Txt font="mono" fos={13} col={warnInk}>{fmtKm(kmLeft(v))} km</Txt> para el próximo
+                Restan <Txt font="mono" fos={13} col={warnInk}>{fmtKm(v.gauge?.kmLeft ?? 0)} km</Txt> para el próximo
                 cambio. Programa tu visita al lubricentro.
               </Txt>
             </LinearGradient>

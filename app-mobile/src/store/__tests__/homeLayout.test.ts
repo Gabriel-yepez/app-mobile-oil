@@ -17,7 +17,7 @@ describe('useHomeLayout', () => {
     useHomeLayout.getState().toggle('openAlerts' as WidgetId);
     useHomeLayout.getState().move('openAlerts' as WidgetId, 0);
     expect(visibleWidgets(useHomeLayout.getState().layout)).toEqual([
-      'gauge', 'techReadout', 'quickActions', 'kpis', 'openAlerts', 'recentHistory',
+      'oilStatus', 'quickActions', 'kpis', 'openAlerts', 'recentHistory',
     ]);
   });
 
@@ -40,7 +40,7 @@ describe('useHomeLayout', () => {
   // ofrece asa ni interruptor para estos widgets, la acción no hace nada.
   it('el bloque fijo no se mueve ni se apaga', () => {
     const antes = useHomeLayout.getState().layout;
-    useHomeLayout.getState().move('gauge' as WidgetId, 1);
+    useHomeLayout.getState().move('oilStatus' as WidgetId, 1);
     useHomeLayout.getState().toggle('kpis' as WidgetId);
     expect(useHomeLayout.getState().layout).toEqual(antes);
   });
