@@ -7,6 +7,7 @@ import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OilModule } from './modules/oil/oil.module';
 import { BrandsModule } from './modules/brands/brands.module';
+import { ColorsModule } from './modules/colors/colors.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { BrandsModule } from './modules/brands/brands.module';
     AuthModule,
     OilModule,
     BrandsModule,
+    ColorsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
