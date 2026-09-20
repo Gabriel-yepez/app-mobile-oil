@@ -1,11 +1,16 @@
 // Endpoints de /vehicles. Un archivo por recurso.
 import { ApiClient } from '../base';
-import type { NewOilChangeInput, NewVehicleInput } from '../../data/types';
+import type {
+  NewOilChangeInput,
+  NewVehicleInput,
+  VehicleKind,
+} from '../../data/types';
 import type { Gauge, Odometer } from './oil-status.controller';
 
+/** Como la ve la app: `kind` en minúsculas, igual que el resto del código. */
 export type ApiVehicle = {
   id: string;
-  kind: 'CAR' | 'MOTO';
+  kind: VehicleKind;
   brand: string;
   model: string;
   year: number;
@@ -41,22 +46,48 @@ export type ApiOilChangePage = {
   nextCursor: string | null;
 };
 
+/** Forma del backend: es la única que sabe de mayúsculas. */
+type VehiculoCrudo = Omit<ApiVehicle, 'kind'> & { kind: 'CAR' | 'MOTO' };
+
+const aDominio = (v: VehiculoCrudo): ApiVehicle => ({
+  ...v,
+  kind: v.kind === 'CAR' ? 'car' : 'moto',
+});
+
+const aBackend = <T extends { kind?: VehicleKind }>(input: T) => ({
+  ...input,
+  ...(input.kind ? { kind: input.kind === 'car' ? 'CAR' : 'MOTO' } : {}),
+});
+
 class VehiclesController extends ApiClient {
   constructor() {
     super('/vehicles');
   }
 
-  listar() {
-    return this.get<ApiVehicle[]>('', { auth: true });
+  async listar(): Promise<ApiVehicle[]> {
+    return (await this.get<VehiculoCrudo[]>('', { auth: true })).map(aDominio);
   }
 
   /** Idempotente: reenviar el mismo id devuelve el existente, no duplica. */
-  crear(id: string, input: NewVehicleInput) {
-    return this.post<ApiVehicle>('', { auth: true, body: { id, ...input } });
+  async crear(id: string, input: NewVehicleInput): Promise<ApiVehicle> {
+    return aDominio(
+      await this.post<VehiculoCrudo>('', {
+        auth: true,
+        body: { id, ...aBackend(input) },
+      }),
+    );
   }
 
-  editar(id: string, patch: Partial<NewVehicleInput>) {
-    return this.patch<ApiVehicle>(`/${id}`, { auth: true, body: patch });
+  async editar(
+    id: string,
+    patch: Partial<NewVehicleInput>,
+  ): Promise<ApiVehicle> {
+    return aDominio(
+      await this.patch<VehiculoCrudo>(`/${id}`, {
+        auth: true,
+        body: aBackend(patch),
+      }),
+    );
   }
 
   borrar(id: string) {

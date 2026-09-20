@@ -23,7 +23,7 @@ import type { ApiVehicle } from '../../api/controllers/vehicles.controller';
 const api = vehiclesController as unknown as Record<string, jest.Mock>;
 
 const ficha = {
-  kind: 'CAR' as const,
+  kind: 'car' as const,
   brand: 'Toyota',
   model: 'Corolla',
   year: 2019,

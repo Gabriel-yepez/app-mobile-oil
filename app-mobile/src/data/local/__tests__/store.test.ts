@@ -11,7 +11,7 @@ import type { ApiVehicle } from '../../../api/controllers/vehicles.controller';
 
 const vehiculo = (id: string): ApiVehicle => ({
   id,
-  kind: 'CAR',
+  kind: 'car',
   brand: 'Toyota',
   model: 'Corolla',
   year: 2019,

@@ -7,7 +7,7 @@ const crearVehiculo = (id: string): QueueOp => ({
   op: 'CREATE_VEHICLE',
   id,
   payload: {
-    kind: 'CAR',
+    kind: 'car',
     brand: 'Toyota',
     model: 'Corolla',
     year: 2019,

@@ -13,6 +13,7 @@ import { useThemePref } from './src/store/themePref';
 import { AppNavigator } from './src/navigation';
 import { useAuth } from './src/store/auth';
 import { useStore } from './src/store/useStore';
+import { useVehicles } from './src/store/useVehicles';
 import { useNotificationResponse, useNotificationsSync } from './src/notifications';
 
 export default function App() {
@@ -39,6 +40,13 @@ export default function App() {
   const bootstrap = useAuth((s) => s.bootstrap);
   const setProfileFromUser = useStore((s) => s.setProfileFromUser);
 
+  // La flota: se hidrata del almacenamiento local siempre, y solo se refresca
+  // y sincroniza con sesión activa. Hidratar sin sesión igual es correcto —
+  // es lo que hace que la app abra mostrando los vehículos sin esperar red.
+  const hidratarFlota = useVehicles((s) => s.hidratar);
+  const refrescarFlota = useVehicles((s) => s.refresh);
+  const sincronizarFlota = useVehicles((s) => s.sincronizar);
+
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
@@ -46,6 +54,18 @@ export default function App() {
   useEffect(() => {
     if (user) setProfileFromUser(user);
   }, [user, setProfileFromUser]);
+
+  useEffect(() => {
+    void hidratarFlota();
+  }, [hidratarFlota]);
+
+  useEffect(() => {
+    if (authStatus !== 'authed') return;
+    // Primero se drena lo pendiente y después se refresca: al revés, la
+    // respuesta del servidor pisaría en pantalla los cambios que el usuario
+    // hizo sin señal y que todavía no se enviaron.
+    void sincronizarFlota().then(() => refrescarFlota());
+  }, [authStatus, refrescarFlota, sincronizarFlota]);
 
   const [fontsLoaded] = useFonts({
     Inter_500Medium,

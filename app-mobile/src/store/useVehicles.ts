@@ -39,6 +39,9 @@ type VehiclesStore = {
   /** Devuelve el id nuevo: la pantalla navega al detalle sin esperar la red. */
   addVehicle: (input: NewVehicleInput) => string;
   updateVehicle: (id: string, patch: Partial<NewVehicleInput>) => void;
+  /** Una lectura del tablero. El odómetro no es un campo del vehículo sino un
+   *  hecho fechado, así que se reporta, no se edita. */
+  reportOdometer: (vehicleId: string, km: number) => void;
   removeVehicle: (id: string) => void;
   setActiveVehicle: (id: string) => void;
   sincronizar: () => Promise<void>;
@@ -112,6 +115,20 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
       encolarOp(
         { op: 'UPDATE_VEHICLE', id, payload: patch },
         get().vehicles.map((v) => (v.id === id ? { ...v, ...patch } : v)),
+      );
+    },
+
+    reportOdometer: (vehicleId, km) => {
+      const ahora = new Date().toISOString();
+      encolarOp(
+        { op: 'REPORT_ODOMETER', id: nuevoId(), vehicleId, km },
+        // Se refleja de una en la ficha para que la lista no siga mostrando
+        // el número viejo mientras la cola sincroniza.
+        get().vehicles.map((v) =>
+          v.id === vehicleId
+            ? { ...v, odometer: { km, source: 'reported', asOf: ahora } }
+            : v,
+        ),
       );
     },
 

@@ -1,7 +1,13 @@
 // Espejo de los DTOs del backend. Se declara acá y no se importa del backend
 // a propósito: son dos paquetes que se despliegan por separado, y un import
 // cruzado los ataría a compilar juntos.
-export type VehicleKind = 'CAR' | 'MOTO';
+/**
+ * En minúsculas: es el vocabulario que ya hablan todos los componentes de la
+ * app (VehicleThumb, los filtros del garaje, los formularios). El backend usa
+ * mayúsculas y la conversión ocurre en el controlador de la API, igual que el
+ * `toDomain` del backend convierte en SU frontera. Una sola forma adentro.
+ */
+export type VehicleKind = 'car' | 'moto';
 
 export type NewVehicleInput = {
   kind: VehicleKind;
