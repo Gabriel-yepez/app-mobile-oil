@@ -8,7 +8,8 @@ export type ApiUser = {
   cedula: string;
   email: string;
   phone: string;
-  /** El registro no los pide: nacen nulos y se llenan en EditProfile. */
+  /** Anulables solo por las cuentas viejas: el registro ya los exige, así que
+   *  en las nuevas nunca vienen en null. Se llenan desde EditProfile. */
   state: string | null;
   city: string | null;
   currency: 'USD' | 'BS' | 'BOTH';
@@ -28,6 +29,25 @@ export type RegisterInput = {
   password: string;
 };
 
+/**
+ * El perfil editable. Todo opcional porque el backend recibe un PATCH: lo que
+ * no se manda se queda como está.
+ *
+ * `cedula` no aparece a propósito —identifica la cuenta y el backend la
+ * rechaza— y la contraseña tampoco: ese es otro trámite.
+ */
+export type UpdateProfileInput = Partial<
+  Pick<ApiUser, 'fullName' | 'email' | 'phone' | 'state' | 'city' | 'currency'>
+>;
+
+export type UpdateProfileResponse = {
+  user: ApiUser;
+  /** Texto del servidor, listo para el toast. No ramifiques por él. */
+  message: string;
+  /** Los campos que cambiaron de verdad. Vacío = no había nada que cambiar. */
+  changed: string[];
+};
+
 class AuthController extends ApiClient {
   constructor() {
     super('/auth');
@@ -43,6 +63,15 @@ class AuthController extends ApiClient {
 
   me() {
     return this.get<{ user: ApiUser }>('/me', { auth: true });
+  }
+
+  /**
+   * Edita el perfil de la sesión. Mismo recurso que `me()`, así que devuelve
+   * el usuario entero ya actualizado —no solo lo que mandaste— y vale para
+   * pisar el que tiene el store sin pedir un `/me` detrás.
+   */
+  updateMe(patch: UpdateProfileInput) {
+    return this.patch<UpdateProfileResponse>('/me', { auth: true, body: patch });
   }
 
   logout(refreshToken: string) {

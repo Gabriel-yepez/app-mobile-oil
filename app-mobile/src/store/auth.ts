@@ -6,6 +6,7 @@ import {
   authController,
   type ApiUser,
   type RegisterInput,
+  type UpdateProfileInput,
 } from '../api/controllers/auth.controller';
 import { tokenStorage } from '../api/tokens';
 
@@ -22,6 +23,21 @@ type AuthStore = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (input: RegisterInput) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Guarda el perfil contra el backend y devuelve el mensaje del servidor,
+   * que es lo que la pantalla enseña en el toast.
+   *
+   * Vive acá y no en `useStore` porque el usuario autenticado es ESTE store:
+   * al dejar el `user` del servidor, el perfil de `useStore` se actualiza solo
+   * por el efecto de App.tsx, con los valores ya normalizados por el backend
+   * ("caracas" vuelve como "Caracas"). Si la pantalla escribiera el perfil
+   * local por su cuenta, se vería el texto sin normalizar hasta el próximo
+   * arranque.
+   *
+   * No atrapa el error: la pantalla necesita saber que falló para quedarse
+   * abierta con lo que el usuario escribió.
+   */
+  updateProfile: (patch: UpdateProfileInput) => Promise<string>;
 };
 
 const mensajeDe = (e: unknown): string =>
@@ -80,6 +96,12 @@ export const useAuth = create<AuthStore>((set) => ({
       set({ status: 'guest', error: mensajeDe(e) });
       throw e;
     }
+  },
+
+  updateProfile: async (patch) => {
+    const { user, message } = await authController.updateMe(patch);
+    set({ user, error: null });
+    return message;
   },
 
   signOut: async () => {

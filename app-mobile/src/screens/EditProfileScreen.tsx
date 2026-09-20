@@ -1,9 +1,13 @@
 // Editar perfil — el destino del botón de lápiz del hero de Perfil.
 //
-// El formulario arranca como copia local del perfil y solo escribe al store al
-// guardar: si el usuario se arrepiente y vuelve, no queda nada a medio cambiar.
-// Y guarda únicamente los campos que tocó (`updateProfile` es parcial), así
-// mañana sumar un campo al perfil no obliga a pasar por acá.
+// El formulario arranca como copia local del perfil y solo se manda al guardar:
+// si el usuario se arrepiente y vuelve, no queda nada a medio cambiar.
+//
+// Guarda contra el BACKEND (PATCH /auth/me) y no contra el store local. El
+// store se actualiza solo, con el usuario que devuelve el servidor: así lo que
+// queda en pantalla es el valor ya normalizado —"caracas" vuelve como
+// "Caracas"— y no el texto crudo que se escribió. Lo que diga el servidor,
+// haya salido bien o mal, se le enseña al usuario en un toast.
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Screen, Scroll, Txt, useAppColors } from '../ui';
 import { Btn, Field, IconBtn, Input, SectionHead, Select } from '../components/primitives';
 import { Icon } from '../components/Icon';
+import { ApiError } from '../api/base';
+import type { UpdateProfileInput } from '../api/controllers/auth.controller';
 import { Profile } from '../data/mock';
+import { useAuth } from '../store/auth';
+import { toast } from '../store/toast';
 import { useStore } from '../store/useStore';
 
 /** Los 24 estados de Venezuela, para no dejar el estado como texto libre —
@@ -34,7 +42,7 @@ export function EditProfileScreen() {
   const navigation = useNavigation();
   const c = useAppColors();
   const profile = useStore((s) => s.profile);
-  const updateProfile = useStore((s) => s.updateProfile);
+  const updateProfile = useAuth((s) => s.updateProfile);
 
   const [form, setForm] = useState<Editable>({
     fullName: profile.fullName,
@@ -46,6 +54,7 @@ export function EditProfileScreen() {
   // Los errores aparecen recién al intentar guardar: marcar en rojo un campo
   // que el usuario todavía no terminó de escribir es hostil.
   const [intento, setIntento] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
   const set = <K extends keyof Editable>(k: K, v: Editable[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -57,21 +66,48 @@ export function EditProfileScreen() {
       : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
         ? 'Ese correo no parece válido'
         : '',
+    // El estado puede venir vacío en cuentas viejas, creadas antes de que el
+    // registro pidiera el perfil completo. Se exige acá porque el backend no
+    // acepta una cadena vacía, y sin esta comprobación el usuario recibiría
+    // el error del servidor en vez del rojo del campo que lo causa.
+    state: vacio(form.state) ? 'Elegí tu estado' : '',
     city: vacio(form.city) ? 'Poné tu ciudad' : '',
   };
   const hayError = Object.values(errores).some(Boolean);
 
-  const guardar = () => {
+  const guardar = async () => {
     setIntento(true);
-    if (hayError) return;
-    updateProfile({
+    if (hayError || guardando) return;
+
+    // Se manda el formulario entero, sin calcular qué tocó el usuario: el
+    // backend descarta lo que no cambió y responde `changed` con lo que sí.
+    // Hacer ese diff acá sería repetir —mal— una regla que ya vive allá.
+    const patch: UpdateProfileInput = {
       fullName: form.fullName.trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
       state: form.state,
       city: form.city.trim(),
-    });
-    navigation.goBack();
+    };
+
+    setGuardando(true);
+    try {
+      // El mensaje sale del servidor, no de acá: distingue el guardado real de
+      // "no había nada que cambiar", que para el usuario no son lo mismo.
+      toast.ok(await updateProfile(patch));
+      navigation.goBack();
+    } catch (e) {
+      // Se queda en la pantalla a propósito, con lo escrito intacto: volver
+      // atrás tras un fallo dejaría al usuario creyendo que guardó, y con el
+      // texto perdido si quisiera reintentar.
+      toast.error(
+        e instanceof ApiError
+          ? e.message
+          : 'No pudimos guardar. Revisa tu conexión.',
+      );
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const err = (k: keyof typeof errores) => (intento ? errores[k] : '');
@@ -144,7 +180,7 @@ export function EditProfileScreen() {
           <Col gap="$sm">
             <SectionHead>Ubicación</SectionHead>
             <Col px="$lg" gap="$lg">
-              <Field label="Estado">
+              <Field label="Estado" error={err('state')}>
                 <Select
                   value={form.state}
                   options={ESTADOS}
@@ -165,8 +201,8 @@ export function EditProfileScreen() {
           </Col>
 
           <Box px="$lg" pt="$sm">
-            <Btn size="lg" onPress={guardar}>
-              Guardar cambios
+            <Btn size="lg" onPress={() => void guardar()} disabled={guardando}>
+              {guardando ? 'Guardando…' : 'Guardar cambios'}
             </Btn>
           </Box>
         </Scroll>

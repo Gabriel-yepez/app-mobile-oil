@@ -150,4 +150,42 @@ describe('useAuth', () => {
 
     expect(api.logout).toHaveBeenCalledWith('r');
   });
+
+  describe('updateProfile', () => {
+    it('manda el patch y deja el usuario que responde el servidor', async () => {
+      // El servidor devuelve la ciudad NORMALIZADA, distinta de lo que se
+      // mandó. Es la razón de que el store se quede con su respuesta en vez
+      // de con el patch: si no, la pantalla enseñaría "caracas" hasta el
+      // siguiente arranque.
+      api.updateMe.mockResolvedValue({
+        user: { ...usuario, city: 'Caracas' },
+        message: 'Listo, tus datos quedaron actualizados.',
+        changed: ['city'],
+      });
+      useAuth.setState({ user: usuario, status: 'authed' });
+
+      const mensaje = await useAuth.getState().updateProfile({ city: 'caracas' });
+
+      expect(api.updateMe).toHaveBeenCalledWith({ city: 'caracas' });
+      expect(useAuth.getState().user?.city).toBe('Caracas');
+      expect(mensaje).toBe('Listo, tus datos quedaron actualizados.');
+    });
+
+    // La pantalla necesita enterarse para quedarse abierta con lo escrito: si
+    // el store se tragara el error, el usuario volvería atrás creyendo que
+    // guardó.
+    it('propaga el error y no toca el usuario', async () => {
+      api.updateMe.mockRejectedValue(
+        new ApiError(409, 'EMAIL_TAKEN', 'Ese correo ya tiene una cuenta.'),
+      );
+      useAuth.setState({ user: usuario, status: 'authed' });
+
+      await expect(
+        useAuth.getState().updateProfile({ email: 'ana@correo.com' }),
+      ).rejects.toMatchObject({ code: 'EMAIL_TAKEN' });
+
+      expect(useAuth.getState().user).toEqual(usuario);
+      expect(useAuth.getState().status).toBe('authed');
+    });
+  });
 });

@@ -31,17 +31,20 @@ type Store = {
   profile: Profile;
   subscription: Subscription;
 
-  /** Parcial a propósito: la pantalla de editar manda solo lo que tocó. */
-  updateProfile: (patch: Partial<Profile>) => void;
-  /** Vuelca el usuario autenticado sobre el perfil, al arrancar la sesión. */
+  // Acá había un `updateProfile` que escribía el perfil en local. Se fue a
+  // useAuth, que es donde vive el usuario de verdad: ahora editar el perfil
+  // es una llamada al backend, y el perfil de este store se repinta solo con
+  // lo que responde el servidor (ver el efecto de App.tsx). Tener las dos
+  // cosas dejaba escribir el perfil sin que el servidor se enterara.
+
+  /** Vuelca el usuario autenticado sobre el perfil, al arrancar la sesión y
+   *  después de cada edición. */
   setProfileFromUser: (u: AuthUser) => void;
 };
 
 export const useStore = create<Store>((set) => ({
   profile: MOCK_PROFILE,
   subscription: MOCK_SUBSCRIPTION,
-
-  updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
 
   // El registro ya pide estado y ciudad, así que para las cuentas nuevas
   // siempre vienen. Las creadas antes los tienen en null, y ahí se muestra
