@@ -104,8 +104,9 @@ describe('nombreValido', () => {
     ['-Toyota', 'arranca con símbolo'],
     [' .Toyota', 'arranca con símbolo tras recortar'],
     ['http://spam.com', 'URL'],
-    ['Toyota\nChevrolet', 'salto de línea'],
     ['a'.repeat(41), '41 caracteres'],
+    ['Toyota\u202Eoo', 'override RTL'],
+    ['Toyo\u0000ta', 'byte nulo'],
     ['Toyota/Chevrolet', 'barra'],
     ['<b>Toyota</b>', 'etiquetas'],
   ])('rechaza %s (%s)', (n) => {
