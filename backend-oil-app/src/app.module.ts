@@ -6,6 +6,7 @@ import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OilModule } from './modules/oil/oil.module';
+import { BrandsModule } from './modules/brands/brands.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { OilModule } from './modules/oil/oil.module';
     PrismaModule,
     AuthModule,
     OilModule,
+    BrandsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
