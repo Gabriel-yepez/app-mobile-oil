@@ -16,18 +16,8 @@ import { useBrands, useMarcasDe } from '../store/useBrands';
 import { nombreValido, sugerirParecida } from '../data/marcas/nombre';
 import { useVehicles } from '../store/useVehicles';
 import { useOilStatus } from '../hooks/useOilStatus';
+import { ColorSelect } from '../components/ColorSelect';
 import { RootScreenProps } from '../navigation/types';
-
-/** La misma paleta que ofrece el alta: si acá hubiera otra, un vehículo podría
- *  quedar con un color que el alta no sabe volver a elegir. */
-const COLORS: { name: string; hex: string }[] = [
-  { name: 'Negro', hex: '#1F2937' },
-  { name: 'Gris', hex: '#9CA3AF' },
-  { name: 'Blanco', hex: '#F3F4F6' },
-  { name: 'Rojo', hex: '#DC2626' },
-  { name: 'Azul', hex: '#2563EB' },
-  { name: 'Verde', hex: '#059669' },
-];
 
 const AHORA = new Date().getFullYear();
 
@@ -50,7 +40,7 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
     year: String(vehicle?.year ?? ''),
     plate: vehicle?.plate ?? '',
     km: '',
-    color: vehicle?.color ?? COLORS[0].hex,
+    color: vehicle?.color ?? '#1F2937',
     // Se muestra en km/mes, que es como la gente sabe cuánto maneja.
     kmMes: String(Math.round((vehicle?.kmPerDay ?? 40) * 30)),
   });
@@ -92,8 +82,6 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
   const set = <K extends keyof typeof form>(k: K, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const colorIdx = Math.max(0, COLORS.findIndex((x) => x.hex === form.color));
-  const color = COLORS[colorIdx];
 
   const año = parseInt(form.year, 10);
   const km = parseInt(form.km, 10);
@@ -233,30 +221,10 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
                   </Box>
                   <Box f={1}>
                     <Field label="Color">
-                      <Touchable
-                        onPress={() => set('color', COLORS[(colorIdx + 1) % COLORS.length].hex)}
-                        fade
-                        fd="row"
-                        ai="center"
-                        h={52}
-                        gap="$sm"
-                        br="$md"
-                        bw={1.5}
-                        bc="$line"
-                        bg="$surface"
-                        px={14}
-                      >
-                        <Box
-                          h={22}
-                          w={22}
-                          br="$pill"
-                          bw={2}
-                          bc="#FFFFFF"
-                          bg={color.hex}
-                          transition="quick"
-                        />
-                        <Txt fos={14}>{color.name}</Txt>
-                      </Touchable>
+                      <ColorSelect
+                        value={form.color}
+                        onChange={(hex) => set('color', hex)}
+                      />
                     </Field>
                   </Box>
                 </Row>

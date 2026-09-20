@@ -10,6 +10,7 @@ import AsyncStorage from 'expo-sqlite/kv-store';
 import type { ApiVehicle } from '../../api/controllers/vehicles.controller';
 import type { OilStatusResponse } from '../../api/controllers/oil-status.controller';
 import type { ApiBrand } from '../../api/controllers/brands.controller';
+import type { ApiColor } from '../../api/controllers/colors.controller';
 import type { VehicleKind } from '../types';
 import type { QueueEntry } from '../sync/queue';
 
@@ -18,6 +19,7 @@ const CLAVE_COLA = 'ruedalo:cola';
 const claveEstado = (vehicleId: string) => `ruedalo:estado:${vehicleId}`;
 const CLAVE_MARCAS = 'ruedalo:marcas';
 const CLAVE_COLA_MARCAS = 'ruedalo:cola-marcas';
+const CLAVE_COLORES = 'ruedalo:colores';
 
 async function leerJson<T>(clave: string, siFalla: T): Promise<T> {
   try {
@@ -99,4 +101,13 @@ export async function guardarColaMarcas(cola: QueueEntry[]): Promise<void> {
 export async function leerColaMarcas(): Promise<QueueEntry[]> {
   const c = await leerJson<unknown>(CLAVE_COLA_MARCAS, []);
   return Array.isArray(c) ? (c as QueueEntry[]) : [];
+}
+
+export async function guardarColores(colores: ApiColor[]): Promise<void> {
+  await guardarJson(CLAVE_COLORES, colores);
+}
+
+export async function leerColores(): Promise<ApiColor[]> {
+  const c = await leerJson<unknown>(CLAVE_COLORES, []);
+  return Array.isArray(c) ? (c as ApiColor[]) : [];
 }

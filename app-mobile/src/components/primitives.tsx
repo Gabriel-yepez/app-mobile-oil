@@ -323,6 +323,44 @@ type SelectProps = {
   onAddNew?: (texto: string) => void;
 };
 
+/**
+ * La hoja que sube desde abajo, con su fondo oscuro.
+ *
+ * Vive acá y no copiada en cada selector por una razón concreta: la hoja
+ * TIENE QUE TRAGARSE SUS PROPIOS TOQUES. Sin ese `Touchable` interno, tocar
+ * cualquier cosa que no sea a su vez un Touchable —un campo de texto, por
+ * ejemplo— atraviesa el contenido, llega al fondo y CIERRA la hoja en vez de
+ * hacer lo que el usuario quería. Ya pasó una vez con el buscador de marcas.
+ */
+export function HojaModal({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+      <Touchable f={1} jc="flex-end" bg="$scrim" onPress={onClose}>
+        <Touchable
+          onPress={() => {}}
+          maxHeight={420}
+          borderTopLeftRadius="$xl"
+          borderTopRightRadius="$xl"
+          bg="$surface"
+          py="$md"
+          transition="bouncy"
+          enterStyle={{ y: 40, opacity: 0 }}
+        >
+          {children}
+        </Touchable>
+      </Touchable>
+    </Modal>
+  );
+}
+
 export function Select({
   value,
   placeholder = 'Seleccionar',
@@ -376,23 +414,7 @@ export function Select({
         <Icon name="chevD" color={c.muted} size={20} />
       </Touchable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={cerrar}>
-        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={cerrar}>
-          {/* La hoja se traga sus propios toques. Sin esto, tocar el campo de
-              búsqueda CIERRA la hoja en vez de enfocarlo: el toque atraviesa
-              el Input —que no es un Touchable— y termina en el fondo, que
-              cierra. Las filas de la lista nunca lo sufrieron porque cada una
-              es su propio Touchable y se queda con el toque. */}
-          <Touchable
-            onPress={() => {}}
-            maxHeight={420}
-            borderTopLeftRadius="$xl"
-            borderTopRightRadius="$xl"
-            bg="$surface"
-            py="$md"
-            transition="bouncy"
-            enterStyle={{ y: 40, opacity: 0 }}
-          >
+      <HojaModal open={open} onClose={cerrar}>
             {searchable ? (
               <Box px="$2xl" pb="$sm">
                 <Input
@@ -451,9 +473,7 @@ export function Select({
                 );
               }}
             />
-          </Touchable>
-        </Touchable>
-      </Modal>
+      </HojaModal>
     </>
   );
 }

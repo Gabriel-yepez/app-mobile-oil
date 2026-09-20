@@ -16,6 +16,7 @@ import { useAuth } from './src/store/auth';
 import { useStore } from './src/store/useStore';
 import { useVehicles } from './src/store/useVehicles';
 import { useBrands } from './src/store/useBrands';
+import { useColors } from './src/store/useColors';
 import { useNotificationResponse, useNotificationsSync } from './src/notifications';
 
 export default function App() {
@@ -69,6 +70,19 @@ export default function App() {
   useEffect(() => {
     void hidratarMarcas();
   }, [hidratarMarcas]);
+
+  // Los colores son solo lectura: hidratar y refrescar, sin cola que drenar.
+  const hidratarColores = useColors((s) => s.hidratar);
+  const refrescarColores = useColors((s) => s.refresh);
+
+  useEffect(() => {
+    void hidratarColores();
+  }, [hidratarColores]);
+
+  useEffect(() => {
+    if (authStatus !== 'authed') return;
+    void refrescarColores();
+  }, [authStatus, refrescarColores]);
 
   useEffect(() => {
     if (authStatus !== 'authed') return;

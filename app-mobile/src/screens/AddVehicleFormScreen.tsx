@@ -8,16 +8,9 @@ import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
 import { useBrands, useMarcasDe } from '../store/useBrands';
 import { nombreValido, sugerirParecida } from '../data/marcas/nombre';
+import { ColorSelect } from '../components/ColorSelect';
+import { useColors } from '../store/useColors';
 import { RootScreenProps } from '../navigation/types';
-
-const COLORS: { name: string; hex: string }[] = [
-  { name: 'Negro', hex: '#1F2937' },
-  { name: 'Gris', hex: '#9CA3AF' },
-  { name: 'Blanco', hex: '#F3F4F6' },
-  { name: 'Rojo', hex: '#DC2626' },
-  { name: 'Azul', hex: '#2563EB' },
-  { name: 'Verde', hex: '#059669' },
-];
 
 export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'AddVehicleForm'>) {
   const insets = useSafeAreaInsets();
@@ -29,13 +22,15 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
-  const [colorIdx, setColorIdx] = useState(0);
+  // El hex y no un índice: es lo que se guarda y lo que el catálogo puede
+  // dejar de tener. Arranca en el primero del catálogo.
+  const primerColor = useColors((st) => st.colores[0]?.hex ?? '#1F2937');
+  const [color, setColor] = useState(primerColor);
   const [plate, setPlate] = useState('');
   const [km, setKm] = useState('');
   // Default de 1.200 km/mes: 40 km/día, el uso urbano típico en Venezuela.
   const [kmMes, setKmMes] = useState('1200');
 
-  const color = COLORS[colorIdx];
 
   const pedirMarcaNueva = (texto: string) => {
     if (!nombreValido(texto)) {
@@ -104,34 +99,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                 </Box>
                 <Box f={1}>
                   <Field label="Color">
-                    <Touchable
-                      onPress={() => setColorIdx((i) => (i + 1) % COLORS.length)}
-                      fade
-                      fd="row"
-                      ai="center"
-                      h={52}
-                      gap="$sm"
-                      br="$md"
-                      bw={1.5}
-                      bc="$line"
-                      bg="$surface"
-                      px={14}
-                    >
-                      <Box
-                        h={22}
-                        w={22}
-                        br="$pill"
-                        bw={2}
-                        bc="#FFFFFF"
-                        bg={color.hex}
-                        transition="quick"
-                        shadowColor="#000000"
-                        shadowOpacity={0.15}
-                        shadowRadius={2}
-                        shadowOffset={{ width: 0, height: 1 }}
-                      />
-                      <Txt fos={14}>{color.name}</Txt>
-                    </Touchable>
+                    <ColorSelect value={color} onChange={setColor} />
                   </Field>
                 </Box>
               </Row>
@@ -178,7 +146,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   model: model || 'Sin modelo',
                   year: parseInt(year, 10) || new Date().getFullYear(),
                   plate: plate || '—',
-                  color: color.hex,
+                  color,
                   km: parseInt(km, 10) || 0,
                   // Cuánto maneja, para que la barra baje sola entre cambios.
                   // Se pregunta en km/mes, que es como la gente sabe cuánto
