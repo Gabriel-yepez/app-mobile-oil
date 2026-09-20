@@ -378,7 +378,13 @@ export function Select({
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={cerrar}>
         <Touchable f={1} jc="flex-end" bg="$scrim" onPress={cerrar}>
-          <Box
+          {/* La hoja se traga sus propios toques. Sin esto, tocar el campo de
+              búsqueda CIERRA la hoja en vez de enfocarlo: el toque atraviesa
+              el Input —que no es un Touchable— y termina en el fondo, que
+              cierra. Las filas de la lista nunca lo sufrieron porque cada una
+              es su propio Touchable y se queda con el toque. */}
+          <Touchable
+            onPress={() => {}}
             maxHeight={420}
             borderTopLeftRadius="$xl"
             borderTopRightRadius="$xl"
@@ -445,7 +451,7 @@ export function Select({
                 );
               }}
             />
-          </Box>
+          </Touchable>
         </Touchable>
       </Modal>
     </>

@@ -10,6 +10,7 @@
 //
 // CUÁNDO REVERTIR ESTO: en cuanto aparezca un tercer escritor con cola propia,
 // hay que extraer un `useSync` de verdad. Con dos todavía no se paga el riesgo.
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { brandsController } from '../api/controllers/brands.controller';
 import type { ApiBrand } from '../api/controllers/brands.controller';
@@ -174,8 +175,26 @@ export const useBrands = create<Estado>((set, get) => ({
   },
 }));
 
-/** Los nombres que el selector debe ofrecer para ese tipo. */
-export const useMarcasDe = (kind: VehicleKind): string[] =>
-  useBrands((s) => unirMarcas(s.marcas[kind], s.pendientes[kind])).map(
-    (b) => b.name,
+/**
+ * Los nombres que el selector debe ofrecer para ese tipo.
+ *
+ * OJO con la forma de esto. Los dos selectores devuelven la MISMA referencia
+ * mientras el estado no cambie, y la combinación se arma afuera con useMemo.
+ *
+ * Hacerlo al revés —`useBrands((s) => unirMarcas(...))`— es un bucle infinito
+ * de renders: zustand compara el resultado del selector con `Object.is`, y
+ * `unirMarcas` construye un array nuevo en cada llamada, así que cada render
+ * parece un cambio de estado y dispara el siguiente. La app muere con
+ * "Maximum update depth exceeded" al abrir el formulario.
+ *
+ * Regla: un selector de zustand nunca debe construir un objeto o un array.
+ */
+export const useMarcasDe = (kind: VehicleKind): string[] => {
+  const marcas = useBrands((s) => s.marcas[kind]);
+  const pendientes = useBrands((s) => s.pendientes[kind]);
+
+  return useMemo(
+    () => unirMarcas(marcas, pendientes).map((b) => b.name),
+    [marcas, pendientes],
   );
+};
