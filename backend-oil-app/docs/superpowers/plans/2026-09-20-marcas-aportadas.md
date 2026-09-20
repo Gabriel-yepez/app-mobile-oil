@@ -104,8 +104,9 @@ describe('nombreValido', () => {
     ['-Toyota', 'arranca con símbolo'],
     [' .Toyota', 'arranca con símbolo tras recortar'],
     ['http://spam.com', 'URL'],
-    ['Toyota\nChevrolet', 'salto de línea'],
     ['a'.repeat(41), '41 caracteres'],
+    ['Toyota\u202Eoo', 'override RTL'],
+    ['Toyo\u0000ta', 'byte nulo'],
     ['Toyota/Chevrolet', 'barra'],
     ['<b>Toyota</b>', 'etiquetas'],
   ])('rechaza %s (%s)', (n) => {
@@ -1021,10 +1022,20 @@ En `backend-oil-app/src/app.module.ts`, agregar el import y sumar `BrandsModule`
 - [ ] **Step 4: Verificar que las rutas se montan**
 
 ```bash
-cd backend-oil-app && pnpm build && timeout 25 pnpm start 2>&1 | grep -E "brands|BrandsController"
+cd backend-oil-app && pnpm build
 ```
 
-Expected: dos líneas, `Mapped {/api/v1/brands, GET}` y `Mapped {/api/v1/brands, POST}`.
+Después levantar el servidor en segundo plano y comprobar las rutas. **`timeout` no existe en macOS**, así que no sirve para acotar el arranque:
+
+```bash
+cd backend-oil-app && pnpm start > /tmp/start.log 2>&1 &
+sleep 10
+grep -E "Mapped \{/api/v1/brands" /tmp/start.log
+curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:3000/api/v1/brands?kind=CAR'
+kill %1
+```
+
+Expected: dos líneas `Mapped`, una GET y una POST, y `401` en el curl (sin token el guard debe rechazar).
 
 - [ ] **Step 5: Commit**
 

@@ -7,6 +7,7 @@
 import { ApiError } from '../../api/base';
 import type { vehiclesController } from '../../api/controllers/vehicles.controller';
 import type { oilStatusController } from '../../api/controllers/oil-status.controller';
+import type { brandsController } from '../../api/controllers/brands.controller';
 import { cabeza, esperaMs, marcarIntento, sacar } from './queue';
 import type { QueueEntry, QueueOp } from './queue';
 
@@ -31,7 +32,18 @@ export type RunnerDeps = {
   /** Lo llama el runner cuando una op muere: el registro local queda marcado
    *  con su motivo, para mostrárselo al usuario. Nada desaparece en silencio. */
   marcarRechazado: (op: QueueOp, code: string) => void;
-  api: Pick<
+  api: RunnerApi;
+};
+
+/**
+ * Los métodos que el runner sabe invocar.
+ *
+ * Es `Partial` porque hay dos colas con dueños distintos: la de vehículos no
+ * tiene por qué conocer el controlador de marcas ni al revés. Cada dueño pasa
+ * los métodos de SUS operaciones.
+ */
+export type RunnerApi = Partial<
+  Pick<
     typeof vehiclesController,
     | 'crear'
     | 'editar'
@@ -40,8 +52,22 @@ export type RunnerDeps = {
     | 'editarCambio'
     | 'borrarCambio'
   > &
-    Pick<typeof oilStatusController, 'reportOdometer'>;
-};
+    Pick<typeof oilStatusController, 'reportOdometer'> &
+    Pick<typeof brandsController, 'crearMarca'>
+>;
+
+/**
+ * Que falte un método no es un fallo del usuario sino un error de cableado:
+ * alguien encoló una operación en una cola cuyo dueño no provee cómo enviarla.
+ * Revienta fuerte y temprano — en el primer drenado, en desarrollo — en vez de
+ * fallar en silencio.
+ */
+function requerido<F>(metodo: F | undefined, nombre: string): F {
+  if (metodo === undefined) {
+    throw new Error(`El runner no recibió api.${nombre}`);
+  }
+  return metodo;
+}
 
 export type DrenajeResultado = {
   vacia: boolean;
@@ -53,25 +79,39 @@ export type DrenajeResultado = {
 async function enviar(op: QueueOp, api: RunnerDeps['api']): Promise<void> {
   switch (op.op) {
     case 'CREATE_VEHICLE':
-      await api.crear(op.id, op.payload);
+      await requerido(api.crear, 'crear')(op.id, op.payload);
       return;
     case 'UPDATE_VEHICLE':
-      await api.editar(op.id, op.payload);
+      await requerido(api.editar, 'editar')(op.id, op.payload);
       return;
     case 'DELETE_VEHICLE':
-      await api.borrar(op.id);
+      await requerido(api.borrar, 'borrar')(op.id);
       return;
     case 'CREATE_OIL_CHANGE':
-      await api.registrarCambio(op.id, op.vehicleId, op.payload);
+      await requerido(api.registrarCambio, 'registrarCambio')(
+        op.id,
+        op.vehicleId,
+        op.payload,
+      );
       return;
     case 'UPDATE_OIL_CHANGE':
-      await api.editarCambio(op.id, op.payload);
+      await requerido(api.editarCambio, 'editarCambio')(op.id, op.payload);
       return;
     case 'DELETE_OIL_CHANGE':
-      await api.borrarCambio(op.id);
+      await requerido(api.borrarCambio, 'borrarCambio')(op.id);
       return;
     case 'REPORT_ODOMETER':
-      await api.reportOdometer(op.vehicleId, op.km);
+      await requerido(api.reportOdometer, 'reportOdometer')(
+        op.vehicleId,
+        op.km,
+      );
+      return;
+    case 'CREATE_BRAND':
+      await requerido(api.crearMarca, 'crearMarca')(
+        op.id,
+        op.kind,
+        op.payload.name,
+      );
       return;
   }
 }

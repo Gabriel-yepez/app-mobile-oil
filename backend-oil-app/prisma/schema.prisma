@@ -143,3 +143,23 @@ model OdometerReading {
 
   @@index([vehicleId, readAt(sort: Desc)])
 }
+
+/// Catálogo de marcas. Lo siembran las 18 originales y lo enriquecen los
+/// usuarios. `Vehicle.brand` NO apunta acá: sigue siendo texto suelto, y de
+/// eso depende que dar de alta un vehículo funcione sin señal.
+model Brand {
+  id        String      @id @default(uuid())
+  kind      VehicleKind
+  name      String      @db.VarChar(40)
+  /// Nombre normalizado. Es lo que decide si dos textos son la misma marca.
+  nameKey   String      @db.VarChar(40)
+  /// null = semilla. No es relación a User a propósito: si se borra la cuenta
+  /// que aportó una marca, la marca sobrevive porque ya es del catálogo común.
+  createdBy String?
+  createdAt DateTime    @default(now())
+
+  /// Compuesto con `kind`, nunca `nameKey` solo: Honda, Suzuki y Yamaha son
+  /// marcas de carro Y de moto, y deben ser filas independientes.
+  @@unique([kind, nameKey])
+  @@index([kind, name])
+}

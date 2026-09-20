@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Screen, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
-import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
+import { useBrands, useMarcasDe } from '../store/useBrands';
+import { nombreValido, sugerirParecida } from '../data/marcas/nombre';
 import { useVehicles } from '../store/useVehicles';
 import { useOilStatus } from '../hooks/useOilStatus';
 import { RootScreenProps } from '../navigation/types';
@@ -57,7 +58,37 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
 
   if (!vehicle) return null;
 
-  const brands = vehicle.kind === 'car' ? VE_BRANDS_CAR : VE_BRANDS_MOTO;
+  const brands = useMarcasDe(vehicle.kind);
+  const agregarMarca = useBrands((s) => s.agregar);
+
+  const pedirMarcaNueva = (texto: string) => {
+    if (!nombreValido(texto)) {
+      Alert.alert(
+        'Ese nombre no sirve',
+        'Usa letras, números, espacios, punto o guion. Máximo 40 caracteres.',
+      );
+      return;
+    }
+
+    const parecida = sugerirParecida(texto, brands);
+    if (parecida) {
+      Alert.alert(`¿Quisiste decir ${parecida}?`, `Escribiste «${texto}».`, [
+        { text: `Usar ${parecida}`, onPress: () => set('brand', parecida) },
+        {
+          text: `Crear «${texto}»`,
+          style: 'destructive',
+          onPress: () => {
+            agregarMarca(vehicle.kind, texto);
+            set('brand', texto);
+          },
+        },
+      ]);
+      return;
+    }
+
+    agregarMarca(vehicle.kind, texto);
+    set('brand', texto);
+  };
   const set = <K extends keyof typeof form>(k: K, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -172,6 +203,8 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
                     placeholder="Selecciona la marca"
                     options={brands}
                     onChange={(v) => set('brand', v)}
+                    searchable
+                    onAddNew={pedirMarcaNueva}
                   />
                 </Field>
 

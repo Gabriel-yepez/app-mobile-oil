@@ -14,6 +14,7 @@ import { AppNavigator } from './src/navigation';
 import { useAuth } from './src/store/auth';
 import { useStore } from './src/store/useStore';
 import { useVehicles } from './src/store/useVehicles';
+import { useBrands } from './src/store/useBrands';
 import { useNotificationResponse, useNotificationsSync } from './src/notifications';
 
 export default function App() {
@@ -58,6 +59,23 @@ export default function App() {
   useEffect(() => {
     void hidratarFlota();
   }, [hidratarFlota]);
+
+  // El catálogo de marcas sigue el mismo ciclo que la flota.
+  const hidratarMarcas = useBrands((s) => s.hidratar);
+  const refrescarMarcas = useBrands((s) => s.refresh);
+  const sincronizarMarcas = useBrands((s) => s.sincronizar);
+
+  useEffect(() => {
+    void hidratarMarcas();
+  }, [hidratarMarcas]);
+
+  useEffect(() => {
+    if (authStatus !== 'authed') return;
+    // Igual que la flota: primero se drena lo pendiente y después se refresca.
+    // Al revés, la respuesta del servidor pisaría una marca que el usuario
+    // agregó sin señal y que todavía no se envió.
+    void sincronizarMarcas().then(() => refrescarMarcas());
+  }, [authStatus, refrescarMarcas, sincronizarMarcas]);
 
   useEffect(() => {
     if (authStatus !== 'authed') return;

@@ -3,7 +3,7 @@
 // PURA a propósito, igual que home/layout.ts: acá vive toda la decisión de qué
 // se envía, en qué orden y qué se colapsa contra qué, y eso se prueba con una
 // tabla de casos en vez de simulando una red que falla a voluntad.
-import type { NewOilChangeInput, NewVehicleInput } from '../types';
+import type { NewOilChangeInput, NewVehicleInput, VehicleKind } from '../types';
 
 export type QueueOp =
   | { op: 'CREATE_VEHICLE'; id: string; payload: NewVehicleInput }
@@ -17,7 +17,15 @@ export type QueueOp =
     }
   | { op: 'UPDATE_OIL_CHANGE'; id: string; payload: Partial<NewOilChangeInput> }
   | { op: 'DELETE_OIL_CHANGE'; id: string }
-  | { op: 'REPORT_ODOMETER'; id: string; vehicleId: string; km: number };
+  | { op: 'REPORT_ODOMETER'; id: string; vehicleId: string; km: number }
+  // Sin regla de colapso: una marca no se puede editar ni borrar desde la app,
+  // así que CREATE_BRAND nunca tiene con qué fusionarse.
+  | {
+      op: 'CREATE_BRAND';
+      id: string;
+      kind: VehicleKind;
+      payload: { name: string };
+    };
 
 export type QueueEntry = {
   op: QueueOp;

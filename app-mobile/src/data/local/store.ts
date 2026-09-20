@@ -9,11 +9,15 @@
 import AsyncStorage from 'expo-sqlite/kv-store';
 import type { ApiVehicle } from '../../api/controllers/vehicles.controller';
 import type { OilStatusResponse } from '../../api/controllers/oil-status.controller';
+import type { ApiBrand } from '../../api/controllers/brands.controller';
+import type { VehicleKind } from '../types';
 import type { QueueEntry } from '../sync/queue';
 
 const CLAVE_FLOTA = 'ruedalo:flota';
 const CLAVE_COLA = 'ruedalo:cola';
 const claveEstado = (vehicleId: string) => `ruedalo:estado:${vehicleId}`;
+const CLAVE_MARCAS = 'ruedalo:marcas';
+const CLAVE_COLA_MARCAS = 'ruedalo:cola-marcas';
 
 async function leerJson<T>(clave: string, siFalla: T): Promise<T> {
   try {
@@ -65,4 +69,34 @@ export async function leerEstado(
   vehicleId: string,
 ): Promise<OilStatusResponse | null> {
   return leerJson<OilStatusResponse | null>(claveEstado(vehicleId), null);
+}
+
+export type MarcasPorTipo = Record<VehicleKind, ApiBrand[]>;
+
+const MARCAS_VACIAS: MarcasPorTipo = { car: [], moto: [] };
+
+export async function guardarMarcas(m: MarcasPorTipo): Promise<void> {
+  await guardarJson(CLAVE_MARCAS, m);
+}
+
+export async function leerMarcas(): Promise<MarcasPorTipo> {
+  const m = await leerJson<unknown>(CLAVE_MARCAS, MARCAS_VACIAS);
+  // Mismo criterio que leerFlota: que el JSON parsee no garantiza la forma.
+  // Una versión vieja pudo guardar otra cosa, y un `.map` sobre eso revienta
+  // el selector de marcas justo en el paso 2 del alta.
+  if (typeof m !== 'object' || m === null) return MARCAS_VACIAS;
+  const cand = m as Partial<MarcasPorTipo>;
+  return {
+    car: Array.isArray(cand.car) ? cand.car : [],
+    moto: Array.isArray(cand.moto) ? cand.moto : [],
+  };
+}
+
+export async function guardarColaMarcas(cola: QueueEntry[]): Promise<void> {
+  await guardarJson(CLAVE_COLA_MARCAS, cola);
+}
+
+export async function leerColaMarcas(): Promise<QueueEntry[]> {
+  const c = await leerJson<unknown>(CLAVE_COLA_MARCAS, []);
+  return Array.isArray(c) ? (c as QueueEntry[]) : [];
 }
