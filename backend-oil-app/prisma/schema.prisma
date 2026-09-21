@@ -30,6 +30,10 @@ model User {
 
   refreshTokens RefreshToken[]
   vehicles      Vehicle[]
+
+  deviceTokens     DeviceToken[]
+  notificationPref NotificationPref?
+  notificationLogs NotificationLog[]
 }
 
 model RefreshToken {
@@ -162,4 +166,64 @@ model Brand {
   /// marcas de carro Y de moto, y deben ser filas independientes.
   @@unique([kind, nameKey])
   @@index([kind, name])
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+/// Un token identifica una INSTALACIÓN, no una sesión. Por eso `token` es
+/// único a secas y no `@@unique([userId, token])`: si otra persona inicia
+/// sesión en el mismo teléfono, el token cambia de dueño en vez de duplicarse.
+/// Con dos filas, el dueño anterior seguiría recibiendo avisos de sus
+/// vehículos en un teléfono que ya no es suyo.
+model DeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String         @unique
+  platform   DevicePlatform
+  lastSeenAt DateTime       @default(now())
+  /// `DeviceNotRegistered` lo apaga, no lo borra: si el usuario reinstala,
+  /// vuelve a registrar el mismo token y la fila revive.
+  disabledAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@index([userId])
+}
+
+/// Las preferencias viven acá y no en el teléfono porque es el SERVIDOR el que
+/// decide a quién avisar. De paso sobreviven a reinstalar la app.
+model NotificationPref {
+  userId          String   @id @db.Uuid
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled         Boolean  @default(true)
+  warnEnabled     Boolean  @default(true)
+  overdueEnabled  Boolean  @default(true)
+  checkinEnabled  Boolean  @default(true)
+  warnThresholdKm Int      @default(500)
+  /// Domingo = 1, igual que el trigger WEEKLY de Expo y que la app.
+  checkinWeekday  Int      @default(1)
+  updatedAt       DateTime @updatedAt
+}
+
+/// Hace dos trabajos porque son el mismo hecho —"esto se mandó"—: es el dedupe
+/// (sin él, el mismo "cambio cerca" sale cada día a las 9 hasta que el usuario
+/// cambie el aceite) y es el rastro para casar el ticket con el receipt que
+/// Expo entrega unos 15 minutos después.
+model NotificationLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId    String?   @db.Uuid
+  kind         String
+  sig          String
+  ticketId     String?
+  sentAt       DateTime  @default(now())
+  receiptAt    DateTime?
+  receiptError String?
+
+  @@index([userId, kind, sentAt(sort: Desc)])
+  @@index([ticketId])
 }
