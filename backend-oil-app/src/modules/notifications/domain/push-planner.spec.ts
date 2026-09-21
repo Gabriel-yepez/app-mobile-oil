@@ -73,7 +73,9 @@ describe('planPushes', () => {
 
     it('un vehículo pasado del límite genera solo overdue', () => {
       const r = plan({
-        vehicles: [vehiculo({ status: status({ kmLeft: -800, daysLeft: 20 }) })],
+        vehicles: [
+          vehiculo({ status: status({ kmLeft: -800, daysLeft: 20 }) }),
+        ],
       });
       expect(r.map((m) => m.kind)).toEqual(['overdue']);
     });
@@ -142,7 +144,9 @@ describe('planPushes', () => {
         vehicles: [vehiculo({ status: status({ kmLeft: -40, daysLeft: 30 }) })],
       });
       const dia13 = plan({
-        vehicles: [vehiculo({ status: status({ kmLeft: -520, daysLeft: 17 }) })],
+        vehicles: [
+          vehiculo({ status: status({ kmLeft: -520, daysLeft: 17 }) }),
+        ],
         yaEnviado: [dia0[0].sig],
       });
       expect(dia13).toEqual([]);
@@ -153,7 +157,9 @@ describe('planPushes', () => {
         vehicles: [vehiculo({ status: status({ kmLeft: -40, daysLeft: 30 }) })],
       });
       const dia14 = plan({
-        vehicles: [vehiculo({ status: status({ kmLeft: -600, daysLeft: 16 }) })],
+        vehicles: [
+          vehiculo({ status: status({ kmLeft: -600, daysLeft: 16 }) }),
+        ],
         yaEnviado: [dia0[0].sig],
       });
       expect(dia14.map((m) => m.kind)).toEqual(['overdue']);
@@ -162,7 +168,9 @@ describe('planPushes', () => {
     it('cuenta por el eje que lleva más tiempo vencido', () => {
       // Vencido por tiempo hace 20 días y por km hace 1: manda el de 20.
       const r = plan({
-        vehicles: [vehiculo({ status: status({ kmLeft: -40, daysLeft: -20 }) })],
+        vehicles: [
+          vehiculo({ status: status({ kmLeft: -40, daysLeft: -20 }) }),
+        ],
       });
       expect(r[0].sig).toContain(':1'); // floor(20 / 14) = 1
     });
@@ -229,7 +237,9 @@ describe('planPushes', () => {
 
     it('overdueEnabled en false calla el vencido', () => {
       const r = plan({
-        vehicles: [vehiculo({ status: status({ kmLeft: -800, daysLeft: 20 }) })],
+        vehicles: [
+          vehiculo({ status: status({ kmLeft: -800, daysLeft: 20 }) }),
+        ],
         prefs: { overdueEnabled: false },
       });
       expect(r).toEqual([]);

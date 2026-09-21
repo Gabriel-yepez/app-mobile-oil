@@ -11,9 +11,7 @@ import { PrismaService } from './prisma.service';
 const DIAS_VIGENCIA = 90;
 
 @Injectable()
-export class PrismaNotificationLogRepository
-  implements NotificationLogRepository
-{
+export class PrismaNotificationLogRepository implements NotificationLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private toDomain(r: Row): LogEntry {

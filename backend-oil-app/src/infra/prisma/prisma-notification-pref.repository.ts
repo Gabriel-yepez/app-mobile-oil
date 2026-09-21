@@ -8,9 +8,7 @@ import {
 import { PrismaService } from './prisma.service';
 
 @Injectable()
-export class PrismaNotificationPrefRepository
-  implements NotificationPrefRepository
-{
+export class PrismaNotificationPrefRepository implements NotificationPrefRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private toDomain(r: Row): NotificationPrefs {

@@ -4,9 +4,7 @@ import type {
   NuevoLogEntry,
 } from '../domain/notification-log.repository';
 
-export class InMemoryNotificationLogRepository
-  implements NotificationLogRepository
-{
+export class InMemoryNotificationLogRepository implements NotificationLogRepository {
   readonly filas: (LogEntry & { receiptAt: Date | null })[] = [];
   private n = 0;
 
@@ -31,7 +29,9 @@ export class InMemoryNotificationLogRepository
       .slice(0, limite);
   }
 
-  async marcarReceipt(ticketId: string, _error: string | null): Promise<void> {
+  // El error del receipt no se guarda acá: ningún test afirma sobre él y el
+  // doble solo tiene que saber qué deja de estar pendiente.
+  async marcarReceipt(ticketId: string): Promise<void> {
     for (const f of this.filas) {
       if (f.ticketId === ticketId) f.receiptAt = new Date();
     }

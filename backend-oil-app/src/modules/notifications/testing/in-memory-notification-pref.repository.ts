@@ -1,9 +1,7 @@
 import type { NotificationPrefRepository } from '../domain/notification-pref.repository';
 import { DEFAULT_PREFS, type NotificationPrefs } from '../domain/push-message';
 
-export class InMemoryNotificationPrefRepository
-  implements NotificationPrefRepository
-{
+export class InMemoryNotificationPrefRepository implements NotificationPrefRepository {
   readonly filas = new Map<string, NotificationPrefs>();
 
   async obtener(userId: string): Promise<NotificationPrefs> {
