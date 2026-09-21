@@ -6,6 +6,8 @@ import { PrismaNotificationLogRepository } from '../../infra/prisma/prisma-notif
 import { PrismaNotificationPrefRepository } from '../../infra/prisma/prisma-notification-pref.repository';
 import { NoopPushSender } from '../../infra/push/noop-push.sender';
 import { OilModule } from '../oil/oil.module';
+import { DevicesController } from './devices.controller';
+import { NotificationPrefsController } from './notification-prefs.controller';
 import { DEVICE_TOKEN_REPOSITORY } from './domain/device-token.repository';
 import { NOTIFICATION_LOG_REPOSITORY } from './domain/notification-log.repository';
 import { NOTIFICATION_PREF_REPOSITORY } from './domain/notification-pref.repository';
@@ -18,6 +20,7 @@ import { ReceiptsService } from './receipts.service';
 @Module({
   // El barrido necesita los tres repositorios del módulo oil.
   imports: [OilModule],
+  controllers: [DevicesController, NotificationPrefsController],
   providers: [
     PushDispatchService,
     PushSweepService,
