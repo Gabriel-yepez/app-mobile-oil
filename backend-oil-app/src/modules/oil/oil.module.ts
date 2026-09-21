@@ -22,5 +22,8 @@ import { VehiclesController } from './vehicles.controller';
     { provide: ODOMETER_REPOSITORY, useClass: PrismaOdometerRepository },
     // ───────────────────────────────────────────────────────────────────
   ],
+  // Los exporta para el barrido de push, que recorre los vehículos de todos
+  // los usuarios y necesita leer ciclo y odómetro por su cuenta.
+  exports: [VEHICLE_REPOSITORY, OIL_CHANGE_REPOSITORY, ODOMETER_REPOSITORY],
 })
 export class OilModule {}

@@ -24,6 +24,10 @@ export class InMemoryVehicleRepository implements VehicleRepository {
     return [...this.rows.keys()];
   }
 
+  async findAll(): Promise<Vehicle[]> {
+    return [...this.rows.values()];
+  }
+
   async findByPlate(userId: string, plate: string): Promise<Vehicle | null> {
     return (
       [...this.rows.values()].find(
