@@ -22,8 +22,8 @@ export class InMemoryDeviceTokenRepository implements DeviceTokenRepository {
     return fila;
   }
 
-  async eliminar(token: string): Promise<void> {
-    this.filas.delete(token);
+  async eliminar(userId: string, token: string): Promise<void> {
+    if (this.filas.get(token)?.userId === userId) this.filas.delete(token);
   }
 
   async apagar(token: string): Promise<void> {

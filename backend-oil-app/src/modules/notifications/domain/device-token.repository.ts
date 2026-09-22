@@ -26,8 +26,14 @@ export interface DeviceTokenRepository {
    * Revive el token apagado poniendo `disabledAt` en null.
    */
   registrar(data: NuevoDeviceToken): Promise<DeviceToken>;
-  /** Baja explícita al cerrar sesión. No falla si no existe. */
-  eliminar(token: string): Promise<void>;
+  /**
+   * Baja explícita al cerrar sesión. No falla si no existe.
+   *
+   * Lleva `userId` y no solo el token: sin él, cualquier sesión válida podría
+   * dar de baja el dispositivo de otro y dejarlo sin avisos con solo conocer
+   * su token. El token identifica la instalación, no autoriza nada.
+   */
+  eliminar(userId: string, token: string): Promise<void>;
   /** Lo que hace `DeviceNotRegistered`: apaga sin perder el historial. */
   apagar(token: string): Promise<void>;
   /** Solo los que no están apagados. */

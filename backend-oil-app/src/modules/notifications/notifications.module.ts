@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ExpoPushSender } from '../../infra/expo/expo-push.sender';
 import { PrismaDeviceTokenRepository } from '../../infra/prisma/prisma-device-token.repository';
@@ -14,16 +14,18 @@ import { NOTIFICATION_PREF_REPOSITORY } from './domain/notification-pref.reposit
 import { PUSH_SENDER } from './domain/push-sender';
 import { NotificationsCron } from './notifications.cron';
 import { PushDispatchService } from './push-dispatch.service';
+import { PushEventNotifier } from './push-event-notifier.service';
 import { PushSweepService } from './push-sweep.service';
 import { ReceiptsService } from './receipts.service';
 
 @Module({
   // El barrido necesita los tres repositorios del módulo oil.
-  imports: [OilModule],
+  imports: [forwardRef(() => OilModule)],
   controllers: [DevicesController, NotificationPrefsController],
   providers: [
     PushDispatchService,
     PushSweepService,
+    PushEventNotifier,
     ReceiptsService,
     NotificationsCron,
     // ───────────────────────────────────────────────────────────────────
@@ -55,6 +57,6 @@ import { ReceiptsService } from './receipts.service';
           : new NoopPushSender(),
     },
   ],
-  exports: [PushDispatchService, PushSweepService],
+  exports: [PushDispatchService, PushSweepService, PushEventNotifier],
 })
 export class NotificationsModule {}

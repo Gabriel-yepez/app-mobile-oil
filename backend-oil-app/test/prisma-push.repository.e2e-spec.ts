@@ -78,9 +78,30 @@ describe('Repositorios de push contra Postgres (e2e)', () => {
     });
 
     it('eliminar un token que no existe no revienta', async () => {
+      const u = await crearUsuario();
       await expect(
-        tokens.eliminar('ExponentPushToken[fantasma]'),
+        tokens.eliminar(u.id, 'ExponentPushToken[fantasma]'),
       ).resolves.toBeUndefined();
+    });
+
+    // El token viaja en la URL de la baja y no es un secreto. Sin el userId en
+    // el where, una sesión cualquiera dejaría sin avisos al dueño de ese
+    // teléfono con solo conocer su token.
+    it('no se puede dar de baja el dispositivo de otro', async () => {
+      const dueno = await crearUsuario();
+      const ajeno = await crearUsuario();
+      const t = `ExponentPushToken[ajeno-${Date.now()}]`;
+      await tokens.registrar({
+        userId: dueno.id,
+        token: t,
+        platform: 'ANDROID',
+      });
+
+      await tokens.eliminar(ajeno.id, t);
+
+      expect((await tokens.activosDe(dueno.id)).map((x) => x.token)).toEqual([
+        t,
+      ]);
     });
   });
 

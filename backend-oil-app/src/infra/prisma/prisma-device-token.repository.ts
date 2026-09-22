@@ -42,8 +42,11 @@ export class PrismaDeviceTokenRepository implements DeviceTokenRepository {
     return this.toDomain(row);
   }
 
-  async eliminar(token: string): Promise<void> {
-    await this.prisma.deviceToken.deleteMany({ where: { token } });
+  async eliminar(userId: string, token: string): Promise<void> {
+    // El userId en el where es lo que impide dar de baja el dispositivo
+    // ajeno. `deleteMany` no falla si no hay fila, así que la respuesta sigue
+    // siendo 204 y no delata si ese token existe o de quién es.
+    await this.prisma.deviceToken.deleteMany({ where: { token, userId } });
   }
 
   async apagar(token: string): Promise<void> {

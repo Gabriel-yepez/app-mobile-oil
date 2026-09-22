@@ -34,6 +34,8 @@ describe('registrar un cambio de aceite', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -151,6 +153,8 @@ describe('registrar un cambio con id del cliente', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -218,6 +222,8 @@ describe('historial del vehículo', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',

@@ -140,6 +140,26 @@ describe('Dispositivos para push (e2e)', () => {
       .expect(204);
   });
 
+  // Responde 204 igual que si no existiera: no delata de quién es el token.
+  it('la sesión de otro no puede dar de baja mi dispositivo', async () => {
+    const mio = await sesion();
+    const ajeno = await sesion();
+    const token = TOKEN();
+
+    await http()
+      .post('/me/devices')
+      .set('Authorization', `Bearer ${mio}`)
+      .send({ token, platform: 'ANDROID' })
+      .expect(201);
+
+    await http()
+      .delete(`/me/devices/${encodeURIComponent(token)}`)
+      .set('Authorization', `Bearer ${ajeno}`)
+      .expect(204);
+
+    expect(await prisma.deviceToken.count({ where: { token } })).toBe(1);
+  });
+
   it('sin sesión responde 401', async () => {
     await http()
       .post('/me/devices')

@@ -62,13 +62,19 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Dar de baja el dispositivo',
     description:
-      'Se llama al cerrar sesión. Responde 204 aunque el token no exista.',
+      'Se llama al cerrar sesión. Responde 204 aunque el token no exista o sea de otra cuenta: no confirma ninguna de las dos cosas.',
   })
   @ApiNoContentResponse()
   @SkipThrottle({ auth: true })
   @Delete(':token')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async eliminar(@Param('token') token: string): Promise<void> {
-    await this.devices.eliminar(token);
+  async eliminar(
+    @CurrentUser() user: User,
+    @Param('token') token: string,
+  ): Promise<void> {
+    // Va atado al dueño: el token viaja en la URL y no es un secreto, así que
+    // sin el userId cualquiera con una sesión válida podría dar de baja el
+    // dispositivo de otro y dejarlo sin notificaciones.
+    await this.devices.eliminar(user.id, token);
   }
 }

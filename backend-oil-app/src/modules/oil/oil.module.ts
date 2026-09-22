@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PrismaOilChangeRepository } from '../../infra/prisma/prisma-oil-change.repository';
 import { PrismaOdometerRepository } from '../../infra/prisma/prisma-odometer.repository';
 import { PrismaVehicleRepository } from '../../infra/prisma/prisma-vehicle.repository';
@@ -10,6 +11,10 @@ import { OilService } from './oil.service';
 import { VehiclesController } from './vehicles.controller';
 
 @Module({
+  // Ciclo real con NotificationsModule: aquel necesita los repositorios de
+  // acá para el barrido, y OilService necesita el notificador de allá para
+  // avisar al instante. forwardRef es la forma en que Nest lo resuelve.
+  imports: [forwardRef(() => NotificationsModule)],
   controllers: [VehiclesController],
   providers: [
     OilService,
