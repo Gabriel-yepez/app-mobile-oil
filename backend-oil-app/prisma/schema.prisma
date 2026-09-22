@@ -220,6 +220,9 @@ model NotificationLog {
   kind         String
   sig          String
   ticketId     String?
+  /// El token al que se mandó. Sin él, un DeviceNotRegistered que llega en el
+  /// receipt —15 minutos después— no sabría qué dispositivo apagar.
+  token        String?
   sentAt       DateTime  @default(now())
   receiptAt    DateTime?
   receiptError String?

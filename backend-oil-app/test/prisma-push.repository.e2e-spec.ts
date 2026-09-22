@@ -134,6 +134,7 @@ describe('Repositorios de push contra Postgres (e2e)', () => {
         kind: 'checkin',
         sig: 'checkin:x:2026-W38',
         ticketId: 'tk-1',
+        token: 'ExponentPushToken[a]',
       });
 
       expect(await logs.firmasDe(u.id)).toEqual(
@@ -150,6 +151,7 @@ describe('Repositorios de push contra Postgres (e2e)', () => {
         kind: 'checkin',
         sig: `s-${tk}`,
         ticketId: tk,
+        token: 'ExponentPushToken[a]',
       });
       expect(
         (await logs.pendientesDeReceipt(100)).some((e) => e.ticketId === tk),

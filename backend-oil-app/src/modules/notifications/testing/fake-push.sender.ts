@@ -10,6 +10,8 @@ export class FakePushSender implements PushSender {
   /** Se consume en orden; agotada, devuelve tickets ok con id correlativo. */
   ticketsPorDevolver: PushTicket[] = [];
   receiptsPorDevolver: PushReceipt[] = [];
+  /** Los ids que se pidieron: sirve para afirmar que NO se llamó al emisor. */
+  readonly receiptsPedidos: string[] = [];
   private n = 0;
 
   async enviar(envios: EnvioPush[]): Promise<PushTicket[]> {
@@ -24,6 +26,7 @@ export class FakePushSender implements PushSender {
   }
 
   async receipts(ticketIds: string[]): Promise<PushReceipt[]> {
+    this.receiptsPedidos.push(...ticketIds);
     if (this.receiptsPorDevolver.length > 0) return this.receiptsPorDevolver;
     return ticketIds.map((ticketId) => ({ ticketId, error: null }));
   }

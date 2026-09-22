@@ -11,6 +11,8 @@ export type LogEntry = {
   kind: PushKind;
   sig: string;
   ticketId: string | null;
+  /** A qué dispositivo se mandó: es lo que el receipt diferido apaga. */
+  token: string | null;
   sentAt: Date;
 };
 

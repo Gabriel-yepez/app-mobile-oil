@@ -22,6 +22,7 @@ export class PrismaNotificationLogRepository implements NotificationLogRepositor
       kind: r.kind as PushKind,
       sig: r.sig,
       ticketId: r.ticketId,
+      token: r.token,
       sentAt: r.sentAt,
     };
   }

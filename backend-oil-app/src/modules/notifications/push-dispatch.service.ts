@@ -87,7 +87,8 @@ export class PushDispatchService {
     // Una entrada de bitácora POR ENVÍO, no por mensaje: el receipt es por
     // ticket, y así cada uno se puede casar con el suyo. El dedupe no se
     // entera, porque `firmasDe` devuelve un Set.
-    const anotar: { mensaje: PushMessage; ticketId: string }[] = [];
+    const anotar: { mensaje: PushMessage; ticketId: string; token: string }[] =
+      [];
 
     for (let i = 0; i < envios.length; i++) {
       const ticket = tickets[i];
@@ -95,7 +96,11 @@ export class PushDispatchService {
 
       if (ticket?.ok) {
         enviados++;
-        anotar.push({ mensaje: envio.mensaje, ticketId: ticket.id });
+        anotar.push({
+          mensaje: envio.mensaje,
+          ticketId: ticket.id,
+          token: envio.token,
+        });
         continue;
       }
 
@@ -117,6 +122,7 @@ export class PushDispatchService {
         kind: a.mensaje.kind,
         sig: a.mensaje.sig,
         ticketId: a.ticketId,
+        token: a.token,
       });
     }
 
