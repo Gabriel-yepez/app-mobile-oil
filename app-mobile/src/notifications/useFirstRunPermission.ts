@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { requestPermission } from './permissions';
-import { syncNotifications } from './scheduler';
+import { registrarDispositivo } from './push';
 
 export function useFirstRunPermission(): void {
   useEffect(() => {
@@ -22,9 +22,12 @@ export function useFirstRunPermission(): void {
       if (cancelled) return;
 
       markPermissionAsked();
-      setPref('enabled', state === 'granted');
-      // Sale del diálogo con sus recordatorios ya programados.
-      void syncNotifications();
+      void setPref('enabled', state === 'granted');
+      // Registra el token AQUÍ y no solo al arrancar: cuando App.tsx lo
+      // intentó, este diálogo no se había mostrado todavía y sin permiso no
+      // hay token que pedir. Sin esta línea, el dispositivo no quedaría
+      // registrado hasta el siguiente arranque de la app.
+      void registrarDispositivo();
     };
 
     void ask();

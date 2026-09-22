@@ -18,9 +18,9 @@ import { useVehicles } from './src/store/useVehicles';
 import { useBrands } from './src/store/useBrands';
 import { useColors } from './src/store/useColors';
 import {
+  limpiarAvisosLocales,
   registrarDispositivo,
   useNotificationResponse,
-  useNotificationsSync,
 } from './src/notifications';
 
 export default function App() {
@@ -35,9 +35,14 @@ export default function App() {
   useNativeAppearance();
   const themeHydrated = useThemePref((s) => s.hydrated);
 
-  // Programa y reconcilia las notificaciones locales. Va antes del return
-  // temprano por fuentes: los hooks deben llamarse siempre en el mismo orden.
-  useNotificationsSync();
+  // Los avisos los decide y los manda el servidor. Esto solo cancela, una
+  // vez, los que dejó programados la versión anterior de la app: viven en el
+  // SO y sobrevivirían a la actualización, saliendo además de los push.
+  // Va antes del return temprano por fuentes: los hooks deben llamarse
+  // siempre en el mismo orden.
+  useEffect(() => {
+    void limpiarAvisosLocales();
+  }, []);
   useNotificationResponse();
 
   // Sesión: lee el token del almacenamiento seguro y lo confirma contra /me.

@@ -22,10 +22,8 @@ export {
   requestPermission,
   type PermissionState,
 } from './permissions';
-export { buildSchedule, nextOccurrence, REMINDER_HOUR } from './plan';
 export { darDeBajaDispositivo, registrarDispositivo } from './push';
-export { reconcile, syncNotifications, type SyncResult } from './scheduler';
+export { limpiarAvisosLocales } from './legacy-cleanup';
 export { useFirstRunPermission } from './useFirstRunPermission';
 export { useNotificationResponse } from './useNotificationResponse';
-export { useNotificationsSync } from './useNotificationsSync';
 export * from './types';
