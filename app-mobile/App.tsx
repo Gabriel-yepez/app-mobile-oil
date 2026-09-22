@@ -17,7 +17,11 @@ import { useStore } from './src/store/useStore';
 import { useVehicles } from './src/store/useVehicles';
 import { useBrands } from './src/store/useBrands';
 import { useColors } from './src/store/useColors';
-import { useNotificationResponse, useNotificationsSync } from './src/notifications';
+import {
+  registrarDispositivo,
+  useNotificationResponse,
+  useNotificationsSync,
+} from './src/notifications';
 
 export default function App() {
   // Preferencia del usuario y, si eligió "sistema", el ajuste del teléfono.
@@ -83,6 +87,16 @@ export default function App() {
     if (authStatus !== 'authed') return;
     void refrescarColores();
   }, [authStatus, refrescarColores]);
+
+  // Registra el dispositivo para las notificaciones push. Cubre los tres
+  // caminos con un solo efecto —iniciar sesión, registrarse y arrancar con
+  // sesión viva— porque los tres terminan en 'authed'. Es idempotente, así
+  // que repetirlo en cada arranque es justo lo que se quiere: refresca el
+  // `lastSeenAt` y revive el token que se hubiera apagado.
+  useEffect(() => {
+    if (authStatus !== 'authed') return;
+    void registrarDispositivo();
+  }, [authStatus]);
 
   useEffect(() => {
     if (authStatus !== 'authed') return;
