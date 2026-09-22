@@ -15,8 +15,9 @@ export function useFirstRunPermission(): void {
     let cancelled = false;
 
     const ask = async () => {
-      const { prefs, hydrated, markPermissionAsked, setPref } = useNotifPrefs.getState();
-      if (!hydrated || prefs.permissionAskedAt !== null) return;
+      const { permissionAskedAt, hydrated, markPermissionAsked, setPref } =
+        useNotifPrefs.getState();
+      if (!hydrated || permissionAskedAt !== null) return;
 
       const state = await requestPermission();
       if (cancelled) return;
