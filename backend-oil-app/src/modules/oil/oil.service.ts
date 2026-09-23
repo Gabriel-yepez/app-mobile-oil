@@ -1,8 +1,9 @@
 // Orquesta el dominio del aceite: carga lo que hace falta, se lo pasa al
 // calculador y arma el bloque. Las reglas viven acá; el controlador solo habla
 // HTTP y el calculador solo hace aritmética.
-import { Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Errors } from '../../common/errors';
+import { PushEventNotifier } from '../notifications/push-event-notifier.service';
 import { daysBetween } from './domain/dates';
 import { computeOilStatus } from './domain/oil-status.calculator';
 import { KM_PER_DAY_MAX } from './domain/oil-status';
@@ -39,6 +40,11 @@ export class OilService {
     @Inject(ODOMETER_REPOSITORY)
     private readonly odometer: OdometerRepository,
     private readonly cycle: OilCycleService,
+    // forwardRef porque NotificationsModule importa OilModule para leer
+    // vehículos, ciclos y odómetro: el ciclo entre los dos módulos es real y
+    // esta es la forma en que Nest lo resuelve.
+    @Inject(forwardRef(() => PushEventNotifier))
+    private readonly push: PushEventNotifier,
   ) {}
 
   /**
@@ -176,6 +182,8 @@ export class OilService {
       source: 'OIL_CHANGE',
     });
     await this.cycle.syncVehicleCycle(vehicleId);
+    // Después de sincronizar el ciclo: el aviso depende del ciclo nuevo.
+    this.push.avisar(userId);
     return { change: creado, created: true };
   }
 
@@ -349,6 +357,9 @@ export class OilService {
       readAt: now,
       source: 'MANUAL',
     });
+    // Después de escribir, nunca antes: si se avisara primero, el planificador
+    // leería el estado viejo y decidiría con datos que ya no son ciertos.
+    this.push.avisar(userId);
     return this.getOilStatus(userId, vehicleId, now);
   }
 }

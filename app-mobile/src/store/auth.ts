@@ -1,6 +1,7 @@
 // Sesión real. Distinto de `session.ts`, que solo recuerda el correo del
 // "Recordarme" y sigue siendo una comodidad de UI, no una credencial.
 import { create } from 'zustand';
+import { darDeBajaDispositivo } from '../notifications/push';
 import { ApiClient, ApiError } from '../api/base';
 import {
   authController,
@@ -106,6 +107,10 @@ export const useAuth = create<AuthStore>((set) => ({
 
   signOut: async () => {
     const tokens = await tokenStorage.get();
+    // Antes de borrar las credenciales: la petición va autenticada y sin el
+    // access token vivo el servidor la rechazaría. Es silenciosa — ver
+    // darDeBajaDispositivo.
+    await darDeBajaDispositivo();
     try {
       if (tokens) await authController.logout(tokens.refreshToken);
     } catch {

@@ -1,44 +1,97 @@
-// Preferencias de notificación — el ÚNICO estado persistido de la app.
-// El resto del store (vehículos, cambios, perfil) sigue en memoria con data
-// mock; la persistencia completa llega con el backend.
+// Preferencias de notificación.
+//
+// Viven en el BACKEND: es el servidor el que decide a quién avisar, así que
+// tiene que conocerlas, y de paso sobreviven a reinstalar la app. Este slice
+// es una copia de trabajo, no el dueño.
+//
+// Lo único que sigue siendo del teléfono es `permissionAskedAt`: eso es un
+// hecho del dispositivo —si ya se mostró el diálogo nativo— y no una
+// preferencia de la cuenta. Por eso es lo único que se persiste acá.
 import AsyncStorage from 'expo-sqlite/kv-store';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { DEFAULT_PREFS, NotifPrefs } from '../notifications/types';
+import {
+  notificationsController,
+  type ApiNotifPrefs,
+} from '../api/controllers/notifications.controller';
+
+export type { ApiNotifPrefs as NotifPrefs };
+
+/** Los mismos valores que el backend le devuelve a quien nunca las tocó. */
+export const DEFAULT_PREFS: ApiNotifPrefs = {
+  enabled: true,
+  warnEnabled: true,
+  overdueEnabled: true,
+  checkinEnabled: true,
+  warnThresholdKm: 500,
+  checkinWeekday: 1,
+};
 
 type NotifPrefsStore = {
-  prefs: NotifPrefs;
-  /** false hasta que termina de leerse el almacenamiento. La reconciliación
-   *  espera a esto para no programar con valores por defecto que el usuario
-   *  ya había cambiado. */
+  prefs: ApiNotifPrefs;
+  /** true mientras se está pidiendo la copia del servidor. */
+  cargando: boolean;
+  /**
+   * false hasta que termina de leerse el almacenamiento. useFirstRunPermission
+   * espera a esto: sin él pediría el permiso otra vez antes de enterarse de
+   * que ya se pidió, y en iOS ese diálogo solo se muestra una vez por
+   * instalación.
+   */
   hydrated: boolean;
-  setPref: <K extends keyof NotifPrefs>(key: K, value: NotifPrefs[K]) => void;
+  /** epoch ms de cuándo se mostró el diálogo nativo; null = nunca. */
+  permissionAskedAt: number | null;
+  cargar: () => Promise<void>;
+  setPref: <K extends keyof ApiNotifPrefs>(
+    key: K,
+    value: ApiNotifPrefs[K]
+  ) => Promise<void>;
   markPermissionAsked: () => void;
 };
 
 export const useNotifPrefs = create<NotifPrefsStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       prefs: DEFAULT_PREFS,
+      cargando: false,
       hydrated: false,
-      setPref: (key, value) => set((s) => ({ prefs: { ...s.prefs, [key]: value } })),
-      markPermissionAsked: () =>
-        set((s) => ({ prefs: { ...s.prefs, permissionAskedAt: Date.now() } })),
+      permissionAskedAt: null,
+
+      cargar: async () => {
+        set({ cargando: true });
+        try {
+          set({ prefs: await notificationsController.obtenerPrefs() });
+        } catch {
+          // Sin red se sigue mostrando lo último conocido: una pantalla de
+          // ajustes en blanco es peor que una desactualizada.
+        } finally {
+          set({ cargando: false });
+        }
+      },
+
+      setPref: async (key, value) => {
+        // Optimista: el switch se mueve al tocarlo, no cuando el servidor
+        // conteste. Si falla, vuelve solo a donde estaba.
+        const previo = get().prefs;
+        set({ prefs: { ...previo, [key]: value } });
+        try {
+          set({
+            prefs: await notificationsController.guardarPrefs({ [key]: value }),
+          });
+        } catch {
+          set({ prefs: previo });
+        }
+      },
+
+      markPermissionAsked: () => set({ permissionAskedAt: Date.now() }),
     }),
     {
       name: 'ruedalo:notif-prefs',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ prefs: s.prefs }),
-      // Sin este merge, añadir una preferencia nueva en el futuro la dejaría
-      // `undefined` en los usuarios que ya tengan datos guardados.
-      merge: (persisted, current) => ({
-        ...current,
-        prefs: {
-          ...DEFAULT_PREFS,
-          ...((persisted as { prefs?: Partial<NotifPrefs> } | undefined)?.prefs ?? {}),
-        },
-      }),
-      onRehydrateStorage: () => () => useNotifPrefs.setState({ hydrated: true }),
+      // Solo el hecho del dispositivo. Persistir las preferencias crearía una
+      // segunda verdad que se desincroniza de la del servidor.
+      partialize: (s) => ({ permissionAskedAt: s.permissionAskedAt }),
+      onRehydrateStorage: () => () =>
+        useNotifPrefs.setState({ hydrated: true }),
     }
   )
 );

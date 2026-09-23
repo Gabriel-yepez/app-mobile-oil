@@ -26,6 +26,8 @@ describe('OilService — alcance por usuario', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
   });
 
@@ -71,6 +73,8 @@ describe('crear vehículo con id del cliente', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
   });
 
@@ -142,6 +146,8 @@ describe('editar y borrar vehículo', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
   });
 
@@ -207,4 +213,72 @@ describe('editar y borrar vehículo', () => {
       response: { error: 'VEHICLE_NOT_FOUND' },
     });
   });
+});
+
+describe('OilService — aviso inmediato por push', () => {
+  let service: OilService;
+  let avisados: string[];
+  let notifier: { avisar: (userId: string) => void };
+
+  // El aviso es fuego y olvido: PushEventNotifier.avisar no devuelve promesa.
+  // Sin vaciar la cola de microtareas, la aserción corre ANTES que el despacho
+  // y el test fallaría por carrera, no por un error real.
+  const vaciarCola = () => new Promise((r) => setImmediate(r));
+
+  const nuevoCambio = () => ({
+    changedAt: new Date('2026-09-20T00:00:00.000Z'),
+    km: 50_000,
+    intervalKm: 5_000,
+    intervalMonths: 6,
+    oilBrand: 'Mobil',
+    oilTag: 'Super',
+    oilViscosity: '20W50',
+    oilSynthetic: false,
+    shop: null,
+    costUsd: null,
+  });
+
+  beforeEach(() => {
+    avisados = [];
+    const vehicles = new InMemoryVehicleRepository();
+    const changes = new InMemoryOilChangeRepository();
+    const odometer = new InMemoryOdometerRepository();
+
+    notifier = {
+      avisar: (userId: string) => {
+        avisados.push(userId);
+      },
+    };
+
+    service = new OilService(
+      vehicles,
+      changes,
+      odometer,
+      new OilCycleService(vehicles, changes),
+      notifier as never,
+    );
+  });
+
+  it('avisa al usuario después de registrar una lectura de odómetro', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+
+    await service.reportOdometer('u1', v.id, 52_000);
+    await vaciarCola();
+
+    expect(avisados).toEqual(['u1']);
+  });
+
+  it('avisa al usuario después de registrar un cambio de aceite', async () => {
+    const v = await service.createVehicle('u1', nuevoVehiculo);
+
+    await service.registerOilChange('u1', v.id, nuevoCambio());
+    await vaciarCola();
+
+    expect(avisados).toEqual(['u1']);
+  });
+
+  // Que un aviso fallido no tumbe la operación es garantía de
+  // PushEventNotifier, no de acá: ver push-event-notifier.service.spec.ts. Es
+  // a propósito que OilService no lleve un try/catch alrededor de `avisar` —
+  // el notificador existe justamente para que nadie tenga que ponerlo.
 });

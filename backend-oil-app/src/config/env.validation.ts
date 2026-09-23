@@ -12,6 +12,26 @@ import {
   validateSync,
 } from 'class-validator';
 
+/**
+ * Lee una bandera booleana del entorno SIN pasar por la conversión implícita.
+ *
+ * `plainToInstance` corre con `enableImplicitConversion`, que convierte el
+ * valor al tipo declarado ANTES de que corra el @Transform. Para un booleano
+ * eso es `Boolean('false')`, que es `true`: leyendo `value`, la cadena "false"
+ * ENCENDÍA la bandera en vez de apagarla, y la única forma de apagarla era
+ * pasar un booleano de verdad — cosa que el entorno no puede hacer, porque
+ * todo lo que viene de ahí es texto.
+ *
+ * `obj` es el objeto crudo, sin convertir, así que ahí la cadena sigue siendo
+ * la cadena.
+ */
+const banderaDelEntorno =
+  (clave: string) =>
+  ({ obj }: { obj: unknown }): boolean => {
+    const crudo = (obj as Record<string, unknown>)[clave];
+    return crudo !== 'false' && crudo !== false;
+  };
+
 export class EnvVars {
   @IsString()
   @IsNotEmpty()
@@ -51,7 +71,7 @@ export class EnvVars {
   // poniendo "false", sin tocar código.
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value !== 'false' && value !== false)
+  @Transform(banderaDelEntorno('SWAGGER_ENABLED'))
   SWAGGER_ENABLED: boolean = true;
 
   // Intentos de registro/login por minuto y por IP. Configurable porque los
@@ -61,6 +81,21 @@ export class EnvVars {
   @IsInt()
   @Transform(({ value }) => Number(value ?? 5))
   THROTTLE_AUTH_LIMIT: number = 5;
+
+  // Activa la seguridad reforzada de Expo para push. Opcional porque en
+  // desarrollo se envía sin ella, pero en producción debe estar: sin el token,
+  // cualquiera que consiga un ExpoPushToken de la app puede mandarle
+  // notificaciones a los usuarios haciéndose pasar por nosotros.
+  @IsOptional()
+  @IsString()
+  EXPO_ACCESS_TOKEN?: string;
+
+  // En `false` los cron de push no se registran. Es lo que permite correr los
+  // e2e y levantar la app en local sin disparar envíos de verdad.
+  @IsOptional()
+  @IsBoolean()
+  @Transform(banderaDelEntorno('PUSH_ENABLED'))
+  PUSH_ENABLED: boolean = true;
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvVars {

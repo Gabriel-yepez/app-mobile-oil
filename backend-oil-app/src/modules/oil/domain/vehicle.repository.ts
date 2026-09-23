@@ -46,6 +46,8 @@ export interface VehicleRepository {
   findById(id: string): Promise<Vehicle | null>;
   findByUser(userId: string): Promise<Vehicle[]>;
   listAllIds(): Promise<string[]>;
+  /** Todos los vehículos de todos los usuarios. Lo usa el barrido de push. */
+  findAll(): Promise<Vehicle[]>;
   /** `id` opcional: lo genera la app para poder crear sin señal. */
   create(data: NewVehicle & { id?: string }): Promise<Vehicle>;
   findByPlate(userId: string, plate: string): Promise<Vehicle | null>;

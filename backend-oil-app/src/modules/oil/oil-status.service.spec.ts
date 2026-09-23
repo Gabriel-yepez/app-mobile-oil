@@ -32,6 +32,8 @@ describe('bloque de estado del aceite', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -103,6 +105,8 @@ describe('reportar el odómetro', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -189,6 +193,8 @@ describe('lista de vehículos con estado', () => {
       changes,
       odometer,
       new OilCycleService(vehicles, changes),
+      // Este spec no mira los avisos: un notificador que no hace nada.
+      { avisar: () => {} } as never,
     );
   });
 

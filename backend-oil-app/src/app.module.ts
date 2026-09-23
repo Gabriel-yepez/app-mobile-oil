@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OilModule } from './modules/oil/oil.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { ColorsModule } from './modules/colors/colors.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -38,6 +40,15 @@ import { ColorsModule } from './modules/colors/colors.module';
     OilModule,
     BrandsModule,
     ColorsModule,
+    // EXCEPCIÓN CONSCIENTE a la regla de configuration.ts de no leer
+    // process.env en crudo: la lista de `imports` se evalúa al construir el
+    // decorador, antes de que exista el ConfigService, así que acá no hay
+    // valor validado que consultar. Es la única lectura cruda del backend.
+    //
+    // Sin el interruptor, correr los e2e o levantar la app en local
+    // registraría los cron y dispararía envíos de verdad.
+    ...(process.env.PUSH_ENABLED === 'false' ? [] : [ScheduleModule.forRoot()]),
+    NotificationsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

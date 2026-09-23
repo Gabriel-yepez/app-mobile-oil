@@ -35,4 +35,35 @@ describe('validateEnv', () => {
       validateEnv({ ...valid, JWT_REFRESH_SECRET: valid.JWT_ACCESS_SECRET }),
     ).toThrow(/distinto/i);
   });
+
+  // Sin este test el fallo pasa inadvertido: la conversión implícita de
+  // class-transformer convierte "false" en `true` antes de que corra el
+  // @Transform, así que la bandera quedaba encendida en producción.
+  describe('banderas booleanas del entorno', () => {
+    it('SWAGGER_ENABLED se apaga con la cadena "false"', () => {
+      expect(
+        validateEnv({ ...valid, SWAGGER_ENABLED: 'false' }).SWAGGER_ENABLED,
+      ).toBe(false);
+    });
+
+    it('SWAGGER_ENABLED está encendida si no se declara', () => {
+      expect(validateEnv(valid).SWAGGER_ENABLED).toBe(true);
+    });
+  });
+
+  describe('notificaciones push', () => {
+    it('PUSH_ENABLED es true si no se declara', () => {
+      expect(validateEnv(valid).PUSH_ENABLED).toBe(true);
+    });
+
+    it('la cadena "false" lo apaga', () => {
+      expect(
+        validateEnv({ ...valid, PUSH_ENABLED: 'false' }).PUSH_ENABLED,
+      ).toBe(false);
+    });
+
+    it('EXPO_ACCESS_TOKEN es opcional', () => {
+      expect(validateEnv(valid).EXPO_ACCESS_TOKEN).toBeUndefined();
+    });
+  });
 });
