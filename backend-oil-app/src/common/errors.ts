@@ -60,6 +60,23 @@ export const Errors = {
       'Tu cuenta ya no está registrada.',
     ),
 
+  // Un solo error para código errado, vencido, agotado o de un correo sin
+  // cuenta. Distinguirlos convertiría el endpoint en un oráculo: bastaría con
+  // probar correos para saber cuáles están registrados.
+  invalidResetCode: () =>
+    new AppError(
+      HttpStatus.BAD_REQUEST,
+      'INVALID_RESET_CODE',
+      'El código no es válido o ya venció. Pide uno nuevo.',
+    ),
+
+  invalidResetToken: () =>
+    new AppError(
+      HttpStatus.BAD_REQUEST,
+      'INVALID_RESET_TOKEN',
+      'El tiempo para cambiar la contraseña terminó. Empieza de nuevo.',
+    ),
+
   emailTaken: () =>
     new AppError(
       HttpStatus.CONFLICT,

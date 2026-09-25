@@ -34,6 +34,8 @@ model User {
   deviceTokens     DeviceToken[]
   notificationPref NotificationPref?
   notificationLogs NotificationLog[]
+
+  passwordResetCodes PasswordResetCode[]
 }
 
 model RefreshToken {
@@ -229,4 +231,32 @@ model NotificationLog {
 
   @@index([userId, kind, sentAt(sort: Desc)])
   @@index([ticketId])
+}
+
+// Un intento de recuperar contraseña. Nace al pedir el código y pasa por dos
+// estados más: verificado (tiene resetToken) y usado (usedAt).
+model PasswordResetCode {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // HMAC-SHA256 con RESET_CODE_SECRET, nunca el código. Un código de 6
+  // dígitos son un millón de combinaciones: con un hash simple, un volcado de
+  // la base alcanzaría para sacarlos todos. Sin el secreto, no.
+  codeHash  String
+  expiresAt DateTime
+  // Intentos fallidos. Al llegar al tope el código queda inservible.
+  attempts  Int      @default(0)
+
+  // Tras verificar el código se emite un token de un solo uso para el último
+  // paso. Aleatorio de 256 bits, así que un SHA-256 simple basta (a diferencia
+  // del código, no hay espacio que recorrer).
+  resetTokenHash String?   @unique
+  resetExpiresAt DateTime?
+
+  // Consumido: ya se cambió la contraseña con él, o lo invalidó un código nuevo.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
