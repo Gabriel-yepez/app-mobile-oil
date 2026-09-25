@@ -5,6 +5,7 @@ describe('validateEnv', () => {
     DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
     JWT_ACCESS_SECRET: 'a'.repeat(32),
     JWT_REFRESH_SECRET: 'b'.repeat(32),
+    RESET_CODE_SECRET: 'c'.repeat(32),
   };
 
   it('acepta un entorno válido y aplica los valores por defecto', () => {
@@ -17,6 +18,7 @@ describe('validateEnv', () => {
     const sinSecreto = {
       DATABASE_URL: valid.DATABASE_URL,
       JWT_REFRESH_SECRET: valid.JWT_REFRESH_SECRET,
+      RESET_CODE_SECRET: valid.RESET_CODE_SECRET,
     };
     expect(() => validateEnv(sinSecreto)).toThrow(/JWT_ACCESS_SECRET/);
   });
@@ -64,6 +66,36 @@ describe('validateEnv', () => {
 
     it('EXPO_ACCESS_TOKEN es opcional', () => {
       expect(validateEnv(valid).EXPO_ACCESS_TOKEN).toBeUndefined();
+    });
+  });
+
+  describe('recuperar contraseña y correo', () => {
+    it('falla si falta RESET_CODE_SECRET', () => {
+      const { RESET_CODE_SECRET: _omitido, ...sin } = valid;
+      void _omitido;
+      expect(() => validateEnv(sin)).toThrow(/RESET_CODE_SECRET/);
+    });
+
+    // Con el mismo secreto que un JWT, quien consiga uno de los dos tiene
+    // también el otro: la separación es la que acota el daño.
+    it('falla si RESET_CODE_SECRET repite un secreto JWT', () => {
+      expect(() =>
+        validateEnv({ ...valid, RESET_CODE_SECRET: valid.JWT_ACCESS_SECRET }),
+      ).toThrow(/RESET_CODE_SECRET/);
+    });
+
+    // Los valores por defecto apuntan a Mailpit: en desarrollo no hace falta
+    // configurar nada para ver los correos.
+    it('el SMTP apunta a Mailpit si no se configura', () => {
+      const env = validateEnv(valid);
+      expect(env.SMTP_HOST).toBe('localhost');
+      expect(env.SMTP_PORT).toBe(1025);
+      expect(env.SMTP_USER).toBeUndefined();
+      expect(env.MAIL_FROM).toContain('@');
+    });
+
+    it('lee el puerto SMTP como número', () => {
+      expect(validateEnv({ ...valid, SMTP_PORT: '587' }).SMTP_PORT).toBe(587);
     });
   });
 });
