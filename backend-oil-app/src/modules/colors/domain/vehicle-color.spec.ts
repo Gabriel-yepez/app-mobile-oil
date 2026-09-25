@@ -3,8 +3,16 @@ import { COLORES, type VehicleColor } from './vehicle-color';
 describe('catálogo de colores', () => {
   it('trae los 10 en el orden curado', () => {
     expect(COLORES.map((c) => c.name)).toEqual([
-      'Negro', 'Gris', 'Plata', 'Blanco', 'Rojo',
-      'Vinotinto', 'Azul', 'Verde', 'Amarillo', 'Beige',
+      'Negro',
+      'Gris',
+      'Plata',
+      'Blanco',
+      'Rojo',
+      'Vinotinto',
+      'Azul',
+      'Verde',
+      'Amarillo',
+      'Beige',
     ]);
   });
 

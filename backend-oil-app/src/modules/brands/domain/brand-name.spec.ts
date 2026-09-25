@@ -35,12 +35,16 @@ describe('normalizarNombre', () => {
 });
 
 describe('nombreValido', () => {
-  it.each(['Toyota', 'Mercedes-Benz', 'B.M.W.', 'MD', 'Empire Keeway', 'BYD & Co'])(
-    'acepta %s',
-    (n) => {
-      expect(nombreValido(n)).toBe(true);
-    },
-  );
+  it.each([
+    'Toyota',
+    'Mercedes-Benz',
+    'B.M.W.',
+    'MD',
+    'Empire Keeway',
+    'BYD & Co',
+  ])('acepta %s', (n) => {
+    expect(nombreValido(n)).toBe(true);
+  });
 
   it.each([
     ['', 'vacío'],

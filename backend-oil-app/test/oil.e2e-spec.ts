@@ -207,7 +207,9 @@ describe('Estado del aceite (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ color: '#FF0000' })
       .expect(200)
-      .expect((r) => expect((r.body as { color: string }).color).toBe('#FF0000'));
+      .expect((r) =>
+        expect((r.body as { color: string }).color).toBe('#FF0000'),
+      );
 
     await http()
       .delete(`/api/v1/vehicles/${id}`)
@@ -262,8 +264,6 @@ describe('Estado del aceite (e2e)', () => {
   });
 
   it('sin token responde 401', async () => {
-    await http()
-      .get(`/api/v1/vehicles/${vehiculoId}/oil-status`)
-      .expect(401);
+    await http().get(`/api/v1/vehicles/${vehiculoId}/oil-status`).expect(401);
   });
 });

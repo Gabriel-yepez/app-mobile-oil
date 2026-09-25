@@ -64,9 +64,7 @@ export class PrismaOilChangeRepository implements OilChangeRepository {
       where: { vehicleId },
       orderBy: { changedAt: 'desc' },
       take: opts.limit + 1,
-      ...(opts.cursor
-        ? { cursor: { id: opts.cursor }, skip: 1 }
-        : {}),
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     });
 
     const hayMas = rows.length > opts.limit;
