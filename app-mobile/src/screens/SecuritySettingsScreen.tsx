@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Screen, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, IconBtn, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
+import { useAuth } from '../store/auth';
+import type { RootStackParamList } from '../navigation/types';
 
 export function SecuritySettingsScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const c = useAppColors();
+  const email = useAuth((s) => s.user?.email);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   return (
@@ -33,7 +37,12 @@ export function SecuritySettingsScreen() {
           <SectionHead>Acceso</SectionHead>
           <Box px="$lg">
             <Card padded={false}>
+              {/* Mismo trámite que "¿Olvidaste tu contraseña?", con el correo
+                  de la sesión ya puesto: el código por correo es la prueba de
+                  que quien cambia la contraseña controla la cuenta, sepa o no
+                  la actual. */}
               <Touchable
+                onPress={() => navigation.navigate('ForgotPassword', { email })}
                 fd="row"
                 ai="center"
                 gap="$md"

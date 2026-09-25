@@ -43,7 +43,13 @@ export class ApiError extends Error {
     readonly status: number,
     /** Código estable del backend. La UI ramifica por ESTO, nunca por el texto. */
     readonly code: string,
-    message: string
+    message: string,
+    /**
+     * Qué falló, en detalle. Lo trae un 400 `VALIDATION_ERROR`: un texto por
+     * campo o regla incumplida —por ejemplo, todas las reglas de contraseña
+     * que no se cumplen—. Vacío en el resto de errores.
+     */
+    readonly details: string[] = []
   ) {
     super(message);
     this.name = 'ApiError';
@@ -82,11 +88,17 @@ export abstract class ApiClient {
     if (axios.isAxiosError(e)) {
       // Con respuesta: el backend habló, y su cuerpo trae `error` y `message`.
       if (e.response) {
-        const cuerpo = e.response.data as { error?: string; message?: string } | undefined;
+        const cuerpo = e.response.data as
+          | { error?: string; message?: string; details?: unknown }
+          | undefined;
         return new ApiError(
           e.response.status,
           cuerpo?.error ?? 'HTTP_ERROR',
-          cuerpo?.message ?? 'Ocurrió un error inesperado.'
+          cuerpo?.message ?? 'Ocurrió un error inesperado.',
+          // Se filtra a texto: es contenido del servidor que la UI va a pintar.
+          Array.isArray(cuerpo?.details)
+            ? cuerpo.details.filter((d): d is string => typeof d === 'string')
+            : []
         );
       }
       // Sin respuesta: se agotó el tiempo. Se distingue de "sin red" porque el

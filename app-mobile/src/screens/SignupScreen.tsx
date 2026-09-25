@@ -26,8 +26,10 @@ import {
 import { StepBars, StepCounter } from '../components/StepProgress';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../store/auth';
-import { ApiError } from '../api/base';
 import { isEmail } from '../utils/validate';
+import { contrasenaValida } from '../utils/password';
+import { textoDeError } from '../utils/errores';
+import { PasswordRules } from '../components/PasswordRules';
 import { RootScreenProps } from '../navigation/types';
 import type { ApiUser } from '../api/controllers/auth.controller';
 
@@ -102,9 +104,8 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
     }
     if (n === 3) {
       if (!isEmail(email)) return 'Escribe un correo válido.';
-      if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
-      if (!/(?=.*[A-Za-zÀ-ÿ])(?=.*\d)/.test(password))
-        return 'La contraseña debe incluir al menos una letra y un número.';
+      // La leyenda ya marca qué falta; acá basta con no dejar pasar.
+      if (!contrasenaValida(password)) return 'La contraseña no cumple los requisitos.';
       if (!accepted) return 'Debes aceptar los términos para continuar.';
     }
     return null;
@@ -144,9 +145,9 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
       });
       navigation.replace('Tabs');
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : 'No pudimos conectar. Revisa tu conexión.',
-      );
+      // Si el servidor devuelve las reglas incumplidas, se muestran esas:
+      // dicen qué corregir, no solo que algo está mal.
+      setError(textoDeError(e));
     } finally {
       setEnviando(false);
     }
@@ -264,7 +265,7 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
                     autoComplete="email"
                   />
                 </Field>
-                <Field label="Contraseña" hint="Al menos 8 caracteres, con un número">
+                <Field label="Contraseña">
                   <Input
                     value={password}
                     onChangeText={setPassword}
@@ -277,6 +278,7 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
                     }
                   />
                 </Field>
+                <PasswordRules password={password} />
 
                 {/* La casilla va sin `label`: el texto lleva enlaces propios y
                     debe poder tocarse sin marcar los términos. */}
