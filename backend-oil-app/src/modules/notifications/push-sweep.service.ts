@@ -119,8 +119,7 @@ export class PushSweepService {
     } finally {
       // Se suelta pase lo que pase: un lock que queda tomado haría que el
       // barrido de mañana se saltara solo, y nadie recibiría nada nunca más.
-      await this.prisma
-        .$executeRaw`SELECT pg_advisory_unlock(${LOCK_BARRIDO})`;
+      await this.prisma.$executeRaw`SELECT pg_advisory_unlock(${LOCK_BARRIDO})`;
     }
   }
 }

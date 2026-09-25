@@ -8,9 +8,9 @@ const cambios = (...pares: [string, number][]): RateSample[] =>
 
 describe('computeKmPerDay', () => {
   it('sin ciclos medibles devuelve el valor declarado', () => {
-    expect(computeKmPerDay(cambios(['2026-06-04T00:00:00Z', 45_000]), 30)).toEqual(
-      { kmPerDay: 30, medido: false },
-    );
+    expect(
+      computeKmPerDay(cambios(['2026-06-04T00:00:00Z', 45_000]), 30),
+    ).toEqual({ kmPerDay: 30, medido: false });
   });
 
   it('con un ciclo mide el ritmo real', () => {

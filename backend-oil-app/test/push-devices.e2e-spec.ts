@@ -135,7 +135,9 @@ describe('Dispositivos para push (e2e)', () => {
     const jwt = await sesion();
 
     await http()
-      .delete(`/me/devices/${encodeURIComponent('ExponentPushToken[fantasma]')}`)
+      .delete(
+        `/me/devices/${encodeURIComponent('ExponentPushToken[fantasma]')}`,
+      )
       .set('Authorization', `Bearer ${jwt}`)
       .expect(204);
   });

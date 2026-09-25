@@ -12,7 +12,11 @@ function armar() {
 describe('BrandsService.create', () => {
   it('crea una marca nueva y la marca como creada', async () => {
     const { service } = armar();
-    const r = await service.create(USUARIO, { kind: 'CAR', name: 'Chery' }, AHORA);
+    const r = await service.create(
+      USUARIO,
+      { kind: 'CAR', name: 'Chery' },
+      AHORA,
+    );
     expect(r.created).toBe(true);
     expect(r.brand.name).toBe('Chery');
     expect(r.brand.nameKey).toBe('CHERY');
@@ -23,7 +27,11 @@ describe('BrandsService.create', () => {
     const { repo, service } = armar();
     repo.sembrar('CAR', 'Toyota', 'TOYOTA');
 
-    const r = await service.create(USUARIO, { kind: 'CAR', name: '  toyotá ' }, AHORA);
+    const r = await service.create(
+      USUARIO,
+      { kind: 'CAR', name: '  toyotá ' },
+      AHORA,
+    );
 
     expect(r.created).toBe(false);
     // Devuelve la capitalización del catálogo, no la que escribió el usuario.
@@ -34,10 +42,14 @@ describe('BrandsService.create', () => {
   it('es idempotente por id: reintentar la cola no duplica', async () => {
     const { repo, service } = armar();
     const primera = await service.create(
-      USUARIO, { id: 'id-fijo', kind: 'CAR', name: 'Chery' }, AHORA,
+      USUARIO,
+      { id: 'id-fijo', kind: 'CAR', name: 'Chery' },
+      AHORA,
     );
     const reintento = await service.create(
-      USUARIO, { id: 'id-fijo', kind: 'CAR', name: 'Chery' }, AHORA,
+      USUARIO,
+      { id: 'id-fijo', kind: 'CAR', name: 'Chery' },
+      AHORA,
     );
 
     expect(primera.created).toBe(true);
@@ -49,7 +61,11 @@ describe('BrandsService.create', () => {
   it('el mismo nombre en CAR y en MOTO son dos marcas distintas', async () => {
     const { repo, service } = armar();
     await service.create(USUARIO, { kind: 'CAR', name: 'Honda' }, AHORA);
-    const moto = await service.create(USUARIO, { kind: 'MOTO', name: 'Honda' }, AHORA);
+    const moto = await service.create(
+      USUARIO,
+      { kind: 'MOTO', name: 'Honda' },
+      AHORA,
+    );
 
     expect(moto.created).toBe(true);
     expect(repo.filas).toHaveLength(2);
@@ -88,7 +104,11 @@ describe('BrandsService.create', () => {
     for (const f of repo.filas) {
       f.createdAt = new Date(AHORA.getTime() - 25 * 3600 * 1000);
     }
-    const r = await service.create(USUARIO, { kind: 'CAR', name: 'Haval' }, AHORA);
+    const r = await service.create(
+      USUARIO,
+      { kind: 'CAR', name: 'Haval' },
+      AHORA,
+    );
     expect(r.created).toBe(true);
   });
 
@@ -98,7 +118,11 @@ describe('BrandsService.create', () => {
     for (let i = 0; i < 5; i++) {
       await service.create(USUARIO, { kind: 'CAR', name: 'Toyota' }, AHORA);
     }
-    const r = await service.create(USUARIO, { kind: 'CAR', name: 'Chery' }, AHORA);
+    const r = await service.create(
+      USUARIO,
+      { kind: 'CAR', name: 'Chery' },
+      AHORA,
+    );
     expect(r.created).toBe(true);
   });
 });
@@ -118,7 +142,11 @@ describe('BrandsService.list', () => {
     for (const n of ['Toyota', 'Ford', 'Kia', 'Fiat', 'Jeep']) {
       repo.sembrar('CAR', n, n.toUpperCase());
     }
-    const r = await service.create(USUARIO, { kind: 'CAR', name: 'Chery' }, AHORA);
+    const r = await service.create(
+      USUARIO,
+      { kind: 'CAR', name: 'Chery' },
+      AHORA,
+    );
     expect(r.created).toBe(true);
   });
 });

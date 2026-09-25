@@ -77,7 +77,10 @@ export class PrismaVehicleRepository implements VehicleRepository {
       kmPerDaySource?: KmRateSource;
     },
   ): Promise<Vehicle> {
-    const row = await this.prisma.vehicle.update({ where: { id }, data: patch });
+    const row = await this.prisma.vehicle.update({
+      where: { id },
+      data: patch,
+    });
     return this.toDomain(row);
   }
 
