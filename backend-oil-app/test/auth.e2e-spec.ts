@@ -20,7 +20,7 @@ const nuevo = () => ({
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
-  password: 'contrasena1',
+  password: 'Clave#2026',
 });
 
 // `res.body` de supertest es `any`. En vez de silenciar la regla de lint en

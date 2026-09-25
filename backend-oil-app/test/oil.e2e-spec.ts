@@ -19,7 +19,7 @@ const nuevoUsuario = () => ({
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
-  password: 'contrasena1',
+  password: 'Clave#2026',
 });
 
 const nuevoVehiculo = () => ({

@@ -14,6 +14,7 @@ import {
   Matches,
 } from 'class-validator';
 import type { Currency } from '../../users/domain/user';
+import { DESCRIPCION_REGLAS, IsStrongPassword } from '../password-policy';
 import {
   normalizarCedula,
   normalizarLugar,
@@ -120,25 +121,17 @@ export class RegisterDto {
   @IsIn(['USD', 'BS', 'BOTH'], { message: 'La moneda no es válida' })
   currency: Currency = 'BOTH';
 
-  // 72 es el límite práctico de las funciones de hash: cortar en silencio una
-  // contraseña más larga sería peor que rechazarla.
   @ApiProperty({
     minLength: 8,
     maxLength: 72,
     format: 'password',
-    example: 'contrasena1',
+    example: 'Clave#2026',
     description:
-      'Contraseña: entre 8 y 72 caracteres, con al menos una letra y al ' +
-      'menos un número. El tope de 72 no es capricho — es el límite real de ' +
-      'la función de hash, y recortar en silencio sería peor que rechazar. ' +
-      'Se guarda con Argon2id; el texto plano no se persiste en ningún lado.',
+      `Contraseña: ${DESCRIPCION_REGLAS}. **Cada regla se valida por ` +
+      'separado**, así que un 400 trae en `details` todas las que no se ' +
+      'cumplen a la vez, no solo la primera. Se guarda con Argon2id; el ' +
+      'texto plano no se persiste en ningún lado.',
   })
-  @IsString()
-  @Length(8, 72, {
-    message: 'La contraseña debe tener entre 8 y 72 caracteres',
-  })
-  @Matches(/(?=.*[A-Za-zÀ-ÿ])(?=.*\d)/, {
-    message: 'La contraseña debe incluir al menos una letra y un número',
-  })
+  @IsStrongPassword()
   password!: string;
 }
