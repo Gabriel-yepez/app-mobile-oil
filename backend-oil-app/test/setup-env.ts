@@ -22,3 +22,25 @@ process.env.PUSH_ENABLED = 'false';
 // para un usuario recién borrado) y 500 al editar un vehículo que ya no
 // existía. Fallaba una de cada tres corridas, cada vez en tests distintos.
 // En serie, cada suite limpia cuando ninguna otra está corriendo.
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Por qué cada suite hace `await app.listen(0, '127.0.0.1')` y no `app.init()`:
+//
+// Con app.init() el servidor no escucha, y supertest hace listen(0) —sobre
+// `::`, todas las interfaces— EN CADA PETICIÓN, y luego se conecta a
+// 127.0.0.1:puerto. En macOS, si otro proceso ya tiene ese puerto atado a
+// 127.0.0.1 en concreto (el IDE, los language servers, Electron: una veintena
+// de puertos del rango efímero en esta máquina), Node acepta igual el listen
+// sobre `::`… pero la conexión a 127.0.0.1 le llega al OTRO proceso, porque la
+// dirección más específica gana.
+//
+// Síntomas que eso producía, todos intermitentes y en tests que en solitario
+// pasaban siempre: 404 en rutas que existen, 403 y 400 inexplicables,
+// peticiones que nunca respondían (timeouts de 5 s en una validación que no
+// toca la base) y "Jest did not exit". Medido: 5 de cada 3.000 listen(0)
+// hablaban con otro proceso; con cientos de peticiones por corrida, fallaba
+// más o menos una de cada diez.
+//
+// Escuchando una sola vez y atado a 127.0.0.1, el sistema solo puede dar un
+// puerto libre EN ESA dirección, y supertest reutiliza el servidor en vez de
+// abrir uno por petición.

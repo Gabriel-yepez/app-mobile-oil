@@ -48,7 +48,8 @@ describe('Preferencias de notificación (e2e)', () => {
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    // Escucha UNA vez y atado a 127.0.0.1, no app.init(): ver test/setup-env.ts.
+    await app.listen(0, '127.0.0.1');
     prisma = app.get(PrismaService);
   });
 
