@@ -12,31 +12,33 @@ export class InMemoryVehicleRepository implements VehicleRepository {
   private readonly rows = new Map<string, Vehicle>();
   private seq = 0;
 
-  async findById(id: string): Promise<Vehicle | null> {
-    return this.rows.get(id) ?? null;
+  findById(id: string): Promise<Vehicle | null> {
+    return Promise.resolve(this.rows.get(id) ?? null);
   }
 
-  async findByUser(userId: string): Promise<Vehicle[]> {
-    return [...this.rows.values()].filter((v) => v.userId === userId);
-  }
-
-  async listAllIds(): Promise<string[]> {
-    return [...this.rows.keys()];
-  }
-
-  async findAll(): Promise<Vehicle[]> {
-    return [...this.rows.values()];
-  }
-
-  async findByPlate(userId: string, plate: string): Promise<Vehicle | null> {
-    return (
-      [...this.rows.values()].find(
-        (v) => v.userId === userId && v.plate === plate,
-      ) ?? null
+  findByUser(userId: string): Promise<Vehicle[]> {
+    return Promise.resolve(
+      [...this.rows.values()].filter((v) => v.userId === userId),
     );
   }
 
-  async create(data: NewVehicle & { id?: string }): Promise<Vehicle> {
+  listAllIds(): Promise<string[]> {
+    return Promise.resolve([...this.rows.keys()]);
+  }
+
+  findAll(): Promise<Vehicle[]> {
+    return Promise.resolve([...this.rows.values()]);
+  }
+
+  findByPlate(userId: string, plate: string): Promise<Vehicle | null> {
+    return Promise.resolve(
+      [...this.rows.values()].find(
+        (v) => v.userId === userId && v.plate === plate,
+      ) ?? null,
+    );
+  }
+
+  create(data: NewVehicle & { id?: string }): Promise<Vehicle> {
     const row: Vehicle = {
       ...data,
       id: data.id ?? `v${++this.seq}`,
@@ -47,37 +49,44 @@ export class InMemoryVehicleRepository implements VehicleRepository {
       nextChangeDueAt: null,
     };
     this.rows.set(row.id, row);
-    return row;
+    return Promise.resolve(row);
   }
 
-  async update(
+  update(
     id: string,
     patch: Partial<Omit<NewVehicle, 'userId'>> & {
       kmPerDaySource?: KmRateSource;
     },
   ): Promise<Vehicle> {
     const actual = this.rows.get(id);
-    if (!actual) throw new Error(`vehículo inexistente: ${id}`);
+    // Promesa rechazada y no throw: el contrato es asíncrono y quien llame sin
+    // await debe ver el fallo en la promesa, no como excepción síncrona.
+    if (!actual) {
+      return Promise.reject(new Error(`vehículo inexistente: ${id}`));
+    }
     const row = { ...actual, ...patch };
     this.rows.set(id, row);
-    return row;
+    return Promise.resolve(row);
   }
 
-  async remove(id: string): Promise<void> {
+  remove(id: string): Promise<void> {
     this.rows.delete(id);
+    return Promise.resolve();
   }
 
-  async updateCycleMirror(id: string, mirror: CycleMirror): Promise<void> {
+  updateCycleMirror(id: string, mirror: CycleMirror): Promise<void> {
     const row = this.rows.get(id);
     if (row) this.rows.set(id, { ...row, ...mirror });
+    return Promise.resolve();
   }
 
-  async updateKmRate(
+  updateKmRate(
     id: string,
     kmPerDay: number,
     source: KmRateSource,
   ): Promise<void> {
     const row = this.rows.get(id);
     if (row) this.rows.set(id, { ...row, kmPerDay, kmPerDaySource: source });
+    return Promise.resolve();
   }
 }

@@ -16,9 +16,9 @@ const mensaje = (id: string): PushMessage => ({
 const clienteFalso = (over: Partial<Record<string, unknown>>): Expo =>
   ({
     chunkPushNotifications: (m: unknown[]) => [m],
-    sendPushNotificationsAsync: async () => [],
+    sendPushNotificationsAsync: () => Promise.resolve([]),
     chunkPushNotificationReceiptIds: (ids: string[]) => [ids],
-    getPushNotificationReceiptsAsync: async () => ({}),
+    getPushNotificationReceiptsAsync: () => Promise.resolve({}),
     ...over,
   }) as unknown as Expo;
 
@@ -26,7 +26,8 @@ describe('ExpoPushSender', () => {
   it('traduce un ticket ok del SDK al ticket del dominio', async () => {
     const sender = new ExpoPushSender(
       clienteFalso({
-        sendPushNotificationsAsync: async () => [{ status: 'ok', id: 'XYZ' }],
+        sendPushNotificationsAsync: () =>
+          Promise.resolve([{ status: 'ok', id: 'XYZ' }]),
       }),
     );
 
@@ -39,13 +40,14 @@ describe('ExpoPushSender', () => {
   it('traduce un ticket con error, conservando el código de Expo', async () => {
     const sender = new ExpoPushSender(
       clienteFalso({
-        sendPushNotificationsAsync: async () => [
-          {
-            status: 'error',
-            message: 'no registrado',
-            details: { error: 'DeviceNotRegistered' },
-          },
-        ],
+        sendPushNotificationsAsync: () =>
+          Promise.resolve([
+            {
+              status: 'error',
+              message: 'no registrado',
+              details: { error: 'DeviceNotRegistered' },
+            },
+          ]),
       }),
     );
 
@@ -63,12 +65,14 @@ describe('ExpoPushSender', () => {
       clienteFalso({
         // Parte de dos en dos para comprobar que se concatenan en orden.
         chunkPushNotifications: (m: unknown[]) => [m.slice(0, 2), m.slice(2)],
-        sendPushNotificationsAsync: async (lote: unknown[]) => {
+        sendPushNotificationsAsync: (lote: unknown[]) => {
           enviados.push(lote);
-          return lote.map((_, i) => ({
-            status: 'ok',
-            id: `id-${enviados.length}-${i}`,
-          }));
+          return Promise.resolve(
+            lote.map((_, i) => ({
+              status: 'ok',
+              id: `id-${enviados.length}-${i}`,
+            })),
+          );
         },
       }),
     );
@@ -90,9 +94,7 @@ describe('ExpoPushSender', () => {
   it('un lote que revienta no tumba los demás: devuelve error por envío', async () => {
     const sender = new ExpoPushSender(
       clienteFalso({
-        sendPushNotificationsAsync: async () => {
-          throw new Error('sin red');
-        },
+        sendPushNotificationsAsync: () => Promise.reject(new Error('sin red')),
       }),
     );
 
@@ -105,14 +107,15 @@ describe('ExpoPushSender', () => {
   it('devuelve el error del receipt y null cuando entregó bien', async () => {
     const sender = new ExpoPushSender(
       clienteFalso({
-        getPushNotificationReceiptsAsync: async () => ({
-          'tk-1': { status: 'ok' },
-          'tk-2': {
-            status: 'error',
-            message: 'x',
-            details: { error: 'DeviceNotRegistered' },
-          },
-        }),
+        getPushNotificationReceiptsAsync: () =>
+          Promise.resolve({
+            'tk-1': { status: 'ok' },
+            'tk-2': {
+              status: 'error',
+              message: 'x',
+              details: { error: 'DeviceNotRegistered' },
+            },
+          }),
       }),
     );
 

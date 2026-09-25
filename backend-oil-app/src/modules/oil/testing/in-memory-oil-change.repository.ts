@@ -19,19 +19,16 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
       .sort((a, b) => b.changedAt.getTime() - a.changedAt.getTime());
   }
 
-  async findByVehicle(
-    vehicleId: string,
-    limit?: number,
-  ): Promise<OilChangeRecord[]> {
+  findByVehicle(vehicleId: string, limit?: number): Promise<OilChangeRecord[]> {
     const all = this.ordenados(vehicleId);
-    return limit ? all.slice(0, limit) : all;
+    return Promise.resolve(limit ? all.slice(0, limit) : all);
   }
 
-  async findLatest(vehicleId: string): Promise<OilChangeRecord | null> {
-    return this.ordenados(vehicleId)[0] ?? null;
+  findLatest(vehicleId: string): Promise<OilChangeRecord | null> {
+    return Promise.resolve(this.ordenados(vehicleId)[0] ?? null);
   }
 
-  async findPage(
+  findPage(
     vehicleId: string,
     opts: { cursor?: string; limit: number },
   ): Promise<OilChangePage> {
@@ -44,31 +41,36 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
 
     const hayMas = ventana.length > opts.limit;
     const items = hayMas ? ventana.slice(0, opts.limit) : ventana;
-    return { items, nextCursor: hayMas ? (items.at(-1)?.id ?? null) : null };
+    return Promise.resolve({
+      items,
+      nextCursor: hayMas ? (items.at(-1)?.id ?? null) : null,
+    });
   }
 
-  async findById(id: string): Promise<OilChangeRecord | null> {
-    return this.rows.get(id) ?? null;
+  findById(id: string): Promise<OilChangeRecord | null> {
+    return Promise.resolve(this.rows.get(id) ?? null);
   }
 
-  async create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord> {
+  create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord> {
     const row: OilChangeRecord = { ...data, id: data.id ?? `oc${++this.seq}` };
     this.rows.set(row.id, row);
-    return row;
+    return Promise.resolve(row);
   }
 
-  async update(
-    id: string,
-    patch: Partial<NewOilChange>,
-  ): Promise<OilChangeRecord> {
+  update(id: string, patch: Partial<NewOilChange>): Promise<OilChangeRecord> {
     const actual = this.rows.get(id);
-    if (!actual) throw new Error(`cambio inexistente: ${id}`);
+    // Promesa rechazada y no throw: el contrato es asíncrono y quien llame sin
+    // await debe ver el fallo en la promesa, no como excepción síncrona.
+    if (!actual) {
+      return Promise.reject(new Error(`cambio inexistente: ${id}`));
+    }
     const row = { ...actual, ...patch };
     this.rows.set(id, row);
-    return row;
+    return Promise.resolve(row);
   }
 
-  async remove(id: string): Promise<void> {
+  remove(id: string): Promise<void> {
     this.rows.delete(id);
+    return Promise.resolve();
   }
 }

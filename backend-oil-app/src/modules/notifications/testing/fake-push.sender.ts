@@ -14,20 +14,26 @@ export class FakePushSender implements PushSender {
   readonly receiptsPedidos: string[] = [];
   private n = 0;
 
-  async enviar(envios: EnvioPush[]): Promise<PushTicket[]> {
+  enviar(envios: EnvioPush[]): Promise<PushTicket[]> {
     this.enviados.push(...envios);
-    return envios.map(
-      () =>
-        this.ticketsPorDevolver.shift() ?? {
-          ok: true as const,
-          id: `tk-${++this.n}`,
-        },
+    return Promise.resolve(
+      envios.map(
+        () =>
+          this.ticketsPorDevolver.shift() ?? {
+            ok: true as const,
+            id: `tk-${++this.n}`,
+          },
+      ),
     );
   }
 
-  async receipts(ticketIds: string[]): Promise<PushReceipt[]> {
+  receipts(ticketIds: string[]): Promise<PushReceipt[]> {
     this.receiptsPedidos.push(...ticketIds);
-    if (this.receiptsPorDevolver.length > 0) return this.receiptsPorDevolver;
-    return ticketIds.map((ticketId) => ({ ticketId, error: null }));
+    if (this.receiptsPorDevolver.length > 0) {
+      return Promise.resolve(this.receiptsPorDevolver);
+    }
+    return Promise.resolve(
+      ticketIds.map((ticketId) => ({ ticketId, error: null })),
+    );
   }
 }
