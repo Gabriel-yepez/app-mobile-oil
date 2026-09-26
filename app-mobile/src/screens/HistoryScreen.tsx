@@ -1,16 +1,17 @@
 // Historial completo — resumen de inversión USD/Bs.S + lista de todos los cambios
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
 import { radius } from '../theme';
 import { Card, FilterChip, FilterChips, IconBtn, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
-import { fmtKm, fmtUsd, fmtFecha } from '../utils/format';
-import { BS_RATE, SPEND_BARS } from '../data/mock';
+import { fmtBs, fmtDecimal, fmtKm, fmtUsd, fmtFecha } from '../utils/format';
+import { gastoPorMes } from '../utils/inversion';
 import { useVehicles } from '../store/useVehicles';
 import { useAllOilChanges } from '../hooks/useAllOilChanges';
+import { useTasaBcv } from '../store/tasaBcv';
 
 // El filtro tiene DOS niveles y no una sola fila larga de chips: con un chip
 // por vehículo, una flota de seis ya no entra en pantalla. Primero se elige el
@@ -27,6 +28,16 @@ export function HistoryScreen() {
   const vehicles = useVehicles((s) => s.vehicles);
   const [kind, setKind] = useState<Kind>('all');
   const [elegido, setElegido] = useState<string>('all');
+  const tasa = useTasaBcv((s) => s.tasa);
+  const cargarTasa = useTasaBcv((s) => s.cargar);
+
+  // En cada foco, como el historial: la tasa cambia a diario y el servidor la
+  // tiene en caché, así que pedirla de nuevo no cuesta nada.
+  useFocusEffect(
+    useCallback(() => {
+      void cargarTasa();
+    }, [cargarTasa]),
+  );
 
   const vehicleOf = (id: string) => vehicles.find((v) => v.id === id);
 
@@ -72,10 +83,18 @@ export function HistoryScreen() {
     setElegido('all');
   };
 
-  // El total sigue al filtro: un "invertido" que incluye carros encima de una
-  // lista de solo motos no se entiende.
+  // El total es de todos los años y sigue al filtro: un "invertido" que
+  // incluye carros encima de una lista de solo motos no se entiende.
   const totalUsd = filtered.reduce((sum, ch) => sum + (ch.costUsd ?? 0), 0);
-  const maxBar = Math.max(...SPEND_BARS);
+
+  // El gráfico, en cambio, es del año en curso: doce barras de ENE a DIC. Por
+  // eso lleva su propio rótulo con el año, para no leerse como el desglose
+  // del total de arriba.
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const barras = gastoPorMes(filtered, anio);
+  // Con todo en cero no hay escala: se evita el 0/0 y las barras quedan planas.
+  const maxBar = Math.max(...barras) || 1;
 
   return (
     <Box f={1} bg="$bg3">
@@ -106,24 +125,39 @@ export function HistoryScreen() {
             style={{ borderRadius: radius.lg, padding: 16 }}
           >
             <Txt font="bold" fos={11} tone="onDarkMuted" ls={1.2} caps>
-              Inversión 2026
+              Inversión total
             </Txt>
             <Row ai="baseline" gap="$sm" mt={6}>
               <Txt font="mono" fos={32} tone="onDark" ls={-1}>{fmtUsd(totalUsd)}</Txt>
               <Txt fos={12} tone="onDarkSoft">
-                USD · ≈ Bs.S {fmtKm(totalUsd * BS_RATE)}
+                USD{tasa ? ` · ≈ ${fmtBs(totalUsd * tasa.bsPerUsd)}` : ''}
               </Txt>
             </Row>
+            {/* Sin tasa todavía (primera vez y sin señal) se omite la
+                conversión: mejor nada que un número inventado. */}
+            {tasa ? (
+              <Txt fos={11} tone="onDarkMuted" mt={2}>
+                Tasa BCV {fmtDecimal(tasa.bsPerUsd)} Bs.S/USD · {fmtFecha(tasa.effectiveDate)}
+              </Txt>
+            ) : null}
+
+            <Txt font="bold" fos={10} tone="onDarkMuted" ls={1.2} caps mt={14}>
+              Por mes · {anio}
+            </Txt>
 
             {/* mini bar chart */}
-            <Row mt={14} h={50} ai="flex-end" gap={6}>
-              {SPEND_BARS.map((h, i) => (
+            <Row mt={8} h={50} ai="flex-end" gap={6}>
+              {barras.map((usd, i) => (
                 <Box
                   key={i}
                   f={1}
                   br={3}
-                  bg={i === SPEND_BARS.length - 1 ? '$accent2' : 'rgba(255,255,255,0.18)'}
-                  height={`${(h / maxBar) * 100}%`}
+                  // Se resalta el mes en curso, no la última barra: diciembre
+                  // es la última aunque todavía no haya llegado.
+                  bg={i === hoy.getMonth() ? '$accent2' : 'rgba(255,255,255,0.18)'}
+                  // Un mes sin gasto deja un trazo mínimo en vez de un hueco,
+                  // para que se lean los doce meses del año.
+                  height={usd > 0 ? `${(usd / maxBar) * 100}%` : 2}
                   transition="gauge"
                   enterStyle={{ height: 0 }}
                 />

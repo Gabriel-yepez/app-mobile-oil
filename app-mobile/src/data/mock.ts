@@ -187,19 +187,3 @@ export const MOCK_CHANGES: OilChange[] = [
   { id: 'c6', vehicleId: 'v2', date: '18 jul 2025', km: 132400, oil: { brand: 'Castrol', tag: 'GTX', viscosity: '20W-50' }, shop: 'Lubricantes El Marqués', costUsd: 22 },
   { id: 'c7', vehicleId: 'v1', date: '14 may 2025', km: 62100, oil: { brand: 'Castrol', tag: 'GTX', viscosity: '20W-50' }, shop: 'Lubricantes El Marqués', costUsd: 25 },
 ];
-
-export const MOCK_PROFILE: Profile = {
-  fullName: 'Luis Guerrero',
-  cedula: 'V-25.481.073',
-  email: 'luis.guerrero@gmail.com',
-  phone: '+58 414 528 9012',
-  state: 'Distrito Capital',
-  city: 'Caracas',
-  currency: 'BOTH',
-};
-
-// Tasa mock USD → Bs.S para la conversión secundaria
-export const BS_RATE = 36.54;
-
-// Mini bar chart "Inversión 2026" (12 meses)
-export const SPEND_BARS = [24, 18, 32, 14, 28, 36, 12, 22, 30, 28, 18, 26];

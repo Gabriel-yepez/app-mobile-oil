@@ -1,4 +1,4 @@
-import { fmtFecha, parseFecha } from '../format';
+import { fmtDecimal, fmtFecha, fmtUsd, parseFecha } from '../format';
 
 describe('fmtFecha', () => {
   it('formatea en es-VE corto', () => {
@@ -38,5 +38,19 @@ describe('parseFecha', () => {
   it('rechaza texto que no es una fecha', () => {
     expect(parseFecha('mañana')).toBeNull();
     expect(parseFecha('')).toBeNull();
+  });
+});
+
+describe('fmtDecimal', () => {
+  it('redondea a dos decimales con coma', () => {
+    expect(fmtDecimal(855.6625)).toBe('855,66');
+  });
+
+  it('separa los miles con punto', () => {
+    expect(fmtDecimal(1234567.5)).toBe('1.234.567,50');
+  });
+
+  it('fmtUsd es el mismo número con el signo', () => {
+    expect(fmtUsd(1234.5)).toBe('$1.234,50');
   });
 });

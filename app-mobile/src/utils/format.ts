@@ -5,8 +5,11 @@ export const fmtKm = (n: number): string =>
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-export const fmtUsd = (n: number): string =>
-  `$${n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d),)/g, '.')}`;
+/** Dos decimales con coma y miles con punto: 855.6625 → "855,66". */
+export const fmtDecimal = (n: number): string =>
+  n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d),)/g, '.');
+
+export const fmtUsd = (n: number): string => `$${fmtDecimal(n)}`;
 
 export const fmtBs = (n: number): string => `Bs.S ${fmtKm(n)}`;
 
