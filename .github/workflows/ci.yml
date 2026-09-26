@@ -128,6 +128,11 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # Versiones de los paquetes contra las que pide el SDK de Expo, config de
+      # app.json, dependencias duplicadas... Lo que no ve ni tsc ni Jest.
+      - name: Expo Doctor
+        run: npx expo-doctor
+
       - name: Typecheck
         run: npx tsc --noEmit
 
