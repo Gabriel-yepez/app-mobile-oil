@@ -1,3 +1,4 @@
+import { SIN_TOPES } from '../subscriptions/testing/in-memory-subscriptions';
 import { OilService } from './oil.service';
 import { OilCycleService } from './oil-cycle.service';
 import { InMemoryVehicleRepository } from './testing/in-memory-vehicle.repository';
@@ -28,6 +29,7 @@ describe('OilService — alcance por usuario', () => {
       new OilCycleService(vehicles, changes),
       // Este spec no mira los avisos: un notificador que no hace nada.
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
   });
 
@@ -75,6 +77,7 @@ describe('crear vehículo con id del cliente', () => {
       new OilCycleService(vehicles, changes),
       // Este spec no mira los avisos: un notificador que no hace nada.
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
   });
 
@@ -148,6 +151,7 @@ describe('editar y borrar vehículo', () => {
       new OilCycleService(vehicles, changes),
       // Este spec no mira los avisos: un notificador que no hace nada.
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
   });
 
@@ -256,6 +260,7 @@ describe('OilService — aviso inmediato por push', () => {
       odometer,
       new OilCycleService(vehicles, changes),
       notifier as never,
+      SIN_TOPES,
     );
   });
 

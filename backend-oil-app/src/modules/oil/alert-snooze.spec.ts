@@ -1,3 +1,4 @@
+import { SIN_TOPES } from '../subscriptions/testing/in-memory-subscriptions';
 import { OilService } from './oil.service';
 import { OilCycleService } from './oil-cycle.service';
 import { InMemoryVehicleRepository } from './testing/in-memory-vehicle.repository';
@@ -22,6 +23,7 @@ describe('posponer la alerta de un vehículo', () => {
       new InMemoryOdometerRepository(),
       new OilCycleService(vehicles, changes),
       { avisar: (u: string) => avisos.push(u) } as never,
+      SIN_TOPES,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',

@@ -157,4 +157,21 @@ export const Errors = {
       'EXCHANGE_RATE_UNAVAILABLE',
       'La tasa del BCV no está disponible en este momento.',
     ),
+
+  // Los topes del plan. 403 y no 402: 402 no tiene un uso estándar y hay
+  // clientes HTTP que lo tratan raro. Lo que la app mira es el `code`, que la
+  // lleva a ofrecer el plan Pro.
+  vehicleLimitReached: (plan: string, tope: number) =>
+    new AppError(
+      HttpStatus.FORBIDDEN,
+      'VEHICLE_LIMIT_REACHED',
+      `Tu plan ${plan} permite hasta ${tope} vehículos. Pásate a Pro para agregar más.`,
+    ),
+
+  oilChangeLimitReached: (plan: string, tope: number) =>
+    new AppError(
+      HttpStatus.FORBIDDEN,
+      'OIL_CHANGE_LIMIT_REACHED',
+      `Tu plan ${plan} permite ${tope} cambios de aceite por mes. Pásate a Pro para registrar más.`,
+    ),
 };

@@ -4,6 +4,7 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Errors } from '../../common/errors';
 import { PushEventNotifier } from '../notifications/push-event-notifier.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { daysBetween } from './domain/dates';
 import { computeOilStatus } from './domain/oil-status.calculator';
 import { conAlertaResuelta, type OilChangeView } from './domain/resolved-alert';
@@ -45,6 +46,7 @@ export class OilService {
     // esta es la forma en que Nest lo resuelve.
     @Inject(forwardRef(() => PushEventNotifier))
     private readonly push: PushEventNotifier,
+    private readonly plans: SubscriptionsService,
   ) {}
 
   /**
@@ -97,6 +99,10 @@ export class OilService {
     if (await this.vehicles.findByPlate(userId, data.plate)) {
       throw Errors.plateTaken();
     }
+    // Después del reintento idempotente, a propósito: un vehículo que ya
+    // existía no gasta cupo, y la cola de la app no puede quedar trabada
+    // reintentando algo que el servidor ya guardó.
+    await this.plans.asegurarCupoVehiculo(userId);
 
     return {
       vehicle: await this.vehicles.create({ ...data, userId }),
@@ -176,6 +182,7 @@ export class OilService {
 
     const anterior = await this.changes.findLatest(vehicleId);
     if (anterior && data.km < anterior.km) throw Errors.oilChangeBackwards();
+    await this.plans.asegurarCupoCambio(userId, data.changedAt);
 
     const creado = await this.changes.create({ ...data, vehicleId });
     await this.odometer.create({

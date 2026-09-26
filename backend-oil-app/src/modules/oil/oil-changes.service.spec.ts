@@ -1,3 +1,4 @@
+import { SIN_TOPES } from '../subscriptions/testing/in-memory-subscriptions';
 import { OilService } from './oil.service';
 import { OilCycleService } from './oil-cycle.service';
 import { InMemoryVehicleRepository } from './testing/in-memory-vehicle.repository';
@@ -36,6 +37,7 @@ describe('registrar un cambio de aceite', () => {
       new OilCycleService(vehicles, changes),
       // Este spec no mira los avisos: un notificador que no hace nada.
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -155,6 +157,7 @@ describe('registrar un cambio con id del cliente', () => {
       new OilCycleService(vehicles, changes),
       // Este spec no mira los avisos: un notificador que no hace nada.
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -224,6 +227,7 @@ describe('historial del vehículo', () => {
       new OilCycleService(vehicles, changes),
       // Este spec no mira los avisos: un notificador que no hace nada.
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',
@@ -297,6 +301,7 @@ describe('alertas resueltas en el historial', () => {
       odometer,
       new OilCycleService(vehicles, changes),
       { avisar: () => {} } as never,
+      SIN_TOPES,
     );
     const v = await service.createVehicle('u1', {
       kind: 'CAR',

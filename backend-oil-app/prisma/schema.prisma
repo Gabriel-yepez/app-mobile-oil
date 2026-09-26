@@ -36,6 +36,8 @@ model User {
   notificationLogs NotificationLog[]
 
   passwordResetCodes PasswordResetCode[]
+
+  subscription Subscription?
 }
 
 model RefreshToken {
@@ -264,4 +266,26 @@ model PasswordResetCode {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+enum PlanId {
+  FREE
+  PRO
+}
+
+// El plan del usuario. Un usuario SIN fila está en el gratis: no hace falta
+// crearle una al registrarse, y las cuentas anteriores a esta tabla quedan
+// bien sin migrar datos. Tabla aparte y no columnas en User porque los pagos,
+// cuando lleguen, van a colgar de acá (proveedor, referencia, renovaciones).
+model Subscription {
+  userId String @id @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan PlanId @default(FREE)
+  // Hasta cuándo está pagado. null = sin vencimiento (otorgado a mano).
+  // Vencido, rigen los topes del gratis; no se borra nada de lo que tenía.
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
