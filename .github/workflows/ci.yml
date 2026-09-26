@@ -1,0 +1,135 @@
+# CI de los dos proyectos del monorepo. Corre en cada push a dev para que,
+# cuando se abra el PR de dev -> main, todo llegue ya comprobado. El PR a main
+# también lo dispara: es lo que GitHub muestra como check del PR.
+name: CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Un push nuevo a la misma rama cancela la corrida anterior, que ya no sirve.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (NestJS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend-oil-app
+
+    # Lo mismo que levanta docker-compose.yml: los e2e hablan con Postgres de
+    # verdad y el test de SMTP busca el correo en la API de Mailpit.
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ruedalo
+          POSTGRES_PASSWORD: ruedalo
+          POSTGRES_DB: ruedalo
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U ruedalo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mail:
+        image: axllent/mailpit:latest
+        ports: ['1025:1025', '8025:8025']
+
+    # Sin .env en CI: env.validation.ts lee directamente de aquí. Los secretos
+    # son de juguete, solo tienen que cumplir la validación (32+ caracteres y
+    # distintos entre sí).
+    env:
+      DATABASE_URL: postgresql://ruedalo:ruedalo@localhost:5433/ruedalo?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-de-32-caracteres-minimo
+      JWT_REFRESH_SECRET: ci-refresh-secret-de-32-caracteres-minimo
+      RESET_CODE_SECRET: ci-reset-code-secret-de-32-caracteres-min
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 30d
+      PORT: '3000'
+      CORS_ORIGINS: ''
+      THROTTLE_AUTH_LIMIT: '5'
+      SWAGGER_ENABLED: 'false'
+      EXPO_ACCESS_TOKEN: ''
+      PUSH_ENABLED: 'false'
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
+      SMTP_USER: ''
+      SMTP_PASS: ''
+      MAIL_FROM: Ruédalo <no-responder@ruedalo.local>
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: backend-oil-app/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # Antes que el lint: sin el cliente generado, typescript-eslint ve los
+      # modelos como `any` y da cientos de no-unsafe-* falsos.
+      - name: Generar cliente de Prisma
+        run: pnpm db:generate
+
+      # `pnpm lint` lleva --fix; en CI tiene que fallar, no arreglar en silencio.
+      - name: Lint
+        run: pnpm exec eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: Formato
+        run: pnpm exec prettier --check "src/**/*.ts" "test/**/*.ts"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Tests unitarios
+        run: pnpm test
+
+      - name: Migraciones
+        run: pnpm exec prisma migrate deploy
+
+      - name: Tests e2e
+        run: pnpm test:e2e
+
+  app:
+    name: App (Expo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: app-mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app-mobile/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npx jest --ci
