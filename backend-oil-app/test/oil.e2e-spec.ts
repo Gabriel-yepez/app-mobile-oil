@@ -264,6 +264,89 @@ describe('Estado del aceite (e2e)', () => {
     expect(elNuestro.gauge).not.toBeNull();
   });
 
+  const cambioE2E = (km: number, changedAt: string) => ({
+    changedAt,
+    km,
+    intervalKm: 5000,
+    intervalMonths: 6,
+    oilBrand: 'Pennzoil',
+    oilTag: 'Platinum',
+    oilViscosity: '5W-30',
+    oilSynthetic: true,
+  });
+
+  it('el historial dice qué alerta resolvió cada cambio', async () => {
+    const v = await http()
+      .post('/api/v1/vehicles')
+      .set('Authorization', `Bearer ${token}`)
+      .send(nuevoVehiculo())
+      .expect(201);
+    const id = veh(v).id;
+
+    await http()
+      .post(`/api/v1/vehicles/${id}/oil-changes`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(cambioE2E(45000, '2026-01-10T00:00:00.000Z'))
+      .expect(201);
+    // 5.800 km sobre un intervalo de 5.000: se hizo vencido.
+    const segundo = await http()
+      .post(`/api/v1/vehicles/${id}/oil-changes`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(cambioE2E(50800, '2026-04-10T00:00:00.000Z'))
+      .expect(201);
+    expect((segundo.body as { resolvedAlert: unknown }).resolvedAlert).toBe(
+      'danger',
+    );
+
+    const r = await http()
+      .get(`/api/v1/vehicles/${id}/oil-changes`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const { items } = r.body as {
+      items: { km: number; resolvedAlert: string | null }[];
+    };
+    expect(items.map((c) => [c.km, c.resolvedAlert])).toEqual([
+      [50800, 'danger'],
+      [45000, null],
+    ]);
+  });
+
+  it('posponer y reactivar la alerta queda guardado en la base', async () => {
+    const puesto = await http()
+      .put(`/api/v1/vehicles/${vehiculoId}/alert-snooze`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ days: 3 })
+      .expect(200);
+    const hasta = (puesto.body as { alertSnoozedUntil: string | null })
+      .alertSnoozedUntil;
+    expect(hasta).not.toBeNull();
+    // La respuesta trae el medidor: la app la usa tal cual.
+    expect(puesto.body).toHaveProperty('gauge');
+
+    const fila = await prisma.vehicle.findUnique({ where: { id: vehiculoId } });
+    expect(fila?.alertSnoozedUntil?.toISOString()).toBe(hasta);
+
+    const quitado = await http()
+      .delete(`/api/v1/vehicles/${vehiculoId}/alert-snooze`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(
+      (quitado.body as { alertSnoozedUntil: string | null }).alertSnoozedUntil,
+    ).toBeNull();
+  });
+
+  it.each([0, 31, 2.5])(
+    'posponer %p días responde 400 VALIDATION_ERROR',
+    async (days) => {
+      const r = await http()
+        .put(`/api/v1/vehicles/${vehiculoId}/alert-snooze`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ days })
+        .expect(400);
+      expect(err(r).error).toBe('VALIDATION_ERROR');
+    },
+  );
+
   it('sin token responde 401', async () => {
     await http().get(`/api/v1/vehicles/${vehiculoId}/oil-status`).expect(401);
   });

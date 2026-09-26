@@ -33,6 +33,7 @@ export class PrismaVehicleRepository implements VehicleRepository {
       lastChangeAt: row.lastChangeAt,
       nextChangeKm: row.nextChangeKm,
       nextChangeDueAt: row.nextChangeDueAt,
+      alertSnoozedUntil: row.alertSnoozedUntil,
     };
   }
 
@@ -57,6 +58,14 @@ export class PrismaVehicleRepository implements VehicleRepository {
   async findAll(): Promise<Vehicle[]> {
     const rows = await this.prisma.vehicle.findMany();
     return rows.map((r) => this.toDomain(r));
+  }
+
+  async setAlertSnooze(id: string, until: Date | null): Promise<Vehicle> {
+    const row = await this.prisma.vehicle.update({
+      where: { id },
+      data: { alertSnoozedUntil: until },
+    });
+    return this.toDomain(row);
   }
 
   async findByPlate(userId: string, plate: string): Promise<Vehicle | null> {

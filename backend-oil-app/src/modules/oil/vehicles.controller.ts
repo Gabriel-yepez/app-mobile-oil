@@ -11,6 +11,7 @@ import {
   Query,
   Patch,
   Post,
+  Put,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -36,6 +37,7 @@ import {
   OilChangePageDto,
 } from './dto/oil-change-response.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { SnoozeAlertDto } from './dto/snooze-alert.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { OilStatusResponseDto } from './dto/oil-status-response.dto';
 import {
@@ -123,6 +125,38 @@ export class VehiclesController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
     await this.oil.removeVehicle(user.id, id);
+  }
+
+  @ApiOperation({
+    summary: 'Posponer la alerta del aceite',
+    description: [
+      'Calla la alerta del vehículo por `days` días: deja de contarse como',
+      'abierta y no se mandan push. Pedirlo de nuevo reemplaza el plazo, no lo',
+      'suma. Registrar un cambio de aceite la reactiva sola.',
+    ].join(' '),
+  })
+  @ApiOkResponse({ type: VehicleResponseDto })
+  @Put(':id/alert-snooze')
+  async snoozeAlert(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SnoozeAlertDto,
+  ): Promise<VehicleResponseDto> {
+    return this.oil.snoozeAlert(user.id, id, dto.days);
+  }
+
+  @ApiOperation({
+    summary: 'Reactivar la alerta pospuesta',
+    description:
+      'Deshace el posponer antes de que venza. Si no estaba pospuesta, no hace nada.',
+  })
+  @ApiOkResponse({ type: VehicleResponseDto })
+  @Delete(':id/alert-snooze')
+  async unsnoozeAlert(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<VehicleResponseDto> {
+    return this.oil.unsnoozeAlert(user.id, id);
   }
 
   @ApiOperation({

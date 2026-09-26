@@ -20,6 +20,8 @@ export type Vehicle = {
   lastChangeAt: Date | null;
   nextChangeKm: number | null;
   nextChangeDueAt: Date | null;
+  /** Hasta cuándo está pospuesta la alerta del aceite; null si no lo está. */
+  alertSnoozedUntil: Date | null;
 };
 
 /** Lo que hace falta para crear uno: el id y el espejo del ciclo los pone el
@@ -32,6 +34,7 @@ export type NewVehicle = Omit<
   | 'lastChangeAt'
   | 'nextChangeKm'
   | 'nextChangeDueAt'
+  | 'alertSnoozedUntil'
 >;
 
 /** Lo único que OilCycleService puede escribir del espejo. */
@@ -60,6 +63,8 @@ export interface VehicleRepository {
     },
   ): Promise<Vehicle>;
   remove(id: string): Promise<void>;
+  /** Pospone la alerta hasta `until`, o la reactiva con null. */
+  setAlertSnooze(id: string, until: Date | null): Promise<Vehicle>;
   updateKmRate(
     id: string,
     kmPerDay: number,

@@ -47,6 +47,7 @@ export class InMemoryVehicleRepository implements VehicleRepository {
       lastChangeAt: null,
       nextChangeKm: null,
       nextChangeDueAt: null,
+      alertSnoozedUntil: null,
     };
     this.rows.set(row.id, row);
     return Promise.resolve(row);
@@ -65,6 +66,16 @@ export class InMemoryVehicleRepository implements VehicleRepository {
       return Promise.reject(new Error(`vehículo inexistente: ${id}`));
     }
     const row = { ...actual, ...patch };
+    this.rows.set(id, row);
+    return Promise.resolve(row);
+  }
+
+  setAlertSnooze(id: string, until: Date | null): Promise<Vehicle> {
+    const actual = this.rows.get(id);
+    if (!actual) {
+      return Promise.reject(new Error(`vehículo inexistente: ${id}`));
+    }
+    const row = { ...actual, alertSnoozedUntil: until };
     this.rows.set(id, row);
     return Promise.resolve(row);
   }

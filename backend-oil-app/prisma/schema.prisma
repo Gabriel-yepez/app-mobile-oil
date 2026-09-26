@@ -96,6 +96,11 @@ model Vehicle {
   nextChangeKm    Int?
   nextChangeDueAt DateTime?
 
+  // Hasta cuándo el usuario pospuso la alerta del aceite ("Posponer" en
+  // Alertas). Mientras sea futura, la alerta no cuenta como abierta y el
+  // barrido no manda push. Registrar un cambio la vuelve a null.
+  alertSnoozedUntil DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

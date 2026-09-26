@@ -66,6 +66,10 @@ export function planPushes(input: {
     const g = v.status.gauge;
     // Sin ciclo no hay nada que vencer.
     if (!g) continue;
+    // Pospuesta por el usuario. Al vencer el plazo, el mismo barrido la
+    // retoma: la firma no incluye el posponer, así que no se pierde ningún
+    // aviso que no se haya mandado.
+    if (v.alertSnoozedUntil && v.alertSnoozedUntil > now) continue;
 
     if (g.kmLeft <= 0 || g.daysLeft <= 0) {
       if (!prefs.overdueEnabled) continue;

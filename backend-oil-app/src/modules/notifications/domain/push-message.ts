@@ -43,6 +43,8 @@ export const DEFAULT_PREFS: NotificationPrefs = {
 
 export type PlannerVehicle = {
   id: string;
+  /** Mientras sea futura, ni warn ni overdue: el usuario pidió silencio. */
+  alertSnoozedUntil: Date | null;
   /** "Toyota Corolla": lo que se lee en el cuerpo de la notificación. */
   label: string;
   /**

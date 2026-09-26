@@ -30,6 +30,13 @@ export class VehicleResponseDto {
   lastChangeAt!: Date | null;
   @ApiProperty({ nullable: true }) nextChangeKm!: number | null;
 
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Hasta cuándo el usuario pospuso la alerta del aceite. Mientras sea futura la alerta no se cuenta como abierta y no se mandan push. Registrar un cambio la vuelve a null.',
+  })
+  alertSnoozedUntil!: Date | null;
+
   // El estado viaja con la lista para que la pantalla de la flota sea UNA
   // llamada y no una por vehículo. `null` mientras no haya ningún cambio.
   @ApiProperty({ type: GaugeDto, nullable: true })
@@ -55,6 +62,7 @@ export function toVehicleResponse(v: Vehicle): VehicleResponseDto {
     lastChangeKm: v.lastChangeKm,
     lastChangeAt: v.lastChangeAt,
     nextChangeKm: v.nextChangeKm,
+    alertSnoozedUntil: v.alertSnoozedUntil,
     // Los rellena listVehiclesWithStatus; la ficha sola no los conoce.
     gauge: null,
     odometer: null,

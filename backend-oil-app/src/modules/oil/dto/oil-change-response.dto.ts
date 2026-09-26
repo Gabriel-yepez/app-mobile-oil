@@ -34,6 +34,14 @@ export class OilChangeResponseDto {
   @ApiProperty() oilSynthetic!: boolean;
   @ApiProperty({ nullable: true }) shop!: string | null;
   @ApiProperty({ nullable: true }) costUsd!: number | null;
+
+  @ApiProperty({
+    enum: ['warn', 'danger'],
+    nullable: true,
+    description:
+      'La alerta que este cambio atendió: el estado del aceite justo antes de hacerlo. `null` si se hizo sin alerta (un cambio adelantado) o es el primero del vehículo. Se recalcula al leer, así que sigue a las correcciones del historial.',
+  })
+  resolvedAlert!: 'warn' | 'danger' | null;
 }
 
 export class OilChangePageDto {

@@ -282,3 +282,87 @@ describe('historial del vehículo', () => {
     );
   });
 });
+
+describe('alertas resueltas en el historial', () => {
+  let service: OilService;
+  let vehicleId: string;
+
+  beforeEach(async () => {
+    const vehicles = new InMemoryVehicleRepository();
+    const changes = new InMemoryOilChangeRepository();
+    const odometer = new InMemoryOdometerRepository();
+    service = new OilService(
+      vehicles,
+      changes,
+      odometer,
+      new OilCycleService(vehicles, changes),
+      { avisar: () => {} } as never,
+    );
+    const v = await service.createVehicle('u1', {
+      kind: 'CAR',
+      brand: 'Toyota',
+      model: 'Corolla',
+      year: 2019,
+      plate: 'AB123CD',
+      color: '#111111',
+      kmPerDay: 30,
+    });
+    vehicleId = v.id;
+
+    // Ciclos de 5.000 km / 6 meses:
+    //   35.000 → primer cambio, no había ciclo
+    //   36.000 → adelantado, quedaba el 80%: no hubo alerta
+    //   40.200 → quedaba el 16%: resolvió un warn
+    //   45.600 → pasado el límite de km: resolvió un danger
+    for (const [fecha, km] of [
+      ['2025-01-10T00:00:00Z', 35_000],
+      ['2025-02-10T00:00:00Z', 36_000],
+      ['2025-05-10T00:00:00Z', 40_200],
+      ['2025-08-10T00:00:00Z', 45_600],
+    ] as [string, number][]) {
+      await service.registerOilChange('u1', vehicleId, cambio(km, fecha));
+    }
+  });
+
+  it('marca cada cambio con la alerta que atendió', async () => {
+    const { items } = await service.listOilChanges('u1', vehicleId);
+    expect(items.map((c) => [c.km, c.resolvedAlert])).toEqual([
+      [45_600, 'danger'],
+      [40_200, 'warn'],
+      [36_000, null],
+      [35_000, null],
+    ]);
+  });
+
+  // El anterior del último de una página vive en la página siguiente: sin
+  // buscarlo, el borde de cada página saldría siempre como "sin alerta".
+  it('resuelve bien el último cambio de una página', async () => {
+    const p1 = await service.listOilChanges('u1', vehicleId, { limit: 2 });
+    expect(p1.items.map((c) => c.resolvedAlert)).toEqual(['danger', 'warn']);
+
+    const p2 = await service.listOilChanges('u1', vehicleId, {
+      limit: 1,
+      cursor: p1.nextCursor!,
+    });
+    expect(p2.items[0].resolvedAlert).toBeNull();
+  });
+
+  it('el cambio recién registrado ya dice qué alerta resolvió', async () => {
+    const r = await service.registerOilChange(
+      'u1',
+      vehicleId,
+      cambio(51_000, '2025-11-10T00:00:00Z'),
+    );
+    // 5.400 de 5.000 km: estaba vencido.
+    expect(r.resolvedAlert).toBe('danger');
+  });
+
+  it('al corregir el km se recalcula', async () => {
+    const { items } = await service.listOilChanges('u1', vehicleId, {
+      limit: 1,
+    });
+    const r = await service.updateOilChange('u1', items[0].id, { km: 41_000 });
+    // 41.000 sobre el ciclo de 40.200: le quedaba casi todo.
+    expect(r.resolvedAlert).toBeNull();
+  });
+});

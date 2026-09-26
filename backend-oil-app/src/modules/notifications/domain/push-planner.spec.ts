@@ -36,6 +36,7 @@ const vehiculo = (over: Partial<PlannerVehicle> = {}): PlannerVehicle => ({
   kmPerDay: 40,
   lastChangeKm: CICLO.km,
   lastChangeAt: CICLO.changedAt,
+  alertSnoozedUntil: null,
   status: status({ kmLeft: 300, daysLeft: 60 }),
   ...over,
 });
@@ -287,6 +288,49 @@ describe('planPushes', () => {
       });
       expect(r[0].vehicleId).toBeNull();
       expect(r[0].data).toEqual({ screen: 'Alerts' });
+    });
+  });
+
+  describe('alerta pospuesta', () => {
+    const MANANA = new Date('2026-09-21T13:00:00.000Z');
+    const AYER = new Date('2026-09-19T13:00:00.000Z');
+
+    it('no avisa del vencido mientras está pospuesta', () => {
+      const v = vehiculo({
+        status: status({ kmLeft: -800, daysLeft: 10 }),
+        alertSnoozedUntil: MANANA,
+      });
+      expect(plan({ vehicles: [v] })).toEqual([]);
+    });
+
+    it('tampoco del próximo', () => {
+      const v = vehiculo({ alertSnoozedUntil: MANANA });
+      expect(plan({ vehicles: [v] })).toEqual([]);
+    });
+
+    it('vencido el plazo, vuelve a avisar', () => {
+      const v = vehiculo({
+        status: status({ kmLeft: -800, daysLeft: 10 }),
+        alertSnoozedUntil: AYER,
+      });
+      expect(plan({ vehicles: [v] }).map((m) => m.kind)).toEqual(['overdue']);
+    });
+
+    // Posponer calla la alerta de ESE vehículo; el recordatorio de confirmar
+    // el odómetro es otra cosa y sigue su curso.
+    it('no calla el checkin semanal', () => {
+      const v = vehiculo({
+        alertSnoozedUntil: MANANA,
+        status: status({
+          kmLeft: 300,
+          daysLeft: 60,
+          asOf: new Date('2026-08-01T00:00:00.000Z'),
+        }),
+      });
+      const domingo = { checkinWeekday: 1 };
+      expect(
+        plan({ vehicles: [v], prefs: domingo }).map((m) => m.kind),
+      ).toEqual(['checkin']);
     });
   });
 });

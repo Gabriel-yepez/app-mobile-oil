@@ -63,6 +63,7 @@ export class PushSweepService {
       kmPerDay: v.kmPerDay,
       lastChangeKm: v.lastChangeKm,
       lastChangeAt: v.lastChangeAt,
+      alertSnoozedUntil: v.alertSnoozedUntil,
       status,
     };
   }

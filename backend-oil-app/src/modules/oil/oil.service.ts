@@ -6,6 +6,7 @@ import { Errors } from '../../common/errors';
 import { PushEventNotifier } from '../notifications/push-event-notifier.service';
 import { daysBetween } from './domain/dates';
 import { computeOilStatus } from './domain/oil-status.calculator';
+import { conAlertaResuelta, type OilChangeView } from './domain/resolved-alert';
 import { KM_PER_DAY_MAX } from './domain/oil-status';
 import type { OilStatusResponseDto } from './dto/oil-status-response.dto';
 import {
@@ -16,7 +17,6 @@ import { OilCycleService } from './oil-cycle.service';
 import {
   OIL_CHANGE_REPOSITORY,
   type NewOilChange,
-  type OilChangePage,
   type OilChangeRecord,
   type OilChangeRepository,
 } from './domain/oil-change.repository';
@@ -147,7 +147,7 @@ export class OilService {
     userId: string,
     vehicleId: string,
     data: Omit<NewOilChange, 'vehicleId'> & { id?: string },
-  ): Promise<OilChangeRecord> {
+  ): Promise<OilChangeView> {
     return (await this.registerOilChangeIdempotent(userId, vehicleId, data))
       .change;
   }
@@ -158,7 +158,7 @@ export class OilService {
     userId: string,
     vehicleId: string,
     data: Omit<NewOilChange, 'vehicleId'> & { id?: string },
-  ): Promise<{ change: OilChangeRecord; created: boolean }> {
+  ): Promise<{ change: OilChangeView; created: boolean }> {
     await this.getOwnedVehicle(userId, vehicleId);
 
     // Mismo motivo que en createVehicle, pero acá el duplicado es peor: serían
@@ -167,7 +167,10 @@ export class OilService {
       const existente = await this.changes.findById(data.id);
       if (existente) {
         await this.getOwnedVehicle(userId, existente.vehicleId);
-        return { change: existente, created: false };
+        return {
+          change: await this.conAlertaResuelta(existente),
+          created: false,
+        };
       }
     }
 
@@ -182,9 +185,13 @@ export class OilService {
       source: 'OIL_CHANGE',
     });
     await this.cycle.syncVehicleCycle(vehicleId);
+    // Lo pospuesto era sobre el ciclo que este cambio cierra. Arrastrarlo al
+    // nuevo podría callar una alerta que todavía ni existe.
+    await this.vehicles.setAlertSnooze(vehicleId, null);
     // Después de sincronizar el ciclo: el aviso depende del ciclo nuevo.
     this.push.avisar(userId);
-    return { change: creado, created: true };
+    // `anterior` es justo el ciclo que este cambio cierra.
+    return { change: conAlertaResuelta(creado, anterior), created: true };
   }
 
   /** El caso real: puso 48.000 y eran 45.000. */
@@ -192,7 +199,7 @@ export class OilService {
     userId: string,
     changeId: string,
     patch: Partial<Omit<NewOilChange, 'vehicleId'>>,
-  ): Promise<OilChangeRecord> {
+  ): Promise<OilChangeView> {
     const existente = await this.changes.findById(changeId);
     // Mismo 404 que el vehículo ajeno, y por la misma razón: no confirmar que
     // ese id existe.
@@ -201,7 +208,7 @@ export class OilService {
 
     const actualizado = await this.changes.update(changeId, patch);
     await this.cycle.syncVehicleCycle(existente.vehicleId);
-    return actualizado;
+    return this.conAlertaResuelta(actualizado);
   }
 
   async removeOilChange(userId: string, changeId: string): Promise<void> {
@@ -225,34 +232,68 @@ export class OilService {
     now: Date = new Date(),
   ): Promise<VehicleResponseDto[]> {
     const vehiculos = await this.vehicles.findByUser(userId);
+    return Promise.all(vehiculos.map((v) => this.conEstado(v, now)));
+  }
 
-    return Promise.all(
-      vehiculos.map(async (v) => {
-        const ultimo = await this.changes.findLatest(v.id);
-        const lectura = await this.odometer.findLatest(v.id);
-        const status = computeOilStatus({
-          now,
-          kmPerDay: v.kmPerDay,
-          lastReading: lectura
-            ? { km: lectura.km, readAt: lectura.readAt }
-            : null,
-          cycle: ultimo
-            ? {
-                km: ultimo.km,
-                changedAt: ultimo.changedAt,
-                intervalKm: ultimo.intervalKm,
-                intervalMonths: ultimo.intervalMonths,
-              }
-            : null,
-        });
+  /** La ficha con su medidor y su odómetro, como la lista de la flota. */
+  private async conEstado(v: Vehicle, now: Date): Promise<VehicleResponseDto> {
+    const ultimo = await this.changes.findLatest(v.id);
+    const lectura = await this.odometer.findLatest(v.id);
+    const status = computeOilStatus({
+      now,
+      kmPerDay: v.kmPerDay,
+      lastReading: lectura ? { km: lectura.km, readAt: lectura.readAt } : null,
+      cycle: ultimo
+        ? {
+            km: ultimo.km,
+            changedAt: ultimo.changedAt,
+            intervalKm: ultimo.intervalKm,
+            intervalMonths: ultimo.intervalMonths,
+          }
+        : null,
+    });
 
-        return {
-          ...toVehicleResponse(v),
-          gauge: status.gauge,
-          odometer: status.odometer,
-        };
-      }),
+    return {
+      ...toVehicleResponse(v),
+      gauge: status.gauge,
+      odometer: status.odometer,
+    };
+  }
+
+  /**
+   * "Posponer" en Alertas: calla la alerta del vehículo `dias` días. Se
+   * guarda acá y no en el teléfono porque lo que más importa callar son las
+   * push, y esas las decide el servidor.
+   *
+   * Devuelve la ficha con su estado para que la app la reemplace en la lista
+   * sin volver a pedir la flota.
+   */
+  async snoozeAlert(
+    userId: string,
+    vehicleId: string,
+    dias: number,
+    now: Date = new Date(),
+  ): Promise<VehicleResponseDto> {
+    await this.getOwnedVehicle(userId, vehicleId);
+    const hasta = new Date(now.getTime() + dias * 86_400_000);
+    return this.conEstado(
+      await this.vehicles.setAlertSnooze(vehicleId, hasta),
+      now,
     );
+  }
+
+  /** Deshace el posponer antes de tiempo. */
+  async unsnoozeAlert(
+    userId: string,
+    vehicleId: string,
+    now: Date = new Date(),
+  ): Promise<VehicleResponseDto> {
+    await this.getOwnedVehicle(userId, vehicleId);
+    const v = await this.vehicles.setAlertSnooze(vehicleId, null);
+    // La alerta vuelve a estar viva: que el planificador la mire ya y no
+    // recién en el barrido de mañana.
+    this.push.avisar(userId);
+    return this.conEstado(v, now);
   }
 
   /** Historial del vehículo, del más nuevo al más viejo. */
@@ -260,12 +301,51 @@ export class OilService {
     userId: string,
     vehicleId: string,
     opts: { cursor?: string; limit?: number } = {},
-  ): Promise<OilChangePage> {
+  ): Promise<{ items: OilChangeView[]; nextCursor: string | null }> {
     await this.getOwnedVehicle(userId, vehicleId);
     // Tope duro: sin esto, un `limit=100000` es una descarga de toda la tabla
     // disfrazada de consulta normal.
     const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
-    return this.changes.findPage(vehicleId, { cursor: opts.cursor, limit });
+    const page = await this.changes.findPage(vehicleId, {
+      cursor: opts.cursor,
+      limit,
+    });
+
+    // Cada cambio necesita el que lo precedió, que en una lista del más nuevo
+    // al más viejo es el de al lado. El del último vive en la página
+    // siguiente: se pide solo si la hay, y es una fila.
+    const despues = page.nextCursor
+      ? await this.anteriorA(vehicleId, page.nextCursor)
+      : null;
+
+    return {
+      items: page.items.map((c, i) =>
+        conAlertaResuelta(c, page.items[i + 1] ?? despues),
+      ),
+      nextCursor: page.nextCursor,
+    };
+  }
+
+  /** El cambio inmediatamente anterior (más viejo) a `changeId`, o null. */
+  private async anteriorA(
+    vehicleId: string,
+    changeId: string,
+  ): Promise<OilChangeRecord | null> {
+    const { items } = await this.changes.findPage(vehicleId, {
+      cursor: changeId,
+      limit: 1,
+    });
+    return items[0] ?? null;
+  }
+
+  /** Un cambio suelto con su alerta resuelta: busca a su predecesor. */
+  private async conAlertaResuelta(
+    cambio: OilChangeRecord,
+  ): Promise<OilChangeView> {
+    return conAlertaResuelta(
+      cambio,
+      await this.anteriorA(cambio.vehicleId, cambio.id),
+    );
   }
 
   /**

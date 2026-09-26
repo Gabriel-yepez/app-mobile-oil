@@ -27,6 +27,7 @@ const vehiculos: Vehicle[] = [
     lastChangeAt: new Date('2026-03-01T00:00:00.000Z'),
     nextChangeKm: 50_000,
     nextChangeDueAt: new Date('2026-09-01T00:00:00.000Z'),
+    alertSnoozedUntil: null,
   },
   {
     id: 'veh-2',
@@ -43,6 +44,7 @@ const vehiculos: Vehicle[] = [
     lastChangeAt: new Date('2026-08-01T00:00:00.000Z'),
     nextChangeKm: 10_000,
     nextChangeDueAt: new Date('2027-02-01T00:00:00.000Z'),
+    alertSnoozedUntil: null,
   },
 ];
 
