@@ -1,12 +1,10 @@
 // Perfil y suscripción. La FLOTA ya no vive acá: se mudó a useVehicles, que
 // la trae del backend con caché local y cola de escrituras.
 //
-// Lo que queda todavía es mock (MOCK_PROFILE, MOCK_SUBSCRIPTION); el perfil se
-// pisa con el usuario real al iniciar sesión, y la suscripción espera su
-// propia tanda.
+// El perfil es una copia del usuario autenticado (ver setProfile). Lo único que
+// queda mock es la suscripción (MOCK_SUBSCRIPTION), que espera su propia tanda.
 import { create } from 'zustand';
 import {
-  MOCK_PROFILE,
   MOCK_SUBSCRIPTION,
   PLANS,
   Plan,
@@ -38,22 +36,34 @@ type Store = {
   // cosas dejaba escribir el perfil sin que el servidor se enterara.
 
   /** Vuelca el usuario autenticado sobre el perfil, al arrancar la sesión y
-   *  después de cada edición. */
-  setProfileFromUser: (u: AuthUser) => void;
+   *  después de cada edición. Con `null` (sesión cerrada) lo vacía. */
+  setProfile: (u: AuthUser | null) => void;
+};
+
+/** El perfil antes de que llegue el usuario. Vacío a propósito: arrancar con
+ *  el mock hacía que la app mostrara por un instante a "Luis Guerrero" antes
+ *  del nombre real, y que al cerrar sesión quedara el perfil del anterior. */
+export const EMPTY_PROFILE: Profile = {
+  fullName: '',
+  cedula: '',
+  email: '',
+  phone: '',
+  state: '',
+  city: '',
+  currency: 'USD',
 };
 
 export const useStore = create<Store>((set) => ({
-  profile: MOCK_PROFILE,
+  profile: EMPTY_PROFILE,
   subscription: MOCK_SUBSCRIPTION,
 
   // El registro ya pide estado y ciudad, así que para las cuentas nuevas
   // siempre vienen. Las creadas antes los tienen en null, y ahí se muestra
   // vacío a propósito: rellenar el hueco con el mock hacía que el usuario
   // leyera una ciudad que nunca escribió, como si fuera suya.
-  setProfileFromUser: (u) =>
-    set((s) => ({
-      profile: {
-        ...s.profile,
+  setProfile: (u) =>
+    set(() => ({
+      profile: !u ? EMPTY_PROFILE : {
         fullName: u.fullName,
         cedula: u.cedula,
         email: u.email,

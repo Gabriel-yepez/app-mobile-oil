@@ -83,7 +83,11 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
                 {vehicle.brand} {vehicle.model}
               </Txt>
               <Txt fos={13} tone="onDarkSoft">
-                {vehicle.kind === 'car' ? 'Carro' : 'Moto'} · {profile.city}, {profile.state}
+                {/* Sin ciudad ni estado (cuentas viejas, o el perfil aún sin
+                    cargar) se omite el lugar en vez de dejar un " · , ". */}
+                {[vehicle.kind === 'car' ? 'Carro' : 'Moto', [profile.city, profile.state].filter(Boolean).join(', ')]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Txt>
             </Col>
           </Row>

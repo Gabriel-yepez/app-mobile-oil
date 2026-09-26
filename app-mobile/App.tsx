@@ -50,7 +50,7 @@ export default function App() {
   const authStatus = useAuth((s) => s.status);
   const user = useAuth((s) => s.user);
   const bootstrap = useAuth((s) => s.bootstrap);
-  const setProfileFromUser = useStore((s) => s.setProfileFromUser);
+  const setProfile = useStore((s) => s.setProfile);
 
   // La flota: se hidrata del almacenamiento local siempre, y solo se refresca
   // y sincroniza con sesión activa. Hidratar sin sesión igual es correcto —
@@ -63,9 +63,11 @@ export default function App() {
     void bootstrap();
   }, [bootstrap]);
 
+  // También con `null`: al cerrar sesión el perfil se vacía, para que quien
+  // entre después no vea por un instante los datos del anterior.
   useEffect(() => {
-    if (user) setProfileFromUser(user);
-  }, [user, setProfileFromUser]);
+    setProfile(user);
+  }, [user, setProfile]);
 
   useEffect(() => {
     void hidratarFlota();
