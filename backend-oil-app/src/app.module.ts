@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OilModule } from './modules/oil/oil.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { ColorsModule } from './modules/colors/colors.module';
+import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 
@@ -40,6 +41,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     OilModule,
     BrandsModule,
     ColorsModule,
+    ExchangeRateModule,
     // EXCEPCIÓN CONSCIENTE a la regla de configuration.ts de no leer
     // process.env en crudo: la lista de `imports` se evalúa al construir el
     // decorador, antes de que exista el ConfigService, así que acá no hay

@@ -98,4 +98,27 @@ describe('validateEnv', () => {
       expect(validateEnv({ ...valid, SMTP_PORT: '587' }).SMTP_PORT).toBe(587);
     });
   });
+
+  describe('tasa BCV', () => {
+    it('BCV_RATE_URL apunta a dolarapi si no se declara', () => {
+      expect(validateEnv(valid).BCV_RATE_URL).toBe(
+        'https://ve.dolarapi.com/v1/dolares/oficial',
+      );
+    });
+
+    it('BCV_RATE_URL toma la del entorno', () => {
+      const url = 'https://otro-proveedor.com/api/bcv';
+      expect(validateEnv({ ...valid, BCV_RATE_URL: url }).BCV_RATE_URL).toBe(
+        url,
+      );
+    });
+
+    // Un error de tipeo en la URL tiene que tumbar el arranque, no aparecer
+    // semanas después como "la tasa no carga".
+    it('falla si BCV_RATE_URL no es una URL', () => {
+      expect(() =>
+        validateEnv({ ...valid, BCV_RATE_URL: 've.dolarapi.com oficial' }),
+      ).toThrow(/BCV_RATE_URL/);
+    });
+  });
 });

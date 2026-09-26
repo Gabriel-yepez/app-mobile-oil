@@ -148,4 +148,13 @@ export const Errors = {
       'BRAND_LIMIT_REACHED',
       'Agregaste muchas marcas hoy. Intenta de nuevo mañana.',
     ),
+
+  // El proveedor de la tasa no contestó y el servidor todavía no tenía ninguna
+  // guardada (recién arrancado). Si ya tenía una, se devuelve esa y no esto.
+  exchangeRateUnavailable: () =>
+    new AppError(
+      HttpStatus.SERVICE_UNAVAILABLE,
+      'EXCHANGE_RATE_UNAVAILABLE',
+      'La tasa del BCV no está disponible en este momento.',
+    ),
 };

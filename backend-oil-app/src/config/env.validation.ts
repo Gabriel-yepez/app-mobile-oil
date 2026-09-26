@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   MinLength,
   validateSync,
 } from 'class-validator';
@@ -138,6 +139,22 @@ export class EnvVars {
   @IsOptional()
   @IsString()
   MAIL_FROM: string = 'Ruédalo <no-responder@ruedalo.local>';
+
+  // ── Tasa BCV ───────────────────────────────────────────────────────────
+  // De dónde sale la tasa oficial. Cambiar de proveedor es cambiar esta URL,
+  // SIEMPRE que el nuevo responda con la misma forma que dolarapi
+  // (`promedio` y `fechaActualizacion`); si responde distinto, hay que
+  // tocar también DolarApiTasaSource, que es quien la lee.
+  @IsOptional()
+  @IsUrl(
+    {
+      protocols: ['http', 'https'],
+      require_protocol: true,
+      require_tld: false,
+    },
+    { message: 'BCV_RATE_URL debe ser una URL http(s) completa' },
+  )
+  BCV_RATE_URL: string = 'https://ve.dolarapi.com/v1/dolares/oficial';
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvVars {
