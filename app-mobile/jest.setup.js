@@ -1,3 +1,11 @@
+// expo-crypto envuelve un módulo nativo: en Node no existe y randomUUID
+// devuelve undefined. Se sustituye por el randomUUID de Node, que produce
+// exactamente el mismo formato v4.
+jest.mock('expo-crypto', () => ({
+  __esModule: true,
+  randomUUID: () => require('node:crypto').randomUUID(),
+}));
+
 // expo-sqlite abre una base de datos nativa al importarse, así que cualquier
 // test que llegue al store de preferencias reventaría en Node. Lo sustituimos
 // por un almacén en memoria con la misma interfaz.

@@ -39,11 +39,31 @@ Va primero porque todas las tareas siguientes dependen del `ValidationPipe`, del
 **Interfaces:**
 - Produces: `AppConfig` (tipo del env), `AllExceptionsFilter`, y las fábricas de error de `src/common/errors.ts` — que todas las tareas siguientes usan para lanzar errores.
 
-- [ ] **Step 1: Instalar dependencias base**
+- [ ] **Step 1: Instalar dependencias base y cargar `reflect-metadata` en Jest**
 
 ```bash
 pnpm add @nestjs/config class-validator class-transformer helmet
 ```
+
+Los decoradores de `class-validator` leen metadatos con `Reflect.getMetadata`,
+que solo existe si alguien importó `reflect-metadata`. En la app lo carga Nest
+al arrancar, pero **un test unitario no pasa por ahí** y falla con
+`TypeError: Reflect.getMetadata is not a function`. Se arregla una vez, a nivel
+de proyecto, en lugar de con un import suelto en cada archivo.
+
+En `package.json`, dentro de `"jest"`:
+
+```json
+"setupFiles": ["reflect-metadata"]
+```
+
+Y lo mismo en `test/jest-e2e.json`:
+
+```json
+"setupFiles": ["reflect-metadata"]
+```
+
+(`reflect-metadata` ya viene como dependencia del starter; no hay que instalarlo.)
 
 - [ ] **Step 2: Activar `strict` en TypeScript**
 
@@ -325,14 +345,14 @@ Expected: PASS — 3 tests.
 
 - [ ] **Step 12: Cablear `main.ts` y `app.module.ts`**
 
-Crear `src/config/configuration.ts`:
+Crear `src/config/configuration.ts` — **solo el alias de tipo**:
 
 ```ts
-import { EnvVars } from './env.validation';
-
-export type AppConfig = EnvVars;
-
-export const configuration = (): AppConfig => process.env as unknown as AppConfig;
+// Solo el alias de tipo. Deliberadamente SIN una función que lea process.env:
+// ConfigModule ya guarda lo que devuelve validateEnv, así que ConfigService
+// entrega valores validados y convertidos. Una función que leyera process.env
+// en crudo devolvería strings sin validar y burlaría esa garantía.
+export type { EnvVars as AppConfig } from './env.validation';
 ```
 
 Reemplazar `src/main.ts`:

@@ -4,11 +4,16 @@
 // "PASO 2 / 3" a mano, así que el total vivía repetido en tres archivos y nada
 // mostraba cuánto faltaba: el contador dice en cuál estás, la barra cuánto
 // queda, que es lo que se mira de reojo.
+//
+// El contador y las barras viven en StepProgress, porque el registro necesita
+// esas dos piezas con otra disposición: dentro del hero navy, que ya trae su
+// propio botón de volver.
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Col, Row, Txt, useAppColors } from '../ui';
+import { Box, Col, Row, useAppColors } from '../ui';
 import { IconBtn } from './primitives';
 import { Icon } from './Icon';
+import { StepBars, StepCounter } from './StepProgress';
 
 export function StepHeader({
   step,
@@ -27,29 +32,12 @@ export function StepHeader({
     <Col px="$xl" pt={insets.top + 12} gap={12}>
       <Row jc="space-between" ai="center">
         <IconBtn icon={<Icon name="chevL" color={c.ink} size={20} />} onPress={onBack} />
-        <Row ai="baseline" gap={4}>
-          <Txt font="mono" fos={11} tone="muted" ls={1}>PASO</Txt>
-          <Txt font="mono" fos={11} ls={1}>{`0${step}`}</Txt>
-          <Txt font="monoMed" fos={11} tone="muted2" ls={1}>{`/ 0${total}`}</Txt>
-        </Row>
+        <StepCounter step={step} total={total} />
         {/* Equilibra el botón de volver para que el contador quede centrado. */}
         <Box w={36} />
       </Row>
 
-      <Row gap={6}>
-        {Array.from({ length: total }, (_, i) => (
-          <Box key={i} f={1} h={5} br="$pill" ov="hidden" bg="$line">
-            {/* El relleno vive dentro de la pista y no cambia de tamaño: se
-                prende y apaga con opacidad, así no hay que animar anchos. */}
-            <Box
-              f={1}
-              transition="lazy"
-              opacity={i < step ? 1 : 0}
-              bg={i === step - 1 ? '$accent' : '$accent2'}
-            />
-          </Box>
-        ))}
-      </Row>
+      <StepBars step={step} total={total} />
     </Col>
   );
 }

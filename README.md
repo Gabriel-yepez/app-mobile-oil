@@ -7,7 +7,7 @@ Control del cambio de aceite para carros y motos en Venezuela.
 | Carpeta | Descripción | Estado |
 |---|---|---|
 | [`app-mobile/`](app-mobile/) | App móvil — React Native + Expo, UI desde el design handoff, data mock | ✅ En desarrollo |
-| [`backend-oil-app/`](backend-oil-app/) | API — NestJS 11 + PostgreSQL/Prisma. Autenticación especificada y planificada | 🚧 En construcción |
+| [`backend-oil-app/`](backend-oil-app/) | API — NestJS 11 + PostgreSQL/Prisma. Registro, login y sesión con refresh rotativo | ✅ Autenticación lista |
 
 **Un solo repositorio.** Las dos carpetas comparten commits, ramas y remoto: no
 hay repos anidados ni submódulos. Cada proyecto conserva su propio gestor de

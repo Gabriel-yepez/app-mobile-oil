@@ -1,5 +1,10 @@
-// Ajustes de notificaciones — switch maestro, tipos de aviso, día y hora del
-// recordatorio, y salida a los ajustes del sistema si el permiso está bloqueado.
+// Ajustes de notificaciones — switch maestro, tipos de aviso, día del
+// recordatorio, y salida a los ajustes del sistema si el permiso está
+// bloqueado.
+//
+// Las preferencias son del SERVIDOR, que es quien decide a quién avisar: se
+// cargan al entrar y cada cambio viaja al API. La hora ya no se elige — el
+// barrido corre a las 9:00 de Venezuela para todos.
 import React, { useCallback, useState } from 'react';
 import { Switch } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -17,7 +22,6 @@ import {
 } from '../notifications';
 
 const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
 
 export function NotificationsScreen() {
   const insets = useSafeAreaInsets();
@@ -25,6 +29,7 @@ export function NotificationsScreen() {
   const c = useAppColors();
   const prefs = useNotifPrefs((s) => s.prefs);
   const setPref = useNotifPrefs((s) => s.setPref);
+  const cargarPrefs = useNotifPrefs((s) => s.cargar);
   const markPermissionAsked = useNotifPrefs((s) => s.markPermissionAsked);
   const [permission, setPermission] = useState<PermissionState>('undetermined');
 
@@ -33,7 +38,10 @@ export function NotificationsScreen() {
   useFocusEffect(
     useCallback(() => {
       void getPermissionState().then(setPermission);
-    }, [])
+      // Y se traen las preferencias del servidor, que es su dueño: pudieron
+      // cambiar desde otro teléfono de la misma cuenta.
+      void cargarPrefs();
+    }, [cargarPrefs])
   );
 
   const blocked = permission === 'denied';
@@ -43,7 +51,7 @@ export function NotificationsScreen() {
     const state = await requestPermission();
     markPermissionAsked();
     setPermission(state);
-    setPref('enabled', state === 'granted');
+    void setPref('enabled', state === 'granted');
   };
 
   const toggle = (
@@ -131,28 +139,28 @@ export function NotificationsScreen() {
                 'Notificaciones',
                 'Interruptor general de todos los avisos',
                 master,
-                (v) => setPref('enabled', v),
+                (v) => void setPref('enabled', v),
                 blocked
               )}
               {toggle(
                 'Cambio próximo',
                 `Cuando falten menos de ${fmtKm(prefs.warnThresholdKm)} km`,
                 prefs.warnEnabled,
-                (v) => setPref('warnEnabled', v),
+                (v) => void setPref('warnEnabled', v),
                 !master
               )}
               {toggle(
                 'Cambio vencido',
                 'Cuando el vehículo pasó el kilometraje recomendado',
                 prefs.overdueEnabled,
-                (v) => setPref('overdueEnabled', v),
+                (v) => void setPref('overdueEnabled', v),
                 !master
               )}
               {toggle(
                 'Recordatorio semanal',
                 'Para que actualices el kilometraje',
                 prefs.checkinEnabled,
-                (v) => setPref('checkinEnabled', v),
+                (v) => void setPref('checkinEnabled', v),
                 !master
               )}
             </Card>
@@ -171,21 +179,13 @@ export function NotificationsScreen() {
                   <Select
                     value={WEEKDAYS[prefs.checkinWeekday - 1]}
                     options={WEEKDAYS}
-                    onChange={(v) => setPref('checkinWeekday', WEEKDAYS.indexOf(v) + 1)}
-                  />
-                </Col>
-                <Col gap={6}>
-                  <Txt fos={12} tone="muted" ls={1} caps>
-                    Hora
-                  </Txt>
-                  <Select
-                    value={`${String(prefs.checkinHour).padStart(2, '0')}:00`}
-                    options={HOURS}
-                    onChange={(v) => setPref('checkinHour', Number(v.slice(0, 2)))}
+                    onChange={(v) =>
+                      void setPref('checkinWeekday', WEEKDAYS.indexOf(v) + 1)
+                    }
                   />
                 </Col>
                 <Txt fos={12} tone="muted">
-                  Los avisos de cambio próximo y vencido se entregan a las 09:00.
+                  Todos los avisos se entregan a las 09:00.
                 </Txt>
               </Col>
             </Card>

@@ -7,17 +7,25 @@ import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, FilterChip, FilterChips, IconBtn, StatusPill, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { fmtKm } from '../utils/format';
-import { kmLeft, oilPct, useStore, vehicleStatus } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+/** Se ramifica por el `code`, nunca por el texto del backend. */
+function mensajeDeRechazo(code: string): string {
+  if (code === 'PLATE_TAKEN') return 'ya tienes un vehículo con esa placa';
+  if (code === 'VEHICLE_NOT_FOUND') return 'ese vehículo ya no existe';
+  return 'revisa los datos';
+}
 type Filter = 'all' | 'car' | 'moto';
 
 export function VehiclesScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
   const c = useAppColors();
-  const vehicles = useStore((s) => s.vehicles);
+  const vehicles = useVehicles((s) => s.vehicles);
+  const rechazos = useVehicles((s) => s.rechazos);
   const [filter, setFilter] = useState<Filter>('all');
 
   const cars = vehicles.filter((v) => v.kind === 'car').length;
@@ -47,18 +55,43 @@ export function VehiclesScreen() {
         />
       </Row>
 
-      <Box mb="$lg" px="$xl">
-        <FilterChips chips={chips} value={filter} onChange={setFilter} />
-      </Box>
+      {/* Con el garaje vacío los tres chips marcan 0 y no hay nada que filtrar:
+          son ruido justo encima del mensaje que explica por qué no hay lista. */}
+      {vehicles.length > 0 ? (
+        <Box mb="$lg" px="$xl">
+          <FilterChips chips={chips} value={filter} onChange={setFilter} />
+        </Box>
+      ) : null}
 
       <Scroll
         bg="$bg3"
         contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Sin esto la lista vacía es una pantalla en blanco y parece que algo
+            falló. Se separa el garaje vacío del filtro sin resultados: son dos
+            situaciones distintas y no se arreglan con lo mismo. */}
+        {filtered.length === 0 ? (
+          <Col ai="center" py="$2xl">
+            <Row gap={8} br="$pill" bw={1} bc="$line" bg="$surfaceDim" px={14} py={8}>
+              <Icon name={filter === 'moto' ? 'moto' : 'car'} color={c.muted2} size={16} />
+              <Txt font="semi" fos={13} tone="muted">
+                {vehicles.length === 0
+                  ? 'Aún no tienes vehículos registrados'
+                  : filter === 'car'
+                    ? 'Aún no tienes carros registrados'
+                    : 'Aún no tienes motos registradas'}
+              </Txt>
+            </Row>
+          </Col>
+        ) : null}
+
         {filtered.map((v) => {
-          const pct = oilPct(v);
-          const status = vehicleStatus(v);
+          // El estado lo calcula el backend y viaja con la lista: una sola
+          // definición para toda la app, en vez de una por pantalla.
+          const pct = v.gauge?.pct ?? 0;
+          const status = v.gauge?.status ?? 'ok';
+          const rechazo = rechazos[v.id];
           const accent = status === 'ok' ? c.ok : status === 'warn' ? c.warn : c.danger;
           return (
             <Touchable key={v.id} fade sink transition="quick" onPress={() => navigation.navigate('VehicleDetail', { vehicleId: v.id })}>
@@ -72,34 +105,48 @@ export function VehiclesScreen() {
                           {v.kind === 'car' ? 'CARRO' : 'MOTO'}
                         </Txt>
                       </Box>
-                      <StatusPill status={status} />
+                      {v.gauge ? <StatusPill status={status} /> : null}
                     </Row>
                     <Txt font="bold" fos={16} ls={-0.2}>
                       {v.brand} {v.model}
                     </Txt>
                     <Txt font="monoMed" fos={12} tone="muted" mt={1}>
-                      {v.plate} · {v.year} · {fmtKm(v.km)} km
+                      {v.plate} · {v.year}
+                      {v.odometer
+                        ? ` · ${v.odometer.source === 'estimated' ? '~' : ''}${fmtKm(v.odometer.km)} km`
+                        : ''}
                     </Txt>
+                    {rechazo ? (
+                      <Txt fos={11} tone="danger" mt={2}>
+                        No se pudo guardar: {mensajeDeRechazo(rechazo)}
+                      </Txt>
+                    ) : null}
                   </Col>
                   <Icon name="chevR" color={c.muted2} size={22} />
                 </Row>
 
-                {/* mini progress */}
-                <Row mt={14} gap={10}>
-                  <Box h={6} f={1} ov="hidden" br={3} bg="$bg2">
-                    <Box
-                      h="100%"
-                      br={3}
-                      bg={accent}
-                      width={`${Math.max(4, Math.min(100, pct))}%`}
-                      transition="gauge"
-                      enterStyle={{ width: '0%' }}
-                    />
-                  </Box>
-                  <Txt font="mono" fos={12} minWidth={88} ta="right">
-                    {fmtKm(kmLeft(v))} <Txt fos={12} tone="muted">km</Txt>
+                {/* mini progress — solo si el vehículo ya tiene un ciclo */}
+                {v.gauge ? (
+                  <Row mt={14} gap={10}>
+                    <Box h={6} f={1} ov="hidden" br={3} bg="$bg2">
+                      <Box
+                        h="100%"
+                        br={3}
+                        bg={accent}
+                        width={`${Math.max(4, Math.min(100, pct))}%`}
+                        transition="gauge"
+                        enterStyle={{ width: '0%' }}
+                      />
+                    </Box>
+                    <Txt font="mono" fos={12} minWidth={88} ta="right">
+                      {fmtKm(v.gauge.kmLeft)} <Txt fos={12} tone="muted">km</Txt>
+                    </Txt>
+                  </Row>
+                ) : (
+                  <Txt fos={12} tone="muted" mt={12}>
+                    Registra el primer cambio para activar el medidor
                   </Txt>
-                </Row>
+                )}
               </Card>
             </Touchable>
           );

@@ -23,7 +23,7 @@ npm run android    # emulador Android
 - **expo-linear-gradient** — headers oscuros y thumbnails
 - **@expo-google-fonts** — Inter (UI), Space Grotesk (títulos), JetBrains Mono (km, USD, placas, cédula)
 - **Tamagui (`@tamagui/core`)** — estilos, tokens, temas claro/oscuro y animaciones
-- **expo-notifications** — notificaciones locales: cambio próximo, vencido y recordatorio semanal
+- **expo-notifications** — recibe los push que manda el backend: cambio próximo, vencido y recordatorio de kilometraje
 - **expo-sqlite/kv-store + zustand/persist** — preferencias de notificación persistidas
 
 ## Tamagui y temas
@@ -89,7 +89,7 @@ src/
 ├── components/     # Icon, BrandMark, OilGauge, TabBar, primitivas (Btn, Input, Card…)
 ├── data/mock.ts    # data mock: flota, cambios, perfil, marcas/aceites VE
 ├── store/          # Zustand + selectors (kmLeft, pct, status) + prefs persistidas
-├── notifications/  # plan puro + reconciliación con el SO + permisos
+├── notifications/  # token de push, permisos y navegación al tocar el aviso
 ├── utils/format.ts # formatos es-VE (78.460 km, $32,00)
 ├── navigation/     # stack raíz + tabs
 └── screens/        # 13 pantallas
@@ -106,7 +106,7 @@ src/
 10. **Historial** — inversión anual USD/Bs.S + lista completa
 11. **Alertas** — vencido / próximo / resueltas (derivadas del estado)
 12. **Perfil** — datos personales (cédula V-, estado VE) + preferencias
-13. **Notificaciones** — switch maestro, tipos de aviso, día y hora del recordatorio
+13. **Notificaciones** — switch maestro, tipos de aviso y día del recordatorio (contra el API)
 14. **Menú** — índice de todo lo que dejó de ser un tab
 15. **Personalizar inicio** — orden y visibilidad de los widgets, arrastrando
 
@@ -115,5 +115,79 @@ src/
 - Integración con backend (reemplazar `src/data/mock.ts` y el store)
 - Persistencia local de vehículos y cambios — offline-first (hoy solo se persisten
   las preferencias de notificación)
-- Push remoto (`getExpoPushTokenAsync` + backend) — requiere development build y EAS
 - Animaciones con `react-native-reanimated`
+
+## Notificaciones push
+
+Los avisos los **decide y los manda el backend**, no la app. El teléfono solo
+registra su token y recibe. La app ya no programa notificaciones locales: al
+arrancar cancela una vez las que dejó programadas la versión anterior, porque
+viven en el sistema operativo y sobrevivirían a la actualización.
+
+Las preferencias (switch maestro, tipos de aviso, umbral, día del recordatorio)
+viven en el backend, porque es quien decide a quién avisar. Sobreviven a
+reinstalar la app. La hora no se elige: el barrido corre a las 9:00 de
+Venezuela para todos.
+
+### Qué hace falta para que un push llegue de verdad
+
+Esto **no** está configurado todavía. Sin ello, todo lo demás funciona pero
+ninguna notificación llega al teléfono.
+
+1. **FCM v1 (Android).** Crear el proyecto en Firebase, descargar la Service
+   Account JSON y subirla a EAS con `eas credentials` (plataforma Android).
+2. **APNs (iOS).** Generar la key en el portal de Apple Developer y subirla con
+   `eas credentials`.
+3. Confirmar que las dos quedaron asociadas al `projectId` que está en
+   `app.json` → `extra.eas.projectId`.
+4. **Development build.** Expo Go **no sirve** para push remoto en Android
+   desde el SDK 53:
+
+   ```bash
+   npx expo run:android   # o run:ios
+   ```
+
+   Si el build de Android falla con un error de CMake, revisa que el JDK sea el
+   17 y no el JBR 25 de Android Studio. Si el de iOS falla con un error de
+   Unicode en CocoaPods, es el locale del shell: `export LANG=en_US.UTF-8`.
+
+### Cómo comprobar que quedó
+
+1. Inicia sesión en la app y confirma que apareció la fila en `DeviceToken`
+   (`pnpm db:studio` en el backend).
+2. Con un vehículo vencido, corre el barrido a mano. Debe llegar la
+   notificación, y tocarla debe abrir el detalle de ese vehículo.
+3. Vuelve a correr el barrido: **no** debe llegar nada. Ese silencio es el
+   dedupe funcionando de punta a punta.
+4. A los 30 minutos, la fila de `NotificationLog` debe tener `receiptAt` puesto
+   y `receiptError` en null.
+
+La etapa previa —el camino completo contra los servidores de Expo, sin teléfono
+y sin credenciales— ya está verificada y documentada en
+`../backend-oil-app/test/manual/push-humo.md`.
+
+## Backend
+
+La app necesita el backend corriendo (`../backend-oil-app`):
+
+```bash
+cd ../backend-oil-app
+docker compose up -d     # PostgreSQL (publica el 5433, no el 5432)
+pnpm start:dev
+```
+
+La URL sale de `app.json` → `expo.extra.apiUrl`.
+
+En **dispositivo físico** `localhost` es el propio teléfono, no tu Mac: hay que
+poner la IP de la red local (`ipconfig getifaddr en0`), por ejemplo
+`http://192.168.0.107:3000/api/v1`. En el simulador de iOS `localhost` sí
+funciona.
+
+### Sesión
+
+Los tokens viven en Keychain/Keystore vía `expo-secure-store` — un módulo
+nativo, así que tras instalarlo hace falta **rebuild del development build**
+(`npx expo run:ios` / `npx expo run:android`); no basta con recargar.
+
+`src/store/auth.ts` es la sesión real; `src/store/session.ts` sigue siendo solo
+el correo recordado del "Recordarme", nunca una credencial.

@@ -38,7 +38,8 @@
           "color": "#0A2540",
           "defaultChannel": "oil-reminders"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

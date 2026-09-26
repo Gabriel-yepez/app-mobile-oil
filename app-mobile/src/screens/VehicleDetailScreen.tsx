@@ -7,8 +7,11 @@ import { Btn, Card, IconBtn, SectionHead, StatusPill, VehicleThumb, VinPlate } f
 import { HeroSurface, useHeroTopColor } from '../components/HeroSurface';
 import { StickyHeader, estimarHeaderH } from '../components/StickyHeader';
 import { Icon } from '../components/Icon';
-import { fmtKm, fmtUsd } from '../utils/format';
-import { kmLeft, oilPct, useStore, vehicleStatus } from '../store/useStore';
+import { fmtKm, fmtUsd, fmtFecha } from '../utils/format';
+import { useStore } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
+import { useOilStatus } from '../hooks/useOilStatus';
+import { useOilChanges } from '../hooks/useOilChanges';
 import { RootScreenProps } from '../navigation/types';
 
 export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'VehicleDetail'>) {
@@ -20,13 +23,20 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
   const [headerH, setHeaderH] = useState(estimarHeaderH(insets.top));
   const c = useAppColors();
   const heroTop = useHeroTopColor();
-  const vehicle = useStore((s) => s.vehicles.find((v) => v.id === route.params.vehicleId));
-  const changes = useStore((s) => s.changes).filter((ch) => ch.vehicleId === route.params.vehicleId);
+  const vehicle = useVehicles((s) =>
+    s.vehicles.find((v) => v.id === route.params.vehicleId),
+  );
+  const { data: estado } = useOilStatus(route.params.vehicleId);
+  const { items: changes } = useOilChanges(route.params.vehicleId);
   const profile = useStore((s) => s.profile);
 
   if (!vehicle) return null;
-  const pct = oilPct(vehicle);
-  const status = vehicleStatus(vehicle);
+
+  // Todo lo del aceite sale del bloque del backend. El vehículo solo aporta
+  // su ficha: así la lista, el detalle y el inicio no pueden discrepar.
+  const pct = estado?.gauge?.pct ?? 0;
+  const status = estado?.gauge?.status ?? 'ok';
+  const odometro = estado?.odometer;
 
   return (
     <Box f={1} bg="$bg3">
@@ -81,9 +91,27 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
           {/* mini stats */}
           <Row mt={18} gap="$sm" ai="stretch">
             {[
-              { l: 'Odómetro', v: fmtKm(vehicle.km), u: 'km' },
-              { l: 'Vida aceite', v: `${pct}%`, u: '' },
-              { l: 'Restan', v: fmtKm(kmLeft(vehicle)), u: 'km' },
+              {
+                l: 'Odómetro',
+                // La tilde marca que es una proyección, no una lectura.
+                v: odometro
+                  ? `${odometro.source === 'estimated' ? '~' : ''}${fmtKm(odometro.km)}`
+                  : '—',
+                u: 'km',
+              },
+              { l: 'Vida aceite', v: estado?.gauge ? `${pct}%` : '—', u: '' },
+              {
+                // El eje que manda: a un carro parado, mostrarle los km que le
+                // sobran mientras se le vence por tiempo es tranquilizarlo con
+                // el número equivocado.
+                l: estado?.gauge?.limitedBy === 'time' ? 'Restan' : 'Restan',
+                v: estado?.gauge
+                  ? estado.gauge.limitedBy === 'time'
+                    ? String(estado.gauge.daysLeft)
+                    : fmtKm(estado.gauge.kmLeft)
+                  : '—',
+                u: estado?.gauge?.limitedBy === 'time' ? 'días' : 'km',
+              },
             ].map((s) => (
               <Col
                 key={s.l}
@@ -117,16 +145,24 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
                   Aceite actual
                 </Txt>
                 <Txt font="display" fos={17}>
-                  {vehicle.oil.brand} {vehicle.oil.tag}
+                  {estado?.oil
+                    ? `${estado.oil.brand} ${estado.oil.tag}`
+                    : 'Sin registrar'}
                 </Txt>
               </Col>
-              <StatusPill status={status} />
+              {estado?.gauge ? <StatusPill status={status} /> : null}
             </Row>
             <Row gap={10} ai="stretch">
               {[
-                { l: 'Viscosidad', v: vehicle.oil.viscosity },
-                { l: 'Último km', v: fmtKm(vehicle.lastChange) },
-                { l: 'Próximo km', v: fmtKm(vehicle.nextChange) },
+                { l: 'Viscosidad', v: estado?.oil?.viscosity ?? '—' },
+                {
+                  l: 'Último km',
+                  v: estado?.cycle ? fmtKm(estado.cycle.lastChangeKm ?? 0) : '—',
+                },
+                {
+                  l: 'Próximo km',
+                  v: estado?.cycle ? fmtKm(estado.cycle.nextChangeKm ?? 0) : '—',
+                },
               ].map((col) => (
                 <Col key={col.l} f={1} borderTopWidth={1} borderTopColor="$line" py={10}>
                   <Txt font="bold" fos={10} tone="muted2" ls={1} caps>
@@ -169,14 +205,17 @@ export function VehicleDetailScreen({ navigation, route }: RootScreenProps<'Vehi
                 </Col>
                 <Card mb={10} f={1}>
                   <Row mb={4} jc="space-between">
-                    <Txt font="monoMed" fos={12} tone="muted">{h.date}</Txt>
+                    <Txt font="monoMed" fos={12} tone="muted">
+                      {fmtFecha(h.changedAt)}
+                    </Txt>
                     <Txt font="mono" fos={13}>{fmtKm(h.km)} km</Txt>
                   </Row>
                   <Txt font="bold" fos={14}>
-                    {h.oil.brand} {h.oil.tag} {h.oil.viscosity}
+                    {h.oilBrand} {h.oilTag} {h.oilViscosity}
                   </Txt>
                   <Txt fos={12} tone="muted" mt={2}>
-                    {h.shop} · {fmtUsd(h.costUsd)} USD
+                    {h.shop ?? 'Sin taller'}
+                    {h.costUsd !== null ? ` · ${fmtUsd(h.costUsd)} USD` : ''}
                   </Txt>
                 </Card>
               </Row>

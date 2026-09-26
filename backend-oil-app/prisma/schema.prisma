@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: el datasource solo declara el motor. La URL de conexión vive en
+// prisma.config.ts (para el CLI) y en el adapter del PrismaClient (para la
+// app) — `url` aquí ya no se admite.
+datasource db {
+  provider = "postgresql"
+}
+
+enum Currency {
+  USD
+  BS
+  BOTH
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  cedula       String   @unique
+  passwordHash String
+  fullName     String
+  phone        String
+  state        String?
+  city         String?
+  currency     Currency @default(BOTH)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  vehicles      Vehicle[]
+
+  deviceTokens     DeviceToken[]
+  notificationPref NotificationPref?
+  notificationLogs NotificationLog[]
+
+  passwordResetCodes PasswordResetCode[]
+}
+
+model RefreshToken {
+  // Se guarda el SHA-256 del token, nunca el token: un volcado de la base no
+  // debe entregar sesiones vivas.
+  id         String    @id @default(uuid()) @db.Uuid
+  tokenHash  String    @unique
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  // Id del token que lo sucedió: el rastro que permite detectar que alguien
+  // reusó un refresh ya rotado.
+  replacedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+enum VehicleKind {
+  CAR
+  MOTO
+}
+
+enum KmRateSource {
+  DECLARED
+  MEASURED
+}
+
+enum ReadingSource {
+  OIL_CHANGE
+  MANUAL
+}
+
+model Vehicle {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind  VehicleKind
+  brand String
+  model String
+  year  Int
+  plate String
+  color String
+
+  // Ritmo de uso: la base de la proyección del odómetro. Arranca declarado por
+  // el usuario y se recalibra solo con cada ciclo medido. Es un hecho del
+  // vehículo, no un estado derivado.
+  kmPerDay       Decimal      @db.Decimal(6, 2)
+  kmPerDaySource KmRateSource @default(DECLARED)
+
+  // Espejo del ciclo vigente. Derivable de la última fila de OilChange, se
+  // persiste para tener el ciclo actual en la ficha. OilCycleService es el
+  // ÚNICO que escribe estas cuatro: ni controladores, ni seeds.
+  lastChangeKm    Int?
+  lastChangeAt    DateTime?
+  nextChangeKm    Int?
+  nextChangeDueAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  oilChanges       OilChange[]
+  odometerReadings OdometerReading[]
+
+  @@unique([userId, plate])
+  @@index([userId])
+}
+
+model OilChange {
+  id        String  @id @default(uuid()) @db.Uuid
+  vehicleId String  @db.Uuid
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // Fecha real del cambio, que no es createdAt: se puede registrar hoy un
+  // cambio hecho la semana pasada.
+  changedAt DateTime
+  km        Int
+
+  // Los dos ejes del ciclo. Los escribe el usuario.
+  intervalKm     Int
+  intervalMonths Int
+
+  oilBrand     String
+  oilTag       String
+  oilViscosity String
+  oilSynthetic Boolean
+
+  shop    String?
+  costUsd Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId, changedAt(sort: Desc)])
+}
+
+model OdometerReading {
+  // La base de la proyección: cada cambio de aceite escribe también una de
+  // estas, así la estimación siempre parte de la última lectura real que
+  // existe, sin importar de dónde vino.
+  id        String  @id @default(uuid()) @db.Uuid
+  vehicleId String  @db.Uuid
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  km     Int
+  readAt DateTime
+  source ReadingSource
+
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId, readAt(sort: Desc)])
+}
+
+/// Catálogo de marcas. Lo siembran las 18 originales y lo enriquecen los
+/// usuarios. `Vehicle.brand` NO apunta acá: sigue siendo texto suelto, y de
+/// eso depende que dar de alta un vehículo funcione sin señal.
+model Brand {
+  id        String      @id @default(uuid())
+  kind      VehicleKind
+  name      String      @db.VarChar(40)
+  /// Nombre normalizado. Es lo que decide si dos textos son la misma marca.
+  nameKey   String      @db.VarChar(40)
+  /// null = semilla. No es relación a User a propósito: si se borra la cuenta
+  /// que aportó una marca, la marca sobrevive porque ya es del catálogo común.
+  createdBy String?
+  createdAt DateTime    @default(now())
+
+  /// Compuesto con `kind`, nunca `nameKey` solo: Honda, Suzuki y Yamaha son
+  /// marcas de carro Y de moto, y deben ser filas independientes.
+  @@unique([kind, nameKey])
+  @@index([kind, name])
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+/// Un token identifica una INSTALACIÓN, no una sesión. Por eso `token` es
+/// único a secas y no `@@unique([userId, token])`: si otra persona inicia
+/// sesión en el mismo teléfono, el token cambia de dueño en vez de duplicarse.
+/// Con dos filas, el dueño anterior seguiría recibiendo avisos de sus
+/// vehículos en un teléfono que ya no es suyo.
+model DeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String         @unique
+  platform   DevicePlatform
+  lastSeenAt DateTime       @default(now())
+  /// `DeviceNotRegistered` lo apaga, no lo borra: si el usuario reinstala,
+  /// vuelve a registrar el mismo token y la fila revive.
+  disabledAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@index([userId])
+}
+
+/// Las preferencias viven acá y no en el teléfono porque es el SERVIDOR el que
+/// decide a quién avisar. De paso sobreviven a reinstalar la app.
+model NotificationPref {
+  userId          String   @id @db.Uuid
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled         Boolean  @default(true)
+  warnEnabled     Boolean  @default(true)
+  overdueEnabled  Boolean  @default(true)
+  checkinEnabled  Boolean  @default(true)
+  warnThresholdKm Int      @default(500)
+  /// Domingo = 1, igual que el trigger WEEKLY de Expo y que la app.
+  checkinWeekday  Int      @default(1)
+  updatedAt       DateTime @updatedAt
+}
+
+/// Hace dos trabajos porque son el mismo hecho —"esto se mandó"—: es el dedupe
+/// (sin él, el mismo "cambio cerca" sale cada día a las 9 hasta que el usuario
+/// cambie el aceite) y es el rastro para casar el ticket con el receipt que
+/// Expo entrega unos 15 minutos después.
+model NotificationLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId    String?   @db.Uuid
+  kind         String
+  sig          String
+  ticketId     String?
+  /// El token al que se mandó. Sin él, un DeviceNotRegistered que llega en el
+  /// receipt —15 minutos después— no sabría qué dispositivo apagar.
+  token        String?
+  sentAt       DateTime  @default(now())
+  receiptAt    DateTime?
+  receiptError String?
+
+  @@index([userId, kind, sentAt(sort: Desc)])
+  @@index([ticketId])
+}
+
+// Un intento de recuperar contraseña. Nace al pedir el código y pasa por dos
+// estados más: verificado (tiene resetToken) y usado (usedAt).
+model PasswordResetCode {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // HMAC-SHA256 con RESET_CODE_SECRET, nunca el código. Un código de 6
+  // dígitos son un millón de combinaciones: con un hash simple, un volcado de
+  // la base alcanzaría para sacarlos todos. Sin el secreto, no.
+  codeHash  String
+  expiresAt DateTime
+  // Intentos fallidos. Al llegar al tope el código queda inservible.
+  attempts  Int      @default(0)
+
+  // Tras verificar el código se emite un token de un solo uso para el último
+  // paso. Aleatorio de 256 bits, así que un SHA-256 simple basta (a diferencia
+  // del código, no hay espacio que recorrer).
+  resetTokenHash String?   @unique
+  resetExpiresAt DateTime?
+
+  // Consumido: ya se cambió la contraseña con él, o lo invalidó un código nuevo.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}

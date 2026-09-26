@@ -11,13 +11,12 @@ import { AuthHero } from '../components/AuthHero';
 import { Btn, Card, Checkbox, Field, Input } from '../components/primitives';
 import { Icon } from '../components/Icon';
 import { useSession } from '../store/session';
+import { useAuth } from '../store/auth';
+import { ApiError } from '../api/base';
+import { isEmail } from '../utils/validate';
 import { RootScreenProps } from '../navigation/types';
 
-// Mientras no haya backend el formulario arranca lleno, para entrar de un toque.
-const DEMO_EMAIL = 'luis.guerrero@gmail.com';
-const DEMO_PASSWORD = 'contraseña1';
-
-export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
+export function LoginScreen({ navigation, route }: RootScreenProps<'Login'>) {
   const insets = useSafeAreaInsets();
   const c = useAppColors();
 
@@ -27,23 +26,50 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
   const rememberEmail = useSession((s) => s.rememberEmail);
   const forget = useSession((s) => s.forget);
 
-  const [email, setEmail] = useState(DEMO_EMAIL);
-  const [password, setPassword] = useState(DEMO_PASSWORD);
+  const signIn = useAuth((s) => s.signIn);
+
+  // Recuperar contraseña vuelve acá con el correo que se acaba de usar.
+  const correoDeParams = route.params?.email;
+  const aviso = route.params?.aviso;
+
+  const [email, setEmail] = useState(correoDeParams ?? '');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // El almacenamiento se lee en asíncrono: hasta que no termina no hay correo
-  // guardado que poner, y escribirlo antes lo pisaría con el de la demo.
+  // guardado que poner.
   useEffect(() => {
     if (!hydrated) return;
     setRemember(savedRemember);
-    if (savedRemember && savedEmail) setEmail(savedEmail);
-  }, [hydrated, savedRemember, savedEmail]);
+    // El correo que llega por parámetro gana al recordado: es el que el usuario
+    // acaba de usar para cambiar la contraseña.
+    if (savedRemember && savedEmail && !correoDeParams) setEmail(savedEmail);
+  }, [hydrated, savedRemember, savedEmail, correoDeParams]);
 
-  const submit = () => {
-    if (remember) rememberEmail(email);
-    else forget();
-    navigation.replace('Tabs');
+  const submit = async () => {
+    setError(null);
+
+    // Se atajan acá los errores obvios para no gastar una petición; decidir si
+    // la cuenta existe sigue siendo cosa del servidor.
+    if (!isEmail(email)) return setError('Escribe un correo válido.');
+    if (password.length === 0) return setError('Escribe tu contraseña.');
+
+    setEnviando(true);
+    try {
+      await signIn(email, password);
+      // "Recordarme" guarda el correo, nunca la contraseña. Se hace después de
+      // entrar: recordar un correo con el que no se pudo acceder no sirve.
+      if (remember) rememberEmail(email);
+      else forget();
+      navigation.replace('Tabs');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No pudimos conectar. Revisa tu conexión.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -115,14 +141,27 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
               </Touchable>
             </Row>
 
+            {aviso && !error ? (
+              <Txt fos={13} tone="ok" mt={2}>
+                {aviso}
+              </Txt>
+            ) : null}
+
+            {error ? (
+              <Txt fos={13} tone="danger" mt={2}>
+                {error}
+              </Txt>
+            ) : null}
+
             <Btn
               kind="primary"
               size="lg"
               style={{ marginTop: 4 }}
               iconRight={<Icon name="arrow" color={c.solidInk} size={20} />}
-              onPress={submit}
+              disabled={enviando}
+              onPress={() => void submit()}
             >
-              Iniciar sesión
+              {enviando ? 'Entrando…' : 'Iniciar sesión'}
             </Btn>
           </Card>
         </Box>

@@ -4,8 +4,7 @@
 // QUÉ se ve y en qué orden vive acá, así se testea sin montar un componente;
 // el store de al lado solo la persiste.
 export type WidgetId =
-  | 'gauge'
-  | 'techReadout'
+  | 'oilStatus'
   | 'kpis'
   | 'quickActions'
   | 'recentHistory'
@@ -19,17 +18,20 @@ export type HomeLayout = {
 };
 
 /**
- * Núcleo fijo del inicio: estos cuatro van siempre arriba, en este orden y
+ * Núcleo fijo del inicio: estos tres van siempre arriba, en este orden y
  * siempre visibles. No se arrastran ni se apagan — son la lectura mínima del
- * vehículo activo (nivel, datos, acciones, resumen) y la personalización
+ * vehículo activo (estado del aceite, acciones, resumen) y la personalización
  * empieza recién debajo.
+ *
+ * Eran cuatro: el medidor y la lectura técnica eran widgets separados. Ahora
+ * son una sola tarjeta, porque los dos salen del MISMO bloque del backend y
+ * tenerlos aparte era la forma de que se desincronizaran.
+ *
+ * La migración de un layout guardado no necesita código: `reconcile` descarta
+ * los ids que ya no existen y mete los nuevos, y `oilStatus`, por ser fijo,
+ * entra en la posición de arriba.
  */
-export const PINNED_WIDGETS: WidgetId[] = [
-  'gauge',
-  'techReadout',
-  'quickActions',
-  'kpis',
-];
+export const PINNED_WIDGETS: WidgetId[] = ['oilStatus', 'quickActions', 'kpis'];
 
 /** Orden de fábrica: el bloque fijo y, debajo, los widgets que el usuario
  *  puede prender, apagar y reordenar. */

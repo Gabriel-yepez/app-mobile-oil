@@ -1,37 +1,65 @@
 // Agregar vehículo — Paso 2/3: marca, modelo, año, color, placa, km actual
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
-import { VE_BRANDS_CAR, VE_BRANDS_MOTO } from '../data/mock';
+import { useBrands, useMarcasDe } from '../store/useBrands';
+import { nombreValido, sugerirParecida } from '../data/marcas/nombre';
+import { ColorSelect } from '../components/ColorSelect';
+import { useColors } from '../store/useColors';
 import { RootScreenProps } from '../navigation/types';
-
-const COLORS: { name: string; hex: string }[] = [
-  { name: 'Negro', hex: '#1F2937' },
-  { name: 'Gris', hex: '#9CA3AF' },
-  { name: 'Blanco', hex: '#F3F4F6' },
-  { name: 'Rojo', hex: '#DC2626' },
-  { name: 'Azul', hex: '#2563EB' },
-  { name: 'Verde', hex: '#059669' },
-];
 
 export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'AddVehicleForm'>) {
   const insets = useSafeAreaInsets();
   const c = useAppColors();
   const { kind } = route.params;
-  const brands = kind === 'car' ? VE_BRANDS_CAR : VE_BRANDS_MOTO;
+  const brands = useMarcasDe(kind);
+  const agregarMarca = useBrands((s) => s.agregar);
 
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
-  const [colorIdx, setColorIdx] = useState(0);
+  // El hex y no un índice: es lo que se guarda y lo que el catálogo puede
+  // dejar de tener. Arranca en el primero del catálogo.
+  const primerColor = useColors((st) => st.colores[0]?.hex ?? '#1F2937');
+  const [color, setColor] = useState(primerColor);
   const [plate, setPlate] = useState('');
   const [km, setKm] = useState('');
+  // Default de 1.200 km/mes: 40 km/día, el uso urbano típico en Venezuela.
+  const [kmMes, setKmMes] = useState('1200');
 
-  const color = COLORS[colorIdx];
+
+  const pedirMarcaNueva = (texto: string) => {
+    if (!nombreValido(texto)) {
+      Alert.alert(
+        'Ese nombre no sirve',
+        'Usa letras, números, espacios, punto o guion. Máximo 40 caracteres.',
+      );
+      return;
+    }
+
+    const parecida = sugerirParecida(texto, brands);
+    if (parecida) {
+      Alert.alert(`¿Quisiste decir ${parecida}?`, `Escribiste «${texto}».`, [
+        { text: `Usar ${parecida}`, onPress: () => setBrand(parecida) },
+        {
+          text: `Crear «${texto}»`,
+          style: 'destructive',
+          onPress: () => {
+            agregarMarca(kind, texto);
+            setBrand(texto);
+          },
+        },
+      ]);
+      return;
+    }
+
+    agregarMarca(kind, texto);
+    setBrand(texto);
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -51,7 +79,14 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
           <Box px="$xl" pt="$xl">
             <Card gap={14}>
               <Field label="Marca">
-                <Select value={brand} placeholder="Selecciona la marca" options={brands} onChange={setBrand} />
+                <Select
+                  value={brand}
+                  placeholder="Selecciona la marca"
+                  options={brands}
+                  onChange={setBrand}
+                  searchable
+                  onAddNew={pedirMarcaNueva}
+                />
               </Field>
               <Field label="Modelo">
                 <Input value={model} onChangeText={setModel} placeholder="Corolla XEI" />
@@ -64,34 +99,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                 </Box>
                 <Box f={1}>
                   <Field label="Color">
-                    <Touchable
-                      onPress={() => setColorIdx((i) => (i + 1) % COLORS.length)}
-                      fade
-                      fd="row"
-                      ai="center"
-                      h={52}
-                      gap="$sm"
-                      br="$md"
-                      bw={1.5}
-                      bc="$line"
-                      bg="$surface"
-                      px={14}
-                    >
-                      <Box
-                        h={22}
-                        w={22}
-                        br="$pill"
-                        bw={2}
-                        bc="#FFFFFF"
-                        bg={color.hex}
-                        transition="quick"
-                        shadowColor="#000000"
-                        shadowOpacity={0.15}
-                        shadowRadius={2}
-                        shadowOffset={{ width: 0, height: 1 }}
-                      />
-                      <Txt fos={14}>{color.name}</Txt>
-                    </Touchable>
+                    <ColorSelect value={color} onChange={setColor} />
                   </Field>
                 </Box>
               </Row>
@@ -106,6 +114,19 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   mono
                   keyboardType="number-pad"
                   right={<Txt font="monoMed" fos={12} tone="muted">km</Txt>}
+                />
+              </Field>
+              {/* Sin esto la barra se congelaría entre cambio y cambio: el
+                  odómetro solo existe sentado en el auto, así que se proyecta
+                  con este ritmo y se corrige cuando el usuario lo reporta. */}
+              <Field label="¿Cuánto manejas normalmente?" suffix="km al mes">
+                <Input
+                  value={kmMes}
+                  onChangeText={setKmMes}
+                  placeholder="1200"
+                  mono
+                  keyboardType="number-pad"
+                  right={<Txt font="monoMed" fos={12} tone="muted">km/mes</Txt>}
                 />
               </Field>
             </Card>
@@ -125,8 +146,15 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   model: model || 'Sin modelo',
                   year: parseInt(year, 10) || new Date().getFullYear(),
                   plate: plate || '—',
-                  color: color.hex,
+                  color,
                   km: parseInt(km, 10) || 0,
+                  // Cuánto maneja, para que la barra baje sola entre cambios.
+                  // Se pregunta en km/mes, que es como la gente sabe cuánto
+                  // maneja; el backend piensa en km/día.
+                  kmPerDay: Math.min(
+                    500,
+                    Math.max(1, Math.round(((parseInt(kmMes, 10) || 1200) / 30) * 100) / 100),
+                  ),
                 },
               })
             }

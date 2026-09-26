@@ -9,6 +9,8 @@ export type VehicleDraft = {
   plate: string;
   color: string;
   km: number;
+  /** Ritmo declarado, en km/día: la base de la proyección del odómetro. */
+  kmPerDay: number;
 };
 
 export type TabParamList = {
@@ -19,7 +21,8 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   Onboarding: undefined;
-  Login: undefined;
+  /** Recuperar contraseña vuelve acá con el correo puesto y un aviso. */
+  Login: { email?: string; aviso?: string } | undefined;
   Signup: undefined;
   /** `email` viene del login: lo que el usuario ya había escrito. */
   ForgotPassword: { email?: string } | undefined;
@@ -29,6 +32,7 @@ export type RootStackParamList = {
   AddVehicleType: undefined;
   AddVehicleForm: { kind: 'car' | 'moto' };
   AddOil: { vehicleId?: string; draft?: VehicleDraft };
+  ReportOdometer: { vehicleId: string };
   History: undefined;
   Notifications: undefined;
   // Alerts y Profile eran tabs; con la barra en tres destinos viven en el

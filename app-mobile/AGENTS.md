@@ -24,3 +24,112 @@ borran en compilación y no llegan al bundle.
 
 El set de la app vive en `src/components/Icon.tsx`: si el icono ya está ahí, úsalo
 con `<Icon name="..." />` en vez de importar uno nuevo.
+
+# Capa de API: `src/api/`
+
+```
+src/api/
+├── base.ts                      clase ApiClient + ApiError (sobre axios). NO tocar por endpoint.
+├── tokens.ts                    los tokens, en Keychain/Keystore
+└── controllers/
+    ├── auth.controller.ts       ← la nomenclatura: <recurso>.controller.ts
+    └── vehiculos.controller.ts  (cuando toque)
+```
+
+## La regla
+
+**Un archivo por recurso en `controllers/`, nombrado `<recurso>.controller.ts`,
+con una clase que extiende `ApiClient` y se exporta como instancia única.**
+Ninguna pantalla ni store llama a `fetch` directamente.
+
+```ts
+// src/api/controllers/vehiculos.controller.ts
+import { ApiClient } from '../base';
+
+class VehiculosController extends ApiClient {
+  constructor() {
+    super('/vehiculos'); // prefijo del recurso
+  }
+
+  listar(query?: { estado?: string; pagina?: number }) {
+    return this.get<Vehiculo[]>('', { query, auth: true });
+  }
+
+  crear(body: NuevoVehiculo) {
+    return this.post<Vehiculo>('', { body, auth: true });
+  }
+
+  detalle(id: string) {
+    return this.get<Vehiculo>(`/${id}`, { auth: true });
+  }
+}
+
+export const vehiculosController = new VehiculosController();
+```
+
+`get` / `post` / `put` / `patch` / `del` aceptan `{ query, body, headers, auth }`.
+Los tipos de la respuesta viven en el mismo archivo del controlador.
+
+## Lo que `base.ts` ya resuelve — no lo repitas en un controlador
+
+- **URL base** desde `EXPO_PUBLIC_API_URL`, en una instancia de axios.
+- **Bearer** cuando pasas `auth: true`.
+- **Query params**: pásalos en `query` y los serializa axios, omitiendo los
+  `undefined` y `null`. No construyas la query a mano: un `+` en un correo o un
+  `&` en un filtro romperían la URL.
+- **Timeout de 15 s.** En móvil, una petición sin tope se queda colgada con mala
+  cobertura y la pantalla nunca sale de "Cargando…".
+- **Errores**: axios lanza en todo lo que no sea 2xx, y `base.ts` lo traduce.
+  Hacia arriba solo sale `ApiError` con `status`, `code` y `message` —los
+  controladores no saben que existe axios. Ramifica por `code` (contrato
+  estable del backend), nunca por el texto. Códigos propios del cliente:
+  `NETWORK_ERROR` (sin conexión) y `TIMEOUT` (el servidor no contestó a tiempo);
+  se distinguen porque el consejo al usuario es distinto.
+- **Refresco del token** ante un `401`, con reintento automático.
+
+## Dos cosas que no se tocan
+
+**La cola de refresco es estática en `ApiClient`, compartida por todos los
+controladores.** No la muevas a una instancia ni la dupliques: el backend rota
+los refresh tokens, así que dos refrescos en paralelo presentarían tokens ya
+rotados uno contra otro, el servidor lo leería como robo y cerraría *todas* las
+sesiones del usuario. Hay tests que cubren el caso con dos controladores
+distintos a la vez.
+
+**`EXPO_PUBLIC_*` no es secreto.** Esas variables quedan incrustadas en el
+binario al compilar. Sirven para una URL; una clave de API jamás va ahí.
+
+## Al testear un controlador
+
+El `jest.fn` del mock de axios debe crearse **dentro** de la factoría de
+`jest.mock`, no en una constante del test: `base.ts` llama a `axios.create()`
+en el cuerpo del módulo, o sea antes de que las constantes del test se
+inicialicen, y la instancia se quedaría con un `request` indefinido. Mira
+`src/api/__tests__/base.test.ts`.
+
+## Configuración
+
+`.env` (ignorado por git) a partir de `.env.example`:
+
+```
+EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1
+```
+
+En dispositivo físico `localhost` es el propio teléfono: usa la IP de la red
+local (`ipconfig getifaddr en0`).
+
+# Regla de contraseña: vive en DOS sitios
+
+La regla (8–72 caracteres, una mayúscula, un número y un carácter especial)
+está en `src/utils/password.ts` y en el backend, en
+`backend-oil-app/src/modules/auth/password-policy.ts`. **Si cambias una,
+cambia la otra**: no hay paquete compartido entre los proyectos.
+
+El backend es la autoridad y valida siempre. La copia de la app existe para
+marcar la leyenda en vivo (`<PasswordRules password={...} />`) y ahorrar una
+ida y vuelta. Los tests de los dos lados usan los mismos casos a propósito.
+
+Si el servidor rechaza una contraseña, devuelve TODAS las reglas incumplidas
+en `ApiError.details`; muéstralas con `textoDeError(e)` de
+`src/utils/errores.ts`, no con `e.message` (que en un 400 de validación es un
+genérico "Revisa los datos enviados.").

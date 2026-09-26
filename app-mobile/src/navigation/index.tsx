@@ -26,6 +26,7 @@ import { VehicleDetailScreen } from '../screens/VehicleDetailScreen';
 import { AddVehicleTypeScreen } from '../screens/AddVehicleTypeScreen';
 import { AddVehicleFormScreen } from '../screens/AddVehicleFormScreen';
 import { AddOilScreen } from '../screens/AddOilScreen';
+import { ReportOdometerScreen } from '../screens/ReportOdometerScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { CustomizeHomeScreen } from '../screens/CustomizeHomeScreen';
@@ -84,10 +85,20 @@ const navThemes = {
   },
 };
 
-export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
+export function AppNavigator({
+  scheme,
+  authed,
+}: {
+  scheme: 'light' | 'dark';
+  /** Ya resuelto en App.tsx: acá no se espera, solo se decide la puerta. */
+  authed: boolean;
+}) {
   return (
     <NavigationContainer theme={navThemes[scheme]} ref={navigationRef} onReady={flushPendingRoute}>
-      <Stack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        initialRouteName={authed ? 'Tabs' : 'Onboarding'}
+        screenOptions={{ headerShown: false }}
+      >
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
@@ -98,6 +109,7 @@ export function AppNavigator({ scheme }: { scheme: 'light' | 'dark' }) {
         <Stack.Screen name="AddVehicleType" component={AddVehicleTypeScreen} />
         <Stack.Screen name="AddVehicleForm" component={AddVehicleFormScreen} />
         <Stack.Screen name="AddOil" component={AddOilScreen} />
+        <Stack.Screen name="ReportOdometer" component={ReportOdometerScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Alerts" component={AlertsScreen} />

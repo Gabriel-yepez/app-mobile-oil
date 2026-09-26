@@ -13,6 +13,8 @@ import { HeroSurface, useHeroTopColor } from '../components/HeroSurface';
 import { StickyHeader, estimarHeaderH } from '../components/StickyHeader';
 import { Icon, IconName } from '../components/Icon';
 import { useStore, usePlan, usePlanUsage } from '../store/useStore';
+import { useVehicles } from '../store/useVehicles';
+import { useAllOilChanges } from '../hooks/useAllOilChanges';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -28,8 +30,8 @@ export function ProfileScreen() {
   const c = useAppColors();
   const heroTop = useHeroTopColor();
   const profile = useStore((s) => s.profile);
-  const vehicles = useStore((s) => s.vehicles);
-  const changes = useStore((s) => s.changes);
+  const vehicles = useVehicles((s) => s.vehicles);
+  const { items: changes } = useAllOilChanges();
   const subscription = useStore((s) => s.subscription);
   const plan = usePlan();
   const uso = usePlanUsage();
