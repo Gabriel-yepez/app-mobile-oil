@@ -1,7 +1,12 @@
 // Solo HTTP. El catálogo es una constante, así que no hay servicio que mediar:
 // un servicio que devuelve un array literal es ceremonia, no diseño.
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { COLORES } from './domain/vehicle-color';
 import { ColorResponseDto } from './dto/color-response.dto';

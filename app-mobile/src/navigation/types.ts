@@ -21,7 +21,8 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   Onboarding: undefined;
-  Login: undefined;
+  /** Recuperar contraseña vuelve acá con el correo puesto y un aviso. */
+  Login: { email?: string; aviso?: string } | undefined;
   Signup: undefined;
   /** `email` viene del login: lo que el usuario ya había escrito. */
   ForgotPassword: { email?: string } | undefined;

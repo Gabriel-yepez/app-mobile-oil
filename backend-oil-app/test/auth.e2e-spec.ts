@@ -20,7 +20,7 @@ const nuevo = () => ({
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
-  password: 'contrasena1',
+  password: 'Clave#2026',
 });
 
 // `res.body` de supertest es `any`. En vez de silenciar la regla de lint en
@@ -64,7 +64,8 @@ describe('Auth (e2e)', () => {
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    // Escucha UNA vez y atado a 127.0.0.1, no app.init(): ver test/setup-env.ts.
+    await app.listen(0, '127.0.0.1');
     prisma = app.get(PrismaService);
   });
 

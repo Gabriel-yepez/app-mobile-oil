@@ -75,4 +75,15 @@ describe('PrismaUserRepository (integración)', () => {
 
     await expect(repo.create(nuevo({ cedula: data.cedula }))).rejects.toThrow();
   });
+
+  it('updatePasswordHash cambia el hash y nada más', async () => {
+    const creado = await repo.create(nuevo());
+
+    await repo.updatePasswordHash(creado.id, 'hash-nuevo');
+
+    const leido = await repo.findById(creado.id);
+    expect(leido?.passwordHash).toBe('hash-nuevo');
+    expect(leido?.email).toBe(creado.email);
+    expect(leido?.fullName).toBe(creado.fullName);
+  });
 });

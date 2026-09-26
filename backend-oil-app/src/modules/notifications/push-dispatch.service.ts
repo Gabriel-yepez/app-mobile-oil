@@ -126,6 +126,11 @@ export class PushDispatchService {
       });
     }
 
-    return { planificados: mensajes.length, enviados, fallidos, tokensApagados };
+    return {
+      planificados: mensajes.length,
+      enviados,
+      fallidos,
+      tokensApagados,
+    };
   }
 }

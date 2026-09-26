@@ -58,4 +58,11 @@ export class InMemoryUserRepository implements UserRepository {
     this.users.set(id, actualizado);
     return Promise.resolve(actualizado);
   }
+
+  updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    const actual = this.users.get(id);
+    if (!actual) throw new Error(`No existe el usuario ${id}`);
+    this.users.set(id, { ...actual, passwordHash, updatedAt: new Date() });
+    return Promise.resolve();
+  }
 }

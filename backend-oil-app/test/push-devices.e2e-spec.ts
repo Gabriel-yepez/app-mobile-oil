@@ -20,7 +20,7 @@ const nuevoUsuario = () => ({
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
-  password: 'contrasena1',
+  password: 'Clave#2026',
 });
 
 describe('Dispositivos para push (e2e)', () => {
@@ -53,7 +53,8 @@ describe('Dispositivos para push (e2e)', () => {
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    // Escucha UNA vez y atado a 127.0.0.1, no app.init(): ver test/setup-env.ts.
+    await app.listen(0, '127.0.0.1');
     prisma = app.get(PrismaService);
   });
 
@@ -135,7 +136,9 @@ describe('Dispositivos para push (e2e)', () => {
     const jwt = await sesion();
 
     await http()
-      .delete(`/me/devices/${encodeURIComponent('ExponentPushToken[fantasma]')}`)
+      .delete(
+        `/me/devices/${encodeURIComponent('ExponentPushToken[fantasma]')}`,
+      )
       .set('Authorization', `Bearer ${jwt}`)
       .expect(204);
   });

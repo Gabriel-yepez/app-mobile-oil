@@ -28,4 +28,11 @@ export interface UserRepository {
   create(data: NewUser): Promise<User>;
   /** Escritura parcial: solo toca las claves presentes en `patch`. */
   update(id: string, patch: UserProfilePatch): Promise<User>;
+  /**
+   * Cambia la contraseña. Método aparte y no una clave de `update` a
+   * propósito: así `UserProfilePatch` sigue sin poder tocar el hash, y la
+   * única vía para cambiarlo es el trámite de recuperar contraseña, que
+   * revoca las sesiones.
+   */
+  updatePasswordHash(id: string, passwordHash: string): Promise<void>;
 }

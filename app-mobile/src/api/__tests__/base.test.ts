@@ -139,6 +139,37 @@ describe('ApiClient (axios)', () => {
   });
 
   describe('errores', () => {
+    // Un 400 de validación dice QUÉ campos o reglas fallaron en `details`.
+    // Sin conservarlo, la app solo podría mostrar "Revisa los datos enviados".
+    it('conserva los details de un error de validación', async () => {
+      mockRequest.mockImplementation(() =>
+        httpError(400, {
+          error: 'VALIDATION_ERROR',
+          message: 'Revisa los datos enviados.',
+          details: [
+            'Debe incluir al menos una letra mayúscula',
+            'Debe incluir al menos un carácter especial',
+          ],
+        })
+      );
+
+      await expect(authController.me()).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        details: [
+          'Debe incluir al menos una letra mayúscula',
+          'Debe incluir al menos un carácter especial',
+        ],
+      });
+    });
+
+    it('sin details en el cuerpo, details queda vacío', async () => {
+      mockRequest.mockImplementation(() =>
+        httpError(409, { error: 'EMAIL_TAKEN', message: 'Ese correo ya tiene una cuenta.' })
+      );
+
+      await expect(authController.me()).rejects.toMatchObject({ details: [] });
+    });
+
     it('convierte el error del backend en ApiError con su código', async () => {
       mockRequest.mockImplementation(() =>
         httpError(409, { error: 'EMAIL_TAKEN', message: 'Ese correo ya tiene una cuenta.' })

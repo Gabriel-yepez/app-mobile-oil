@@ -117,3 +117,19 @@ EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1
 
 En dispositivo físico `localhost` es el propio teléfono: usa la IP de la red
 local (`ipconfig getifaddr en0`).
+
+# Regla de contraseña: vive en DOS sitios
+
+La regla (8–72 caracteres, una mayúscula, un número y un carácter especial)
+está en `src/utils/password.ts` y en el backend, en
+`backend-oil-app/src/modules/auth/password-policy.ts`. **Si cambias una,
+cambia la otra**: no hay paquete compartido entre los proyectos.
+
+El backend es la autoridad y valida siempre. La copia de la app existe para
+marcar la leyenda en vivo (`<PasswordRules password={...} />`) y ahorrar una
+ida y vuelta. Los tests de los dos lados usan los mismos casos a propósito.
+
+Si el servidor rechaza una contraseña, devuelve TODAS las reglas incumplidas
+en `ApiError.details`; muéstralas con `textoDeError(e)` de
+`src/utils/errores.ts`, no con `e.message` (que en un 400 de validación es un
+genérico "Revisa los datos enviados.").

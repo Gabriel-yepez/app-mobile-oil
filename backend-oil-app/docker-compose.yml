@@ -14,5 +14,15 @@ services:
       interval: 5s
       retries: 10
 
+  # Bandeja de correo de desarrollo. Recibe todo lo que el backend envía por
+  # SMTP y NO lo reenvía a nadie: los códigos de recuperar contraseña se leen
+  # en http://localhost:8025. En producción el SMTP apunta al proveedor real
+  # (Brevo, Resend, SendGrid…) solo con variables de entorno.
+  mail:
+    image: axllent/mailpit:latest
+    container_name: ruedalo-mail
+    restart: unless-stopped
+    ports: ['1025:1025', '8025:8025']  # SMTP, bandeja web
+
 volumes:
   ruedalo-pgdata:

@@ -9,7 +9,7 @@ const base = {
   phone: '+58 414 528 9012',
   state: '  distrito   CAPITAL ',
   city: 'caracas',
-  password: 'contrasena1',
+  password: 'Clave#2026',
 };
 
 const construir = (over: Partial<typeof base> = {}) =>
@@ -56,9 +56,12 @@ describe('RegisterDto', () => {
   });
 
   it.each([
-    ['contraseña de 7', { password: 'abc123x' }],
-    ['contraseña sin dígito', { password: 'solamenteletras' }],
-    ['contraseña sin letra', { password: '12345678' }],
+    ['contraseña de 7', { password: 'Cl#2026' }],
+    ['contraseña sin número', { password: 'Clave#Nueva' }],
+    ['contraseña sin mayúscula', { password: 'clave#2026' }],
+    ['contraseña sin carácter especial', { password: 'Clave2026' }],
+    // La regla anterior (letra + número) la daba por buena; la nueva no.
+    ['contraseña que solo cumplía la regla vieja', { password: 'contrasena1' }],
     ['correo inválido', { email: 'no-es-correo' }],
     ['nombre vacío', { fullName: '   ' }],
     ['cédula corta', { cedula: 'V-123' }],

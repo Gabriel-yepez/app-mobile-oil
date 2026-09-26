@@ -16,7 +16,7 @@ import { ApiError } from '../api/base';
 import { isEmail } from '../utils/validate';
 import { RootScreenProps } from '../navigation/types';
 
-export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
+export function LoginScreen({ navigation, route }: RootScreenProps<'Login'>) {
   const insets = useSafeAreaInsets();
   const c = useAppColors();
 
@@ -28,7 +28,11 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
 
   const signIn = useAuth((s) => s.signIn);
 
-  const [email, setEmail] = useState('');
+  // Recuperar contraseña vuelve acá con el correo que se acaba de usar.
+  const correoDeParams = route.params?.email;
+  const aviso = route.params?.aviso;
+
+  const [email, setEmail] = useState(correoDeParams ?? '');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -40,8 +44,10 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
   useEffect(() => {
     if (!hydrated) return;
     setRemember(savedRemember);
-    if (savedRemember && savedEmail) setEmail(savedEmail);
-  }, [hydrated, savedRemember, savedEmail]);
+    // El correo que llega por parámetro gana al recordado: es el que el usuario
+    // acaba de usar para cambiar la contraseña.
+    if (savedRemember && savedEmail && !correoDeParams) setEmail(savedEmail);
+  }, [hydrated, savedRemember, savedEmail, correoDeParams]);
 
   const submit = async () => {
     setError(null);
@@ -134,6 +140,12 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
                 </Txt>
               </Touchable>
             </Row>
+
+            {aviso && !error ? (
+              <Txt fos={13} tone="ok" mt={2}>
+                {aviso}
+              </Txt>
+            ) : null}
 
             {error ? (
               <Txt fos={13} tone="danger" mt={2}>

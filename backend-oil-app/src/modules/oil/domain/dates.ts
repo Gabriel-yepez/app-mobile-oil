@@ -18,7 +18,9 @@ export function addMonths(date: Date, months: number): Date {
   const d = date.getUTCDate();
 
   // Día 0 del mes siguiente = último día del mes destino.
-  const ultimoDelDestino = new Date(Date.UTC(y, m + months + 1, 0)).getUTCDate();
+  const ultimoDelDestino = new Date(
+    Date.UTC(y, m + months + 1, 0),
+  ).getUTCDate();
 
   return new Date(
     Date.UTC(

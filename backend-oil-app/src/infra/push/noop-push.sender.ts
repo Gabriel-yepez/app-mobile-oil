@@ -20,20 +20,22 @@ export const PUSH_DESACTIVADO = 'PUSH_DISABLED';
 export class NoopPushSender implements PushSender {
   private readonly log = new Logger(NoopPushSender.name);
 
-  async enviar(envios: EnvioPush[]): Promise<PushTicket[]> {
+  enviar(envios: EnvioPush[]): Promise<PushTicket[]> {
     if (envios.length > 0) {
       this.log.debug(
         `PUSH_ENABLED=false: ${envios.length} aviso(s) descartado(s) sin enviar.`,
       );
     }
-    return envios.map(() => ({
-      ok: false as const,
-      code: PUSH_DESACTIVADO,
-      message: 'Las notificaciones push están desactivadas en este entorno.',
-    }));
+    return Promise.resolve(
+      envios.map(() => ({
+        ok: false as const,
+        code: PUSH_DESACTIVADO,
+        message: 'Las notificaciones push están desactivadas en este entorno.',
+      })),
+    );
   }
 
-  async receipts(): Promise<PushReceipt[]> {
-    return [];
+  receipts(): Promise<PushReceipt[]> {
+    return Promise.resolve([]);
   }
 }

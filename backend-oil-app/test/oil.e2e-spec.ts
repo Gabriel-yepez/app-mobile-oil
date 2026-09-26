@@ -19,7 +19,7 @@ const nuevoUsuario = () => ({
   phone: '+58 414 528 9012',
   state: 'Distrito Capital',
   city: 'Caracas',
-  password: 'contrasena1',
+  password: 'Clave#2026',
 });
 
 const nuevoVehiculo = () => ({
@@ -86,7 +86,8 @@ describe('Estado del aceite (e2e)', () => {
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    // Escucha UNA vez y atado a 127.0.0.1, no app.init(): ver test/setup-env.ts.
+    await app.listen(0, '127.0.0.1');
     prisma = app.get(PrismaService);
 
     token = await registrar();
@@ -207,7 +208,9 @@ describe('Estado del aceite (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ color: '#FF0000' })
       .expect(200)
-      .expect((r) => expect((r.body as { color: string }).color).toBe('#FF0000'));
+      .expect((r) =>
+        expect((r.body as { color: string }).color).toBe('#FF0000'),
+      );
 
     await http()
       .delete(`/api/v1/vehicles/${id}`)
@@ -262,8 +265,6 @@ describe('Estado del aceite (e2e)', () => {
   });
 
   it('sin token responde 401', async () => {
-    await http()
-      .get(`/api/v1/vehicles/${vehiculoId}/oil-status`)
-      .expect(401);
+    await http().get(`/api/v1/vehicles/${vehiculoId}/oil-status`).expect(401);
   });
 });

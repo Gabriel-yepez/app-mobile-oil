@@ -11,6 +11,8 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "setupFiles": [
-    "reflect-metadata"
-  ]
+    "reflect-metadata",
+    "<rootDir>/setup-env.ts"
+  ],
+  "maxWorkers": 1
 }

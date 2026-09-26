@@ -96,6 +96,48 @@ export class EnvVars {
   @IsBoolean()
   @Transform(banderaDelEntorno('PUSH_ENABLED'))
   PUSH_ENABLED: boolean = true;
+
+  // Firma (HMAC) de los códigos de 6 dígitos de recuperar contraseña. Un código
+  // así son un millón de combinaciones: con un hash simple, un volcado de la
+  // base bastaría para sacarlos todos en segundos. Con este secreto, que no
+  // vive en la base, el volcado por sí solo no alcanza.
+  @IsString()
+  @MinLength(32, {
+    message: 'RESET_CODE_SECRET debe tener al menos 32 caracteres',
+  })
+  RESET_CODE_SECRET!: string;
+
+  // ── Correo saliente ────────────────────────────────────────────────────
+  // Los valores por defecto apuntan a Mailpit (docker-compose): en desarrollo
+  // no hay que configurar nada y los correos se leen en localhost:8025. En
+  // producción se apuntan al proveedor (Brevo, Resend, SendGrid…): todos
+  // hablan SMTP, así que cambiar de proveedor es cambiar estas variables.
+  //
+  // No hay SMTP_SECURE a propósito: se deduce del puerto (465 → TLS directo;
+  // cualquier otro → STARTTLS si el servidor lo ofrece). Una bandera booleana
+  // más del entorno sería una más que configurar mal.
+
+  @IsOptional()
+  @IsString()
+  SMTP_HOST: string = 'localhost';
+
+  @IsOptional()
+  @IsInt()
+  @Transform(({ value }) => Number(value ?? 1025))
+  SMTP_PORT: number = 1025;
+
+  // Opcionales: Mailpit no pide credenciales. Los proveedores reales sí.
+  @IsOptional()
+  @IsString()
+  SMTP_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_PASS?: string;
+
+  @IsOptional()
+  @IsString()
+  MAIL_FROM: string = 'Ruédalo <no-responder@ruedalo.local>';
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvVars {
@@ -107,6 +149,16 @@ export function validateEnv(raw: Record<string, unknown>): EnvVars {
       .map((e) => Object.values(e.constraints ?? {}).join(', '))
       .join('\n  - ');
     throw new Error(`Configuración inválida:\n  - ${detalle}`);
+  }
+
+  if (
+    env.RESET_CODE_SECRET === env.JWT_ACCESS_SECRET ||
+    env.RESET_CODE_SECRET === env.JWT_REFRESH_SECRET
+  ) {
+    throw new Error(
+      'RESET_CODE_SECRET debe ser distinto de los secretos JWT: con uno ' +
+        'repetido, quien consiga uno de los dos tiene también el otro.',
+    );
   }
 
   if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) {

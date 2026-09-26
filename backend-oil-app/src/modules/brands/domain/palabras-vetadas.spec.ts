@@ -38,19 +38,55 @@ describe('contieneGroseria', () => {
   describe('no rechaza marcas reales', () => {
     it.each([
       // Las 18 semillas
-      'Toyota', 'Chevrolet', 'Ford', 'Hyundai', 'Kia', 'Renault', 'Fiat',
-      'Jeep', 'Nissan', 'Mitsubishi', 'Bera', 'Empire Keeway', 'MD',
-      'Yamaha', 'Suzuki', 'Honda', 'AVA', 'Skygo',
+      'Toyota',
+      'Chevrolet',
+      'Ford',
+      'Hyundai',
+      'Kia',
+      'Renault',
+      'Fiat',
+      'Jeep',
+      'Nissan',
+      'Mitsubishi',
+      'Bera',
+      'Empire Keeway',
+      'MD',
+      'Yamaha',
+      'Suzuki',
+      'Honda',
+      'AVA',
+      'Skygo',
       // Las que un usuario venezolano va a agregar
-      'Chery', 'JAC', 'BYD', 'Dongfeng', 'Foton', 'Haval', 'Great Wall',
-      'Zotye', 'Changan', 'SsangYong', 'Mercedes-Benz', 'BMW', 'Audi',
-      'Volkswagen', 'Peugeot', 'Citroën', 'Dodge', 'Chrysler', 'Mack',
-      'Iveco', 'Encava', 'Daihatsu', 'Subaru', 'Land Rover', 'Mini',
+      'Chery',
+      'JAC',
+      'BYD',
+      'Dongfeng',
+      'Foton',
+      'Haval',
+      'Great Wall',
+      'Zotye',
+      'Changan',
+      'SsangYong',
+      'Mercedes-Benz',
+      'BMW',
+      'Audi',
+      'Volkswagen',
+      'Peugeot',
+      'Citroën',
+      'Dodge',
+      'Chrysler',
+      'Mack',
+      'Iveco',
+      'Encava',
+      'Daihatsu',
+      'Subaru',
+      'Land Rover',
+      'Mini',
       // Casos que un filtro ingenuo rompería
-      'Passat',   // contiene "ass"
-      'Conosur',  // contiene "cono", que es "coño" sin la eñe
-      'Disputa',  // contiene "puta"
-      'Escort',   // contiene "scort"
+      'Passat', // contiene "ass"
+      'Conosur', // contiene "cono", que es "coño" sin la eñe
+      'Disputa', // contiene "puta"
+      'Escort', // contiene "scort"
     ])('acepta %s', (marca) => {
       expect(contieneGroseria(marca)).toBe(false);
     });

@@ -55,7 +55,9 @@ export interface VehicleRepository {
   updateCycleMirror(id: string, mirror: CycleMirror): Promise<void>;
   update(
     id: string,
-    patch: Partial<Omit<NewVehicle, 'userId'>> & { kmPerDaySource?: KmRateSource },
+    patch: Partial<Omit<NewVehicle, 'userId'>> & {
+      kmPerDaySource?: KmRateSource;
+    },
   ): Promise<Vehicle>;
   remove(id: string): Promise<void>;
   updateKmRate(

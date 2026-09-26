@@ -153,7 +153,10 @@ describe('PushSweepService', () => {
     const mod = await Test.createTestingModule({
       providers: [
         PushSweepService,
-        { provide: PushDispatchService, useValue: { despacharUsuario: jest.fn() } },
+        {
+          provide: PushDispatchService,
+          useValue: { despacharUsuario: jest.fn() },
+        },
         {
           provide: VEHICLE_REPOSITORY,
           useValue: {
@@ -171,8 +174,7 @@ describe('PushSweepService', () => {
         {
           provide: PrismaService,
           useValue: {
-            $queryRaw: () =>
-              Promise.resolve([{ pg_try_advisory_lock: true }]),
+            $queryRaw: () => Promise.resolve([{ pg_try_advisory_lock: true }]),
             $executeRaw: () => {
               soltado = true;
               return Promise.resolve(1);
