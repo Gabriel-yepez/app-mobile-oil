@@ -1,4 +1,4 @@
-import { fmtDecimal, fmtFecha, fmtUsd, parseFecha } from '../format';
+import { fmtDecimal, fmtFecha, fmtHace, fmtUsd, parseFecha } from '../format';
 
 describe('fmtFecha', () => {
   it('formatea en es-VE corto', () => {
@@ -52,5 +52,37 @@ describe('fmtDecimal', () => {
 
   it('fmtUsd es el mismo número con el signo', () => {
     expect(fmtUsd(1234.5)).toBe('$1.234,50');
+  });
+});
+
+describe('fmtHace', () => {
+  // Las 20:00 del 26 sep en Caracas (UTC-4) ya son el 27 en UTC: "hoy" es el
+  // día del teléfono, no el de Greenwich.
+  const ahora = new Date(2026, 8, 26, 20, 0);
+
+  it('el mismo día es "hoy"', () => {
+    expect(fmtHace('2026-09-26T00:00:00.000Z', ahora)).toBe('hoy');
+  });
+
+  it('el día anterior es "ayer"', () => {
+    expect(fmtHace('2026-09-25T00:00:00.000Z', ahora)).toBe('ayer');
+  });
+
+  it('más atrás cuenta los días', () => {
+    expect(fmtHace('2026-08-31T00:00:00.000Z', ahora)).toBe('hace 26d');
+  });
+
+  it('cruza el cambio de año', () => {
+    expect(fmtHace('2025-12-31T00:00:00.000Z', new Date(2026, 0, 2, 9, 0))).toBe('hace 2d');
+  });
+
+  // Registrar hoy un cambio con fecha de mañana es un error de tipeo, pero no
+  // puede mostrarse como "hace -1d".
+  it('una fecha futura se muestra como "hoy"', () => {
+    expect(fmtHace('2026-09-28T00:00:00.000Z', ahora)).toBe('hoy');
+  });
+
+  it('una fecha inválida no rompe la pantalla', () => {
+    expect(fmtHace('no es una fecha', ahora)).toBe('—');
   });
 });

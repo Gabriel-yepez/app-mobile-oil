@@ -32,6 +32,30 @@ export const fmtFecha = (iso: string): string => {
   return `${dia} ${MESES[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 
+const DIA_MS = 86_400_000;
+
+/**
+ * Cuánto pasó desde una fecha ISO: "hoy", "ayer", "hace 26d".
+ *
+ * Cuenta días de calendario, no bloques de 24 h: un cambio de anoche es
+ * "ayer" aunque hayan pasado 10 horas. La fecha del cambio se lee en UTC
+ * (como en fmtFecha, es la que guardó el backend) y "hoy" es el día del
+ * teléfono, que es el que tiene en la cabeza quien lo mira.
+ */
+export const fmtHace = (iso: string, ahora = new Date()): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+
+  const fecha = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const hoy = Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const dias = Math.round((hoy - fecha) / DIA_MS);
+
+  // Una fecha futura es un error de tipeo al registrar; no se muestra negativa.
+  if (dias <= 0) return 'hoy';
+  if (dias === 1) return 'ayer';
+  return `hace ${dias}d`;
+};
+
 /**
  * El inverso de fmtFecha: "08 feb 2026" → ISO en UTC. `null` si no parsea.
  *

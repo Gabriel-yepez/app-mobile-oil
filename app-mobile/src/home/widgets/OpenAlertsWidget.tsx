@@ -7,7 +7,7 @@ import { Box, Col, Touchable, Txt, useAppColors } from '../../ui';
 import { Card, SectionHead, StatusPill, VehicleThumb } from '../../components/primitives';
 import { Icon } from '../../components/Icon';
 import { fmtKm } from '../../utils/format';
-import { useVehicles } from '../../store/useVehicles';
+import { alertaPospuesta, useVehicles } from '../../store/useVehicles';
 import { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -17,9 +17,11 @@ export function OpenAlertsWidget() {
   const c = useAppColors();
   const vehicles = useVehicles((s) => s.vehicles);
 
-  // Vencidos primero, después los que se acercan.
+  // Vencidos primero, después los que se acercan. Las pospuestas no: el
+  // usuario pidió no verlas por unos días, y el inicio es lo primero que ve.
+  const ahora = new Date();
   const abiertos = vehicles
-    .filter((v) => v.gauge !== null && v.gauge.status !== 'ok')
+    .filter((v) => v.gauge !== null && v.gauge.status !== 'ok' && !alertaPospuesta(v, ahora))
     .sort((a, b) => (a.gauge?.kmLeft ?? 0) - (b.gauge?.kmLeft ?? 0))
     .slice(0, 3);
 

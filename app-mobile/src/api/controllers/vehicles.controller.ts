@@ -21,6 +21,9 @@ export type ApiVehicle = {
   lastChangeKm: number | null;
   lastChangeAt: string | null;
   nextChangeKm: number | null;
+  /** ISO. Hasta cuándo el usuario pospuso la alerta del aceite; null si no
+   *  lo hizo. Mientras sea futura, la alerta no cuenta como abierta. */
+  alertSnoozedUntil: string | null;
   /** Viene con la lista para que la flota sea una sola llamada. */
   gauge: Gauge | null;
   odometer: Odometer | null;
@@ -39,6 +42,9 @@ export type ApiOilChange = {
   oilSynthetic: boolean;
   shop: string | null;
   costUsd: number | null;
+  /** La alerta que este cambio atendió: el estado del aceite justo antes de
+   *  hacerlo. null si se hizo sin alerta (adelantado) o es el primero. */
+  resolvedAlert: 'warn' | 'danger' | null;
 };
 
 export type ApiOilChangePage = {
@@ -118,6 +124,22 @@ class VehiclesController extends ApiClient {
 
   borrarCambio(changeId: string) {
     return this.del<void>(`/oil-changes/${changeId}`, { auth: true });
+  }
+
+  /** Calla la alerta `days` días (1 a 30). Devuelve la ficha con su estado. */
+  async posponerAlerta(id: string, days: number): Promise<ApiVehicle> {
+    return aDominio(
+      await this.put<VehiculoCrudo>(`/${id}/alert-snooze`, {
+        auth: true,
+        body: { days },
+      }),
+    );
+  }
+
+  async reactivarAlerta(id: string): Promise<ApiVehicle> {
+    return aDominio(
+      await this.del<VehiculoCrudo>(`/${id}/alert-snooze`, { auth: true }),
+    );
   }
 }
 

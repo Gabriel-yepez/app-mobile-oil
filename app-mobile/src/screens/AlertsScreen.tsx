@@ -1,5 +1,7 @@
-// Alertas — agrupadas por estado: crítica (vencido), warning (próximo) y resueltas
+// Alertas — agrupadas por estado: crítica (vencido), warning (próximo),
+// pospuestas y resueltas
 import React from 'react';
+import { Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -7,17 +9,37 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Txt, useAppColors, useIsDark, useShadows } from '../ui';
 import { Btn, Card, IconBtn, SectionHead } from '../components/primitives';
 import { Icon } from '../components/Icon';
-import { fmtKm } from '../utils/format';
-import { useVehicles } from '../store/useVehicles';
+import { fmtFecha, fmtHace, fmtKm } from '../utils/format';
+import { alertaPospuesta, useVehicles } from '../store/useVehicles';
+import type { ApiVehicle } from '../api/controllers/vehicles.controller';
+import { useAllOilChanges } from '../hooks/useAllOilChanges';
+import { toast } from '../store/toast';
+import { textoDeError } from '../utils/errores';
 import { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-// Resueltas (mock estático — vendrá del backend)
-const RESOLVED = [
-  { v: 'Bera BR-200', text: 'Cambio realizado el 14 ene · 17.000 km', date: 'hace 26d' },
-  { v: 'Toyota Corolla', text: 'Cambio realizado el 21 oct · 67.800 km', date: 'hace 110d' },
+/** Cuántas resueltas se listan. Es un recordatorio de lo último que se
+ *  atendió, no el historial: para eso está la pantalla de Historial. */
+const MAX_RESUELTAS = 5;
+
+/** Los plazos que ofrece "Posponer". El backend acepta de 1 a 30 días; más
+ *  que una semana ya no es posponer, es apagar el aviso, y eso vive en los
+ *  ajustes de notificaciones. */
+const PLAZOS = [
+  { label: '1 día', dias: 1 },
+  { label: '3 días', dias: 3 },
+  { label: '1 semana', dias: 7 },
 ];
+
+const DIA_MS = 86_400_000;
+
+/** "vuelve en 3 días". Redondea hacia arriba: con 20 horas por delante,
+ *  "0 días" se leería como que ya volvió. */
+const vuelveEn = (hasta: string, ahora: Date) => {
+  const dias = Math.max(1, Math.ceil((new Date(hasta).getTime() - ahora.getTime()) / DIA_MS));
+  return `vuelve en ${dias} ${dias === 1 ? 'día' : 'días'}`;
+};
 
 export function AlertsScreen() {
   const insets = useSafeAreaInsets();
@@ -26,10 +48,50 @@ export function AlertsScreen() {
   const sh = useShadows();
   const isDark = useIsDark();
   const vehicles = useVehicles((s) => s.vehicles);
+  const posponerAlerta = useVehicles((s) => s.posponerAlerta);
+  const reactivarAlerta = useVehicles((s) => s.reactivarAlerta);
+  // Resueltas: los cambios que se hicieron CON una alerta encima. Un cambio
+  // adelantado no atendió ninguna y no aparece; eso lo decide el backend en
+  // `resolvedAlert`, recalculando el estado del aceite al momento del cambio.
+  const { items: cambios } = useAllOilChanges();
+  const resueltas = cambios.filter((ch) => ch.resolvedAlert !== null).slice(0, MAX_RESUELTAS);
+  const vehicleOf = (id: string) => vehicles.find((v) => v.id === id);
 
-  const overdue = vehicles.filter((v) => v.gauge?.status === 'danger');
-  const soon = vehicles.filter((v) => v.gauge?.status === 'warn');
+  const ahora = new Date();
+  const conAlerta = vehicles.filter((v) => v.gauge !== null && v.gauge.status !== 'ok');
+  const pospuestas = conAlerta.filter((v) => alertaPospuesta(v, ahora));
+  const vivas = conAlerta.filter((v) => !alertaPospuesta(v, ahora));
+  const overdue = vivas.filter((v) => v.gauge?.status === 'danger');
+  const soon = vivas.filter((v) => v.gauge?.status === 'warn');
   const open = overdue.length + soon.length;
+
+  const posponer = (v: ApiVehicle) => {
+    const elegir = async (dias: number, label: string) => {
+      try {
+        await posponerAlerta(v.id, dias);
+        toast.ok(`Alerta de ${v.brand} ${v.model} pospuesta ${label}.`);
+      } catch (e) {
+        // El store ya la devolvió a abiertas: solo falta decir por qué.
+        toast.error(textoDeError(e));
+      }
+    };
+    Alert.alert(
+      'Posponer alerta',
+      `No te avisaremos de ${v.brand} ${v.model} durante este tiempo. Si registras el cambio antes, la alerta se cierra sola.`,
+      [
+        ...PLAZOS.map((p) => ({ text: p.label, onPress: () => void elegir(p.dias, p.label) })),
+        { text: 'Cancelar', style: 'cancel' as const },
+      ],
+    );
+  };
+
+  const reactivar = async (v: ApiVehicle) => {
+    try {
+      await reactivarAlerta(v.id);
+    } catch (e) {
+      toast.error(textoDeError(e));
+    }
+  };
 
   // En claro el ámbar oscuro del handoff; en oscuro sería ilegible, así que
   // usamos el propio token de warn, ya aclarado para fondos oscuros.
@@ -108,7 +170,7 @@ export function AlertsScreen() {
                 >
                   Registrar cambio
                 </Btn>
-                <Btn kind="ghost" size="sm" style={{ flex: 1 }}>
+                <Btn kind="ghost" size="sm" style={{ flex: 1 }} onPress={() => posponer(v)}>
                   Posponer
                 </Btn>
               </Row>
@@ -150,22 +212,57 @@ export function AlertsScreen() {
           </Box>
         ))}
 
-        {/* resueltas */}
-        <Box mx={-16} mt="$sm">
-          <SectionHead>Resueltas</SectionHead>
-        </Box>
-        {RESOLVED.map((r, i) => (
-          <Card key={i} fd="row" ai="center" gap="$md">
-            <Box h={32} w={32} ai="center" jc="center" br={10} bg="$okSoft">
-              <Icon name="check" color={c.ok} size={18} />
+        {/* pospuestas: siguen existiendo, así que se ven, pero apagadas y
+            sin contar como abiertas. */}
+        {pospuestas.length > 0 ? (
+          <Box mx={-16} mt="$sm">
+            <SectionHead>Pospuestas</SectionHead>
+          </Box>
+        ) : null}
+        {pospuestas.map((v) => (
+          <Card key={v.id} fd="row" ai="center" gap="$md">
+            <Box h={32} w={32} ai="center" jc="center" br={10} bg="$bg3">
+              <Icon name="calendar" color={c.muted} size={18} />
             </Box>
             <Col f={1}>
-              <Txt font="bold" fos={14}>{r.v}</Txt>
-              <Txt fos={12} tone="muted" mt={1}>{r.text}</Txt>
+              <Txt font="bold" fos={14}>
+                {v.brand} {v.model}
+              </Txt>
+              <Txt fos={12} tone="muted" mt={1}>
+                {v.gauge?.status === 'danger' ? 'Vencido' : 'Próximo'} · {vuelveEn(v.alertSnoozedUntil!, ahora)}
+              </Txt>
             </Col>
-            <Txt font="monoMed" fos={11} tone="muted2">{r.date}</Txt>
+            <Btn kind="ghost" size="sm" onPress={() => void reactivar(v)}>
+              Reactivar
+            </Btn>
           </Card>
         ))}
+
+        {/* resueltas: sin cambios que hayan atendido una alerta no hay nada
+            que listar, y un encabezado solo sobre el vacío parece un error. */}
+        {resueltas.length > 0 ? (
+          <Box mx={-16} mt="$sm">
+            <SectionHead>Resueltas</SectionHead>
+          </Box>
+        ) : null}
+        {resueltas.map((ch) => {
+          const v = vehicleOf(ch.vehicleId);
+          return (
+            <Card key={ch.id} fd="row" ai="center" gap="$md">
+              <Box h={32} w={32} ai="center" jc="center" br={10} bg="$okSoft">
+                <Icon name="check" color={c.ok} size={18} />
+              </Box>
+              <Col f={1}>
+                <Txt font="bold" fos={14}>{v ? `${v.brand} ${v.model}` : 'Vehículo'}</Txt>
+                <Txt fos={12} tone="muted" mt={1}>
+                  {ch.resolvedAlert === 'danger' ? 'Estaba vencido' : 'Estaba próximo'} · cambio el{' '}
+                  {fmtFecha(ch.changedAt)} · {fmtKm(ch.km)} km
+                </Txt>
+              </Col>
+              <Txt font="monoMed" fos={11} tone="muted2">{fmtHace(ch.changedAt)}</Txt>
+            </Card>
+          );
+        })}
       </Scroll>
     </Box>
   );

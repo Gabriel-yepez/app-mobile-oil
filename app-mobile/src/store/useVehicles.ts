@@ -45,6 +45,12 @@ type VehiclesStore = {
   /** Registra un cambio. Devuelve su id: la pantalla puede navegar sin
    *  esperar a la red. */
   registrarCambio: (vehicleId: string, input: NewOilChangeInput) => string;
+  /** "Posponer" en Alertas. Va directo a la red y no a la cola: es un
+   *  silencio de días, y encolarlo sin señal daría por pospuesta una alerta
+   *  cuyas push el servidor seguiría mandando. Si falla, se revierte y el
+   *  error sube para que la pantalla lo diga. */
+  posponerAlerta: (vehicleId: string, days: number) => Promise<void>;
+  reactivarAlerta: (vehicleId: string) => Promise<void>;
   removeVehicle: (id: string) => void;
   setActiveVehicle: (id: string) => void;
   sincronizar: () => Promise<void>;
@@ -58,6 +64,7 @@ const fichaLocal = (id: string, input: NewVehicleInput): ApiVehicle => ({
   lastChangeKm: null,
   lastChangeAt: null,
   nextChangeKm: null,
+  alertSnoozedUntil: null,
   // Sin ciclo todavía: la tarjeta muestra el CTA de registrar el primer cambio.
   gauge: null,
   odometer: null,
@@ -67,6 +74,29 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
   const persistir = (vehicles: ApiVehicle[], cola: QueueEntry[]) => {
     void guardarFlota(vehicles);
     void guardarCola(cola);
+  };
+
+  /** Cambia el posponer: optimista, y con la ficha del servidor al volver. */
+  const escribirAlerta = async (
+    vehicleId: string,
+    optimista: string | null,
+    llamada: () => Promise<ApiVehicle>,
+  ) => {
+    const previo = get().vehicles.find((v) => v.id === vehicleId);
+    if (!previo) return;
+    const reemplazar = (ficha: ApiVehicle) => {
+      const vehicles = get().vehicles.map((v) => (v.id === vehicleId ? ficha : v));
+      set({ vehicles });
+      void guardarFlota(vehicles);
+    };
+
+    reemplazar({ ...previo, alertSnoozedUntil: optimista });
+    try {
+      reemplazar(await llamada());
+    } catch (e) {
+      reemplazar(previo);
+      throw e;
+    }
   };
 
   const encolarOp = (op: QueueOp, vehicles: ApiVehicle[]) => {
@@ -135,6 +165,9 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
                 lastChangeKm: input.km,
                 lastChangeAt: input.changedAt,
                 nextChangeKm: input.km + input.intervalKm,
+                // El servidor la quita al registrar: el ciclo nuevo no
+                // hereda el silencio del que se cerró.
+                alertSnoozedUntil: null,
                 odometer: {
                   km: input.km,
                   source: 'reported',
@@ -145,6 +178,19 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
         ),
       );
       return id;
+    },
+
+    posponerAlerta: async (vehicleId, days) => {
+      const optimista = new Date(Date.now() + days * 86_400_000).toISOString();
+      await escribirAlerta(vehicleId, optimista, () =>
+        vehiclesController.posponerAlerta(vehicleId, days),
+      );
+    },
+
+    reactivarAlerta: async (vehicleId) => {
+      await escribirAlerta(vehicleId, null, () =>
+        vehiclesController.reactivarAlerta(vehicleId),
+      );
     },
 
     reportOdometer: (vehicleId, km) => {
@@ -209,11 +255,21 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
 /** Cuántos vehículos necesitan atención, según el estado que calcula el
  *  backend. Un vehículo sin ciclo no cuenta: no hay nada que vencer todavía. */
 export const useOpenAlerts = (): number =>
-  useVehicles(
-    (s) =>
-      s.vehicles.filter((v) => v.gauge !== null && v.gauge.status !== 'ok')
-        .length,
-  );
+  useVehicles((s) => contarAlertasAbiertas(s.vehicles, new Date()));
+
+/** Si el usuario pospuso la alerta y el plazo sigue corriendo. Al vencer,
+ *  vuelve a contar sola: nadie tiene que "despertarla". */
+export const alertaPospuesta = (v: ApiVehicle, ahora: Date): boolean =>
+  // Laxo a propósito: la flota guardada por una versión anterior de la app
+  // no trae el campo, y ahí llega undefined en vez de null.
+  !!v.alertSnoozedUntil && new Date(v.alertSnoozedUntil) > ahora;
+
+/** warn y danger, sin las pospuestas. Un vehículo sin ciclo no cuenta: no
+ *  hay nada que vencer todavía. */
+export const contarAlertasAbiertas = (vehicles: ApiVehicle[], ahora: Date): number =>
+  vehicles.filter(
+    (v) => v.gauge !== null && v.gauge.status !== 'ok' && !alertaPospuesta(v, ahora),
+  ).length;
 
 /** El vehículo activo, o null mientras no haya ninguno. */
 export const useActiveVehicle = (): ApiVehicle | null =>
