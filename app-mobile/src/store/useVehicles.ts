@@ -23,6 +23,7 @@ import {
   type ApiVehicle,
 } from '../api/controllers/vehicles.controller';
 import { oilStatusController } from '../api/controllers/oil-status.controller';
+import { toast } from './toast';
 
 type VehiclesStore = {
   vehicles: ApiVehicle[];
@@ -226,8 +227,21 @@ export const useVehicles = create<VehiclesStore>((set, get) => {
           set({ cola });
           void guardarCola(cola);
         },
-        marcarRechazado: (op, code) =>
-          set((s) => ({ rechazos: { ...s.rechazos, [op.id]: code } })),
+        marcarRechazado: (op, code) => {
+          set((s) => ({ rechazos: { ...s.rechazos, [op.id]: code } }));
+          if (op.op === 'CREATE_OIL_CHANGE') {
+            // Un vehículo rechazado se ve en su tarjeta, pero un cambio no
+            // tiene dónde mostrarse: sin este aviso desaparecería en silencio.
+            toast.error(
+              code === 'OIL_CHANGE_LIMIT_REACHED'
+                ? 'No se guardó un cambio de aceite: llegaste al tope de cambios de tu plan este mes.'
+                : 'No se pudo guardar un cambio de aceite.',
+            );
+            // Al registrarlo se reflejó en el medidor sin esperar la red; el
+            // servidor dijo que no, así que se vuelve a lo que él tiene.
+            void get().refresh().catch(() => {});
+          }
+        },
         api: {
           crear: vehiclesController.crear.bind(vehiclesController),
           editar: vehiclesController.editar.bind(vehiclesController),

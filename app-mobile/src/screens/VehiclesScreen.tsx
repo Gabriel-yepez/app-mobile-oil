@@ -16,6 +16,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 function mensajeDeRechazo(code: string): string {
   if (code === 'PLATE_TAKEN') return 'ya tienes un vehículo con esa placa';
   if (code === 'VEHICLE_NOT_FOUND') return 'ese vehículo ya no existe';
+  if (code === 'VEHICLE_LIMIT_REACHED') return 'llegaste al tope de vehículos de tu plan';
   return 'revisa los datos';
 }
 type Filter = 'all' | 'car' | 'moto';

@@ -6,16 +6,25 @@
 import React from 'react';
 import { Box, Col, Row, Txt, useAppColors } from '../ui';
 import { Icon } from './Icon';
-import { Plan, Subscription } from '../data/mock';
+import type { ApiSubscription } from '../api/controllers/subscriptions.controller';
+import type { Uso } from '../store/suscripcion';
+import { fmtFecha } from '../utils/format';
 
 export const ESTADO_SUSCRIPCION = {
   active: { label: 'Activa', tone: 'ok' },
-  trial: { label: 'Prueba', tone: 'warn' },
   expired: { label: 'Vencida', tone: 'danger' },
 } as const;
 
-/** Una línea de consumo: cuánto se usó de un tope del plan. */
-export type Uso = { k: string; usado: number; tope: number | null };
+/** La línea de precio y vigencia bajo el nombre del plan. */
+export function vigenciaTexto(s: ApiSubscription): string {
+  // Vencido: el título ya dice el plan que rige (el gratis); esto explica por qué.
+  if (s.status === 'expired') {
+    return `Tu Pro venció${s.expiresAt ? ` el ${fmtFecha(s.expiresAt)}` : ''} · rigen los topes del Gratis`;
+  }
+  if (s.plan.priceUsd === 0) return 'Sin costo';
+  const precio = `$${s.plan.priceUsd} al mes`;
+  return s.expiresAt ? `${precio} · pagado hasta el ${fmtFecha(s.expiresAt)}` : precio;
+}
 
 /** Texto del uso contra el tope. `null` en el tope es "sin límite", no cero: el
  *  plan pago no muestra un contador que nunca se va a llenar. */
@@ -45,14 +54,9 @@ export function Medidor({ usado, tope }: { usado: number; tope: number | null })
 }
 
 /** Encabezado del plan: qué se tiene contratado y en qué estado. */
-export function PlanHeader({
-  plan,
-  subscription,
-}: {
-  plan: Plan;
-  subscription: Subscription;
-}) {
+export function PlanHeader({ subscription }: { subscription: ApiSubscription }) {
   const c = useAppColors();
+  const { plan } = subscription;
   const estado = ESTADO_SUSCRIPCION[subscription.status];
 
   return (
@@ -63,9 +67,7 @@ export function PlanHeader({
       <Col f={1}>
         <Txt font="bold" fos={16}>Plan {plan.name}</Txt>
         <Txt fos={12} tone="muted" mt={1}>
-          {plan.priceUsd === 0
-            ? 'Sin costo'
-            : `$${plan.priceUsd} al mes · se renueva el ${subscription.renewsOn}`}
+          {vigenciaTexto(subscription)}
         </Txt>
       </Col>
       <Row gap={6} ai="center" br="$pill" bg="$bg2" px="$sm" py={4}>

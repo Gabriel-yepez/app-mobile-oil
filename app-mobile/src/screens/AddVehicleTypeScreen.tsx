@@ -8,6 +8,8 @@ import { Btn, IconBtn } from '../components/primitives';
 import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
 import { RootScreenProps } from '../navigation/types';
+import { useVehicles } from '../store/useVehicles';
+import { quedaCupoVehiculo, useSuscripcion } from '../store/suscripcion';
 
 type Kind = 'car' | 'moto';
 
@@ -21,6 +23,13 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
   const c = useAppColors();
   const sh = useShadows();
   const [selected, setSelected] = useState<Kind>('car');
+  const cantidad = useVehicles((s) => s.vehicles.length);
+  const suscripcion = useSuscripcion((s) => s.suscripcion);
+  // Se avisa acá, en el paso 1, y no al guardar en el paso 3: llenar tres
+  // pantallas para enterarse al final de que no cabía es lo peor que se le
+  // puede hacer al usuario. El servidor aplica el tope igual.
+  const hayCupo = quedaCupoVehiculo(suscripcion, cantidad);
+  const tope = suscripcion?.plan.maxVehicles ?? null;
 
   return (
     <Box f={1} bg="$bg">
@@ -99,20 +108,30 @@ export function AddVehicleTypeScreen({ navigation }: RootScreenProps<'AddVehicle
           <Icon name="shield" color={c.accent} size={20} />
         </Box>
         <Txt f={1} fos={13} lh={19.5} tone="muted">
-          Podrás registrar tantos vehículos como quieras. Tu información se guarda solo en tu cuenta.
+          {hayCupo
+            ? tope === null
+              ? 'Tu plan no tiene tope de vehículos. Tu información se guarda solo en tu cuenta.'
+              : `Tu plan ${suscripcion?.plan.name} permite hasta ${tope} vehículos; llevas ${cantidad}. Tu información se guarda solo en tu cuenta.`
+            : `Llegaste al tope de ${tope} vehículos de tu plan ${suscripcion?.plan.name}. Pásate a Pro para agregar más.`}
         </Txt>
       </Row>
 
       <Box f={1} />
       <Box px="$xl" pb={Math.max(insets.bottom, 24) + 12}>
-        <Btn
-          kind="primary"
-          size="lg"
-          icon={<Icon name="arrow" color="#fff" size={18} />}
-          onPress={() => navigation.navigate('AddVehicleForm', { kind: selected })}
-        >
-          Continuar
-        </Btn>
+        {hayCupo ? (
+          <Btn
+            kind="primary"
+            size="lg"
+            icon={<Icon name="arrow" color="#fff" size={18} />}
+            onPress={() => navigation.navigate('AddVehicleForm', { kind: selected })}
+          >
+            Continuar
+          </Btn>
+        ) : (
+          <Btn kind="primary" size="lg" onPress={() => navigation.navigate('Subscription')}>
+            Ver planes
+          </Btn>
+        )}
       </Box>
     </Box>
   );

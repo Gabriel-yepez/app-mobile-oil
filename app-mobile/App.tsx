@@ -14,6 +14,7 @@ import { AppNavigator } from './src/navigation';
 import { ToastHost } from './src/components/Toast';
 import { useAuth } from './src/store/auth';
 import { useStore } from './src/store/useStore';
+import { useSuscripcion } from './src/store/suscripcion';
 import { useVehicles } from './src/store/useVehicles';
 import { useBrands } from './src/store/useBrands';
 import { useColors } from './src/store/useColors';
@@ -68,6 +69,15 @@ export default function App() {
   useEffect(() => {
     setProfile(user);
   }, [user, setProfile]);
+
+  // El plan sigue a la sesión igual que el perfil: se carga al entrar y se
+  // olvida al salir, porque es de la cuenta y no del teléfono.
+  const cargarSuscripcion = useSuscripcion((s) => s.cargar);
+  const limpiarSuscripcion = useSuscripcion((s) => s.limpiar);
+  useEffect(() => {
+    if (user) void cargarSuscripcion();
+    else limpiarSuscripcion();
+  }, [user, cargarSuscripcion, limpiarSuscripcion]);
 
   useEffect(() => {
     void hidratarFlota();

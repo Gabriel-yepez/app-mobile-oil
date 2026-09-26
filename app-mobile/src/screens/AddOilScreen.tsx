@@ -1,6 +1,6 @@
 // Registrar cambio de aceite — también es el Paso 3/3 del flujo agregar vehículo
 import React, { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
@@ -10,6 +10,7 @@ import { SHOPS_VE, VE_OILS, VISCOSITIES } from '../data/mock';
 import { fmtFecha, fmtKm, parseFecha } from '../utils/format';
 import { useVehicles } from '../store/useVehicles';
 import { useOilStatus } from '../hooks/useOilStatus';
+import { quedaCupoCambio, useSuscripcion } from '../store/suscripcion';
 
 import { RootScreenProps } from '../navigation/types';
 
@@ -25,6 +26,7 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
   const vehicles = useVehicles((s) => s.vehicles);
   const addVehicle = useVehicles((s) => s.addVehicle);
   const registrarCambio = useVehicles((s) => s.registrarCambio);
+  const suscripcion = useSuscripcion((s) => s.suscripcion);
 
   const vehicle = vehicleId
     ? vehicles.find((v) => v.id === vehicleId)
@@ -67,6 +69,21 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
     const changedAt = parseFecha(date);
     if (!changedAt) {
       setErrorFecha('Escríbela como "08 feb 2026".');
+      return;
+    }
+
+    // Antes de encolar: sin esto, el cambio se vería guardado y el servidor
+    // lo rechazaría al sincronizar. Solo se conoce el uso del mes en curso;
+    // uno de otro mes lo decide el servidor.
+    if (!quedaCupoCambio(suscripcion, changedAt)) {
+      Alert.alert(
+        'Llegaste al tope del mes',
+        `Tu plan ${suscripcion?.plan.name} permite ${suscripcion?.plan.maxChangesPerMonth} cambios de aceite por mes. Pásate a Pro para registrar más.`,
+        [
+          { text: 'Ahora no', style: 'cancel' },
+          { text: 'Ver planes', onPress: () => navigation.navigate('Subscription') },
+        ],
+      );
       return;
     }
 

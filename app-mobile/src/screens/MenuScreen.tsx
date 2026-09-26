@@ -8,7 +8,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, SectionHead } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
-import { useStore, usePlan } from '../store/useStore';
+import { useStore } from '../store/useStore';
+import { usePlan } from '../store/suscripcion';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { THEME_LABEL, useThemePref } from '../store/themePref';
 import { useAuth } from '../store/auth';
@@ -76,7 +77,7 @@ export function MenuScreen() {
   const planFilas: Fila[] = [
     {
       k: 'Mi suscripción',
-      v: `Plan ${plan.name}`,
+      v: plan ? `Plan ${plan.name}` : '',
       icon: 'spark',
       onPress: () => navigation.navigate('Subscription'),
     },

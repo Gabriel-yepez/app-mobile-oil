@@ -3,26 +3,54 @@
 //
 // Responde tres preguntas en ese orden: qué tengo contratado, cuánto llevo
 // usado, y qué hay del otro lado si cambio de plan.
-import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback } from 'react';
+import { Alert } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Screen, Scroll, Txt, useAppColors } from '../ui';
 import { Btn, Card, IconBtn, SectionHead } from '../components/primitives';
 import { PlanHeader, UsoLista } from '../components/subscription';
 import { Icon } from '../components/Icon';
-import { PLAN_LIST } from '../data/mock';
-import { usePlan, usePlanUsage, useStore } from '../store/useStore';
+import { useSuscripcion, usoDe } from '../store/suscripcion';
+import type { ApiPlan, ApiSubscription } from '../api/controllers/subscriptions.controller';
+import { fmtFecha } from '../utils/format';
+
+/** La nota al pie: cuándo vence lo que tiene, dicho en una línea. */
+function notaVigencia(s: ApiSubscription): string {
+  if (s.status === 'expired') {
+    return 'Renueva el Pro para volver a no tener topes. Lo que ya registraste no se pierde.';
+  }
+  if (s.plan.priceUsd === 0) return 'El plan Gratis no vence.';
+  return s.expiresAt
+    ? `Tu plan ${s.plan.name} está pagado hasta el ${fmtFecha(s.expiresAt)}.`
+    : `Tu plan ${s.plan.name} no vence.`;
+}
+
+/** Cambiar de plan necesita el cobro, que todavía no existe. Se dice tal cual
+ *  en vez de fingir que se contrató algo. */
+const avisarPagoPendiente = (p: ApiPlan) =>
+  Alert.alert(
+    `Plan ${p.name}`,
+    'Todavía no se puede cambiar de plan desde la app. Estamos habilitando el pago; te avisaremos cuando esté listo.',
+  );
 
 export function SubscriptionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const c = useAppColors();
-  const subscription = useStore((s) => s.subscription);
-  const plan = usePlan();
-  const uso = usePlanUsage();
+  const subscription = useSuscripcion((s) => s.suscripcion);
+  const planes = useSuscripcion((s) => s.planes);
+  const cargar = useSuscripcion((s) => s.cargar);
 
-  // Los otros planes: los que se pueden contratar desde el actual.
-  const otros = PLAN_LIST.filter((p) => p.id !== plan.id);
+  useFocusEffect(
+    useCallback(() => {
+      void cargar();
+    }, [cargar]),
+  );
+
+  const plan = subscription?.plan ?? null;
+  // Los otros planes: los que se pueden contratar desde el que rige.
+  const otros = plan ? planes.filter((p) => p.id !== plan.id) : [];
 
   return (
     <Screen>
@@ -37,6 +65,13 @@ export function SubscriptionScreen() {
         <Box w={36} />
       </Row>
 
+      {/* Primera vez y sin señal: no hay plan que mostrar, y uno inventado
+          sería peor que decirlo. */}
+      {!subscription || !plan ? (
+        <Txt fos={14} tone="muted" ta="center" px="$xl" py="$2xl">
+          No pudimos cargar tu plan. Revisa tu conexión e intenta de nuevo.
+        </Txt>
+      ) : (
       <Scroll
         contentContainerStyle={{ paddingBottom: 48, gap: 18 }}
         showsVerticalScrollIndicator={false}
@@ -45,7 +80,7 @@ export function SubscriptionScreen() {
           <SectionHead>Tu plan</SectionHead>
           <Box px="$lg">
             <Card>
-              <PlanHeader plan={plan} subscription={subscription} />
+              <PlanHeader subscription={subscription} />
             </Card>
           </Box>
         </Col>
@@ -54,7 +89,7 @@ export function SubscriptionScreen() {
           <SectionHead>Uso</SectionHead>
           <Box px="$lg">
             <Card>
-              <UsoLista items={uso} />
+              <UsoLista items={usoDe(subscription)} />
             </Card>
           </Box>
         </Col>
@@ -77,7 +112,7 @@ export function SubscriptionScreen() {
 
         {otros.map((p) => (
           <Col key={p.id} gap="$sm">
-            <SectionHead>{p.priceUsd > plan.priceUsd ? 'Mejorá tu plan' : 'Otro plan'}</SectionHead>
+            <SectionHead>{p.priceUsd > plan.priceUsd ? 'Mejora tu plan' : 'Otro plan'}</SectionHead>
             <Box px="$lg">
               <Card>
                 <Row ai="baseline" gap="$sm">
@@ -97,11 +132,9 @@ export function SubscriptionScreen() {
                 </Col>
 
                 <Box mt="$lg">
-                  {/* El cobro necesita backend: por ahora el botón deja el rastro
-                      en consola en vez de fingir que contrató algo. */}
                   <Btn
                     kind={p.priceUsd > plan.priceUsd ? 'primary' : 'ghost'}
-                    onPress={() => console.log(`Cambiar al plan ${p.id} (falta backend de pagos)`)}
+                    onPress={() => avisarPagoPendiente(p)}
                   >
                     {p.priceUsd > plan.priceUsd ? `Pasar a ${p.name}` : `Cambiar a ${p.name}`}
                   </Btn>
@@ -112,11 +145,10 @@ export function SubscriptionScreen() {
         ))}
 
         <Txt fos={12} tone="muted2" ta="center" px="$xl">
-          {plan.priceUsd === 0
-            ? 'El plan Gratis no vence.'
-            : `Tu plan se renueva solo el ${subscription.renewsOn}.`}
+          {notaVigencia(subscription)}
         </Txt>
       </Scroll>
+      )}
     </Screen>
   );
 }

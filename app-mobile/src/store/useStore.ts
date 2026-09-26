@@ -1,18 +1,11 @@
 // Perfil y suscripción. La FLOTA ya no vive acá: se mudó a useVehicles, que
 // la trae del backend con caché local y cola de escrituras.
 //
-// El perfil es una copia del usuario autenticado (ver setProfile). Lo único que
-// queda mock es la suscripción (MOCK_SUBSCRIPTION), que espera su propia tanda.
+// El perfil es una copia del usuario autenticado (ver setProfile). El plan y
+// su consumo se mudaron a store/suscripcion, que los trae del backend.
 import { create } from 'zustand';
-import {
-  MOCK_SUBSCRIPTION,
-  PLANS,
-  Plan,
-  Profile,
-  Subscription,
-} from '../data/mock';
+import type { Profile } from '../data/mock';
 import type { ApiUser as AuthUser } from '../api/controllers/auth.controller';
-import { useVehicles } from './useVehicles';
 
 // Acá vivían kmLeft, oilPct y vehicleStatus.
 //
@@ -27,7 +20,6 @@ import { useVehicles } from './useVehicles';
 
 type Store = {
   profile: Profile;
-  subscription: Subscription;
 
   // Acá había un `updateProfile` que escribía el perfil en local. Se fue a
   // useAuth, que es donde vive el usuario de verdad: ahora editar el perfil
@@ -55,7 +47,6 @@ export const EMPTY_PROFILE: Profile = {
 
 export const useStore = create<Store>((set) => ({
   profile: EMPTY_PROFILE,
-  subscription: MOCK_SUBSCRIPTION,
 
   // El registro ya pide estado y ciudad, así que para las cuentas nuevas
   // siempre vienen. Las creadas antes los tienen en null, y ahí se muestra
@@ -77,20 +68,3 @@ export const useStore = create<Store>((set) => ({
 
 // useActiveVehicle y useOpenAlerts se mudaron a useVehicles: son selectores
 // de la flota, y la flota ya no vive acá.
-
-/** El plan contratado, ya resuelto: las pantallas leen topes y nombre de acá
- *  en vez de repetir el `PLANS[sub.plan]` cada una. */
-export const usePlan = (): Plan => useStore((s) => PLANS[s.subscription.plan]);
-
-/** Consumo contra los topes del plan. Lo calcula el store y no cada pantalla:
- *  el perfil y el detalle del plan muestran exactamente los mismos números. */
-export const usePlanUsage = () => {
-  const plan = usePlan();
-  const vehicles = useVehicles((s) => s.vehicles.length);
-  const changesThisMonth = useStore((s) => s.subscription.changesThisMonth);
-
-  return [
-    { k: 'Vehículos', usado: vehicles, tope: plan.maxVehicles },
-    { k: 'Cambios este mes', usado: changesThisMonth, tope: plan.maxChangesPerMonth },
-  ];
-};

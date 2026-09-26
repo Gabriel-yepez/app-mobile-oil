@@ -1,8 +1,8 @@
 // Perfil — hero oscuro con avatar + datos personales + preferencias.
 // Cerrar sesión y Notificaciones viven en el Menú desde que el perfil dejó de
 // ser un destino raíz del tab bar.
-import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
@@ -12,7 +12,8 @@ import { PlanHeader, UsoLista } from '../components/subscription';
 import { HeroSurface, useHeroTopColor } from '../components/HeroSurface';
 import { StickyHeader, estimarHeaderH } from '../components/StickyHeader';
 import { Icon, IconName } from '../components/Icon';
-import { useStore, usePlan, usePlanUsage } from '../store/useStore';
+import { useStore } from '../store/useStore';
+import { useSuscripcion, usoDe } from '../store/suscripcion';
 import { useVehicles } from '../store/useVehicles';
 import { useAllOilChanges } from '../hooks/useAllOilChanges';
 import { RootStackParamList } from '../navigation/types';
@@ -32,9 +33,15 @@ export function ProfileScreen() {
   const profile = useStore((s) => s.profile);
   const vehicles = useVehicles((s) => s.vehicles);
   const { items: changes } = useAllOilChanges();
-  const subscription = useStore((s) => s.subscription);
-  const plan = usePlan();
-  const uso = usePlanUsage();
+  const subscription = useSuscripcion((s) => s.suscripcion);
+  const cargarSuscripcion = useSuscripcion((s) => s.cargar);
+
+  // En cada foco: el uso cambia al registrar cambios o vehículos.
+  useFocusEffect(
+    useCallback(() => {
+      void cargarSuscripcion();
+    }, [cargarSuscripcion]),
+  );
 
   const personalRows = [
     { k: 'Cédula', v: profile.cedula, mono: true },
@@ -127,15 +134,17 @@ export function ProfileScreen() {
           </Row>
         </HeroSurface>
 
-        {/* suscripción — resumen tocable; el detalle vive en su propia pantalla */}
+        {/* suscripción — resumen tocable; el detalle vive en su propia pantalla.
+            Sin datos todavía (primera vez y sin señal) no se inventa un plan. */}
+        {subscription ? (
         <Box pt={18}>
           <SectionHead>Suscripción</SectionHead>
           <Box px="$lg">
             <Touchable fade sink transition="quick" onPress={() => navigation.navigate('Subscription')}>
               <Card>
-                <PlanHeader plan={plan} subscription={subscription} />
+                <PlanHeader subscription={subscription} />
                 <Box mt="$lg">
-                  <UsoLista items={uso} />
+                  <UsoLista items={usoDe(subscription)} />
                 </Box>
                 <Row ai="center" jc="center" gap={4} mt="$lg">
                   <Txt font="semi" fos={13} tone="accent">Ver detalle del plan</Txt>
@@ -145,6 +154,7 @@ export function ProfileScreen() {
             </Touchable>
           </Box>
         </Box>
+        ) : null}
 
         {/* datos personales */}
         <Box pt={18}>
