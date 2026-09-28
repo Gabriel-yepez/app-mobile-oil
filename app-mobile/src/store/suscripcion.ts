@@ -13,6 +13,7 @@ import {
   subscriptionsController,
   type ApiPlan,
   type ApiSubscription,
+  type ApiSupport,
 } from '../api/controllers/subscriptions.controller';
 
 type SuscripcionStore = {
@@ -20,6 +21,8 @@ type SuscripcionStore = {
   planes: ApiPlan[];
   /** null hasta la primera carga de esta sesión. */
   suscripcion: ApiSubscription | null;
+  /** A dónde escribir a soporte y si el plan tiene prioridad. */
+  soporte: ApiSupport | null;
   cargar: () => Promise<void>;
   /** Al cerrar sesión: el plan es de la cuenta, no del teléfono. */
   limpiar: () => void;
@@ -30,25 +33,27 @@ export const useSuscripcion = create<SuscripcionStore>()(
     (set) => ({
       planes: [],
       suscripcion: null,
+      soporte: null,
 
       cargar: async () => {
         try {
-          const [planes, suscripcion] = await Promise.all([
+          const [planes, suscripcion, soporte] = await Promise.all([
             subscriptionsController.planes(),
             subscriptionsController.mia(),
+            subscriptionsController.soporte(),
           ]);
-          set({ planes, suscripcion });
+          set({ planes, suscripcion, soporte });
         } catch {
           // Sin red se sigue mostrando lo último conocido.
         }
       },
 
-      limpiar: () => set({ suscripcion: null }),
+      limpiar: () => set({ suscripcion: null, soporte: null }),
     }),
     {
       name: 'ruedalo:suscripcion',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ planes: s.planes, suscripcion: s.suscripcion }),
+      partialize: (s) => ({ planes: s.planes, suscripcion: s.suscripcion, soporte: s.soporte }),
     }
   )
 );

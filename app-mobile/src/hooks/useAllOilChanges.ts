@@ -17,6 +17,8 @@ import { useVehicles } from '../store/useVehicles';
 export function useAllOilChanges(limitPorVehiculo = 20) {
   const vehicles = useVehicles((s) => s.vehicles);
   const [items, setItems] = useState<ApiOilChange[]>([]);
+  // Cuántos quedaron fuera de la ventana del plan, sumando la flota.
+  const [ocultos, setOcultos] = useState(0);
   const [cargando, setCargando] = useState(false);
 
   const ids = vehicles.map((v) => v.id).join(',');
@@ -24,6 +26,7 @@ export function useAllOilChanges(limitPorVehiculo = 20) {
   const cargar = useCallback(async () => {
     if (!ids) {
       setItems([]);
+      setOcultos(0);
       return;
     }
     setCargando(true);
@@ -36,9 +39,12 @@ export function useAllOilChanges(limitPorVehiculo = 20) {
               .historial(id, { limit: limitPorVehiculo })
               // Que un vehículo falle no puede vaciar el historial de los
               // otros: se devuelve su página vacía y el resto se muestra.
-              .catch(() => ({ items: [], nextCursor: null })),
+              .catch(() => ({ items: [], nextCursor: null, hiddenByPlan: 0 })),
           ),
       );
+
+      // `?? 0`: un backend anterior a la ventana del plan no manda el campo.
+      setOcultos(paginas.reduce((n, p) => n + (p.hiddenByPlan ?? 0), 0));
 
       setItems(
         paginas
@@ -56,5 +62,5 @@ export function useAllOilChanges(limitPorVehiculo = 20) {
     }, [cargar]),
   );
 
-  return { items, cargando, recargar: cargar };
+  return { items, ocultos, cargando, recargar: cargar };
 }

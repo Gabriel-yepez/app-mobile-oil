@@ -1,9 +1,11 @@
 // Historial completo — resumen de inversión USD/Bs.S + lista de todos los cambios
 import React, { useCallback, useState } from 'react';
+import { Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { Box, Col, Row, Scroll, Txt, useAppColors } from '../ui';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { radius } from '../theme';
 import { Card, FilterChip, FilterChips, IconBtn, VehicleThumb } from '../components/primitives';
 import { Icon } from '../components/Icon';
@@ -12,6 +14,12 @@ import { gastoPorMes } from '../utils/inversion';
 import { useVehicles } from '../store/useVehicles';
 import { useAllOilChanges } from '../hooks/useAllOilChanges';
 import { useTasaBcv } from '../store/tasaBcv';
+import { usePlan } from '../store/suscripcion';
+import { useStore } from '../store/useStore';
+import { toast } from '../store/toast';
+import { exportarHistorialPdf } from '../data/exportarHistorial';
+import { textoDeError } from '../utils/errores';
+import type { RootStackParamList } from '../navigation/types';
 
 // El filtro tiene DOS niveles y no una sola fila larga de chips: con un chip
 // por vehículo, una flota de seis ya no entra en pantalla. Primero se elige el
@@ -22,9 +30,12 @@ type Kind = 'all' | 'car' | 'moto';
 
 export function HistoryScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const c = useAppColors();
-  const { items: changes } = useAllOilChanges();
+  const { items: changes, ocultos } = useAllOilChanges();
+  const plan = usePlan();
+  const titular = useStore((s) => s.profile.fullName);
+  const [exportando, setExportando] = useState(false);
   const vehicles = useVehicles((s) => s.vehicles);
   const [kind, setKind] = useState<Kind>('all');
   const [elegido, setElegido] = useState<string>('all');
@@ -83,6 +94,34 @@ export function HistoryScreen() {
     setElegido('all');
   };
 
+  // El PDF sigue al filtro, igual que el total: si se está mirando una moto,
+  // se exporta esa moto.
+  const vehiculosDelFiltro =
+    kind === 'all' ? vehicles : vid !== 'all' ? vehicles.filter((v) => v.id === vid) : delTipo;
+
+  const exportar = async () => {
+    if (exportando) return;
+    if (!plan?.exportPdf) {
+      Alert.alert(
+        'Exportar a PDF es del plan Pro',
+        'Con Pro puedes descargar tu historial completo en PDF y compartirlo.',
+        [
+          { text: 'Ahora no', style: 'cancel' },
+          { text: 'Ver planes', onPress: () => navigation.navigate('Subscription') },
+        ],
+      );
+      return;
+    }
+    setExportando(true);
+    try {
+      await exportarHistorialPdf({ titular, vehiculos: vehiculosDelFiltro });
+    } catch (e) {
+      toast.error(textoDeError(e));
+    } finally {
+      setExportando(false);
+    }
+  };
+
   // El total es de todos los años y sigue al filtro: un "invertido" que
   // incluye carros encima de una lista de solo motos no se entiende.
   const totalUsd = filtered.reduce((sum, ch) => sum + (ch.costUsd ?? 0), 0);
@@ -113,6 +152,12 @@ export function HistoryScreen() {
             </Txt>
           </Col>
         </Row>
+        {changes.length > 0 ? (
+          <IconBtn
+            icon={<Icon name="pdf" color={exportando ? c.muted2 : c.ink} size={20} />}
+            onPress={() => void exportar()}
+          />
+        ) : null}
       </Row>
 
       <Scroll bg="$bg3" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
@@ -172,6 +217,23 @@ export function HistoryScreen() {
             </Row>
           </LinearGradient>
         </Box>
+
+        {/* Lo que la ventana del plan dejó fuera. Sin esto, el gratis vería
+            desaparecer cambios viejos sin saber por qué. */}
+        {ocultos > 0 && plan?.historyMonths ? (
+          <Box px="$lg" pb={14}>
+            <Touchable onPress={() => navigation.navigate('Subscription')} fade>
+              <Row gap={10} ai="center" br={14} bg="$bg2" p={14}>
+                <Icon name="history" color={c.accent} size={20} />
+                <Txt f={1} fos={13} lh={19} tone="muted">
+                  {ocultos === 1 ? 'Hay 1 cambio' : `Hay ${ocultos} cambios`} de hace más de {plan.historyMonths} meses
+                  que tu plan {plan.name} no muestra. Pásate a Pro para verlos.
+                </Txt>
+                <Icon name="chevR" color={c.muted2} size={18} />
+              </Row>
+            </Touchable>
+          </Box>
+        ) : null}
 
         {/* Filtros: debajo del hero y encima de la lista, que es lo que
             gobiernan. Arriba del hero quedaban lejos de su efecto. */}

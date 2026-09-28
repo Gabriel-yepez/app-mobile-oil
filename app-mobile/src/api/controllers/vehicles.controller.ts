@@ -51,6 +51,9 @@ export type ApiOilChangePage = {
   items: ApiOilChange[];
   /** null significa que no hay más: sin esto la app pagina para siempre. */
   nextCursor: string | null;
+  /** Cambios fuera de la ventana de historial del plan (el gratis ve 12
+   *  meses). Ocultos, no borrados. */
+  hiddenByPlan: number;
 };
 
 /** Forma del backend: es la única que sabe de mayúsculas. */

@@ -1,5 +1,5 @@
 jest.mock('../../api/controllers/subscriptions.controller', () => ({
-  subscriptionsController: { planes: jest.fn(), mia: jest.fn() },
+  subscriptionsController: { planes: jest.fn(), mia: jest.fn(), soporte: jest.fn() },
 }));
 
 import { subscriptionsController } from '../../api/controllers/subscriptions.controller';
@@ -14,9 +14,22 @@ const GRATIS: ApiPlan = {
   priceUsd: 0,
   maxVehicles: 5,
   maxChangesPerMonth: 10,
+  historyMonths: 12,
+  exportPdf: false,
+  prioritySupport: false,
   features: [],
 };
-const PRO: ApiPlan = { ...GRATIS, id: 'PRO', name: 'Pro', priceUsd: 4, maxVehicles: null, maxChangesPerMonth: null };
+const PRO: ApiPlan = {
+  ...GRATIS,
+  id: 'PRO',
+  name: 'Pro',
+  priceUsd: 4,
+  maxVehicles: null,
+  maxChangesPerMonth: null,
+  historyMonths: null,
+  exportPdf: true,
+  prioritySupport: true,
+};
 
 const sub = (plan: ApiPlan, vehicles = 0, changesThisMonth = 0): ApiSubscription => ({
   plan,
@@ -31,15 +44,17 @@ const AHORA = new Date('2026-09-26T15:00:00.000Z');
 describe('useSuscripcion', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useSuscripcion.setState({ planes: [], suscripcion: null });
+    useSuscripcion.setState({ planes: [], suscripcion: null, soporte: null });
   });
 
   it('trae el catálogo y la suscripción', async () => {
     api.planes.mockResolvedValue([GRATIS, PRO]);
     api.mia.mockResolvedValue(sub(GRATIS, 2, 3));
+    api.soporte.mockResolvedValue({ email: 'soporte@ejemplo.com', priority: false });
 
     await useSuscripcion.getState().cargar();
 
+    expect(useSuscripcion.getState().soporte?.email).toBe('soporte@ejemplo.com');
     expect(useSuscripcion.getState().planes).toEqual([GRATIS, PRO]);
     expect(useSuscripcion.getState().suscripcion?.usage.changesThisMonth).toBe(3);
   });

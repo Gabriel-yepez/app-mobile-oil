@@ -14,7 +14,19 @@ export type ApiPlan = {
   maxVehicles: number | null;
   /** Por mes calendario, según la fecha de cada cambio. */
   maxChangesPerMonth: number | null;
+  /** Meses de historial visibles; null es todo. Lo anterior se oculta, no
+   *  se borra: pasando a Pro reaparece. */
+  historyMonths: number | null;
+  exportPdf: boolean;
+  prioritySupport: boolean;
   features: string[];
+};
+
+export type ApiSupport = {
+  /** null si el servidor no tiene soporte configurado: se esconde el botón. */
+  email: string | null;
+  /** El plan que rige incluye soporte prioritario. */
+  priority: boolean;
 };
 
 export type ApiSubscription = {
@@ -40,6 +52,10 @@ class SubscriptionsController extends ApiClient {
 
   mia(): Promise<ApiSubscription> {
     return this.get<ApiSubscription>('/me/subscription', { auth: true });
+  }
+
+  soporte(): Promise<ApiSupport> {
+    return this.get<ApiSupport>('/me/support', { auth: true });
   }
 }
 

@@ -2,6 +2,7 @@
 // de todo lo que dejó de ser un tab cuando la barra bajó a tres destinos.
 import React from 'react';
 import { Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,7 +10,9 @@ import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
 import { Card, SectionHead } from '../components/primitives';
 import { Icon, IconName } from '../components/Icon';
 import { useStore } from '../store/useStore';
-import { usePlan } from '../store/suscripcion';
+import { usePlan, useSuscripcion } from '../store/suscripcion';
+import { toast } from '../store/toast';
+import { mailtoSoporte } from '../utils/soporte';
 import { useNotifPrefs } from '../store/notifPrefs';
 import { THEME_LABEL, useThemePref } from '../store/themePref';
 import { useAuth } from '../store/auth';
@@ -19,21 +22,12 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type Fila = { k: string; v?: string; icon: IconName; onPress: () => void };
 
-/** Página de soporte. Pegar acá la URL definitiva — es el único lugar que hay
- *  que tocar. Mientras esté vacía la fila no abre nada, en vez de mandar al
- *  navegador a una dirección en blanco. */
-const SOPORTE_URL = '';
-
-/** Abre la página en el navegador del teléfono. `openURL` rechaza si no hay
- *  quién maneje el enlace (o si la URL está mal escrita), y una promesa
- *  rechazada sin atrapar tumba la app en release. */
-function abrirSoporte() {
-  if (!SOPORTE_URL) {
-    console.log('Soporte: falta definir SOPORTE_URL en MenuScreen');
-    return;
-  }
-  Linking.openURL(SOPORTE_URL).catch(() => {
-    console.log('Soporte: no se pudo abrir', SOPORTE_URL);
+/** Abre el correo con el mensaje a soporte ya encabezado. `openURL` rechaza
+ *  si no hay app de correo, y una promesa rechazada sin atrapar tumba la app
+ *  en release: ahí se le da la dirección para que escriba por su cuenta. */
+function abrirSoporte(url: string, email: string) {
+  Linking.openURL(url).catch(() => {
+    toast.info(`No encontramos una app de correo. Escríbenos a ${email}.`);
   });
 }
 
@@ -46,6 +40,7 @@ export function MenuScreen() {
   const notifEnabled = useNotifPrefs((s) => s.prefs.enabled);
   const themePref = useThemePref((s) => s.pref);
   const plan = usePlan();
+  const soporte = useSuscripcion((s) => s.soporte);
 
   const cuenta: Fila[] = [
     { k: 'Mi perfil', v: profile.fullName, icon: 'user', onPress: () => navigation.navigate('Profile') },
@@ -83,9 +78,29 @@ export function MenuScreen() {
     },
   ];
 
-  const ayuda: Fila[] = [
-    { k: 'Soporte', icon: 'help', onPress: abrirSoporte },
-  ];
+  // La dirección la configura el backend (SUPPORT_EMAIL). Sin ella la fila no
+  // aparece: mejor eso que un botón que no lleva a ningún lado.
+  const email = soporte?.email;
+  const ayuda: Fila[] = email
+    ? [
+        {
+          k: 'Contactar soporte',
+          v: soporte.priority ? 'Prioritario' : undefined,
+          icon: 'help',
+          onPress: () =>
+            abrirSoporte(
+              mailtoSoporte({
+                email,
+                priority: soporte.priority,
+                cuenta: profile.email,
+                plan: plan?.name ?? '—',
+                version: Constants.expoConfig?.version ?? '—',
+              }),
+              email,
+            ),
+        },
+      ]
+    : [];
 
   const acerca: Fila[] = [
     {
@@ -152,10 +167,14 @@ export function MenuScreen() {
           {grupo(planFilas)}
         </Box>
 
-        <Box pt={18}>
-          <SectionHead>Ayuda</SectionHead>
-          {grupo(ayuda)}
-        </Box>
+        {/* Sin soporte configurado, ni la sección: un título sobre una
+            tarjeta vacía parece un error. */}
+        {ayuda.length > 0 ? (
+          <Box pt={18}>
+            <SectionHead>Ayuda</SectionHead>
+            {grupo(ayuda)}
+          </Box>
+        ) : null}
 
         <Box pt={18}>
           <SectionHead>Acerca de</SectionHead>

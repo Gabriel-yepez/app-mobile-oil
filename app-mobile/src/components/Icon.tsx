@@ -19,6 +19,7 @@ import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import Droplet from 'lucide-react-native/icons/droplet';
 import Eye from 'lucide-react-native/icons/eye';
+import FileDown from 'lucide-react-native/icons/file-down';
 import EyeOff from 'lucide-react-native/icons/eye-off';
 import Flag from 'lucide-react-native/icons/flag';
 import Gauge from 'lucide-react-native/icons/gauge';
@@ -77,7 +78,8 @@ export type IconName =
   | 'grip'
   | 'help'
   | 'alert'
-  | 'theme';
+  | 'theme'
+  | 'pdf';
 
 export const ICONS: Record<IconName, LucideIcon> = {
   car: Car,
@@ -114,6 +116,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   help: CircleQuestionMark,
   alert: TriangleAlert,
   theme: SunMoon,
+  pdf: FileDown,
 };
 
 // Grosores del handoff: la mayoría a 1.75, los iconos "de acción" un poco más.
