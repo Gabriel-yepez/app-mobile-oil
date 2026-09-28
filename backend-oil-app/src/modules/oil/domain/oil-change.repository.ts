@@ -27,10 +27,13 @@ export interface OilChangeRepository {
   /** Del más nuevo al más viejo. `limit` acota lo que baja de la base. */
   findByVehicle(vehicleId: string, limit?: number): Promise<OilChangeRecord[]>;
   findLatest(vehicleId: string): Promise<OilChangeRecord | null>;
+  /** `since`: solo los de esa fecha en adelante (la ventana del plan). */
   findPage(
     vehicleId: string,
-    opts: { cursor?: string; limit: number },
+    opts: { cursor?: string; limit: number; since?: Date },
   ): Promise<OilChangePage>;
+  /** Cuántos cambios tiene el vehículo con fecha anterior a `before`. */
+  countBefore(vehicleId: string, before: Date): Promise<number>;
   findById(id: string): Promise<OilChangeRecord | null>;
   /** `id` opcional: lo genera la app para poder registrar sin señal. */
   create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord>;

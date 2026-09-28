@@ -189,4 +189,63 @@ describe('Planes y topes (e2e)', () => {
       'OIL_CHANGE_LIMIT_REACHED',
     );
   });
+
+  it('el gratis ve 12 meses de historial; el pro, todo', async () => {
+    const { token, userId } = await registrar();
+    const v = await crearVehiculo(token, 0).expect(201);
+    const id = (v.body as { id: string }).id;
+
+    for (const [changedAt, km] of [
+      ['2024-01-10T00:00:00.000Z', 30000],
+      [new Date().toISOString(), 45000],
+    ] as [string, number][]) {
+      await http()
+        .post(`/api/v1/vehicles/${id}/oil-changes`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          changedAt,
+          km,
+          intervalKm: 5000,
+          intervalMonths: 6,
+          oilBrand: 'Pennzoil',
+          oilTag: 'Platinum',
+          oilViscosity: '5W-30',
+          oilSynthetic: true,
+        })
+        .expect(201);
+    }
+
+    const historial = async () =>
+      (
+        await http()
+          .get(`/api/v1/vehicles/${id}/oil-changes`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as { items: { km: number }[]; hiddenByPlan: number };
+
+    const gratis = await historial();
+    expect(gratis.items.map((c) => c.km)).toEqual([45000]);
+    expect(gratis.hiddenByPlan).toBe(1);
+
+    // Ocultar no es borrar: al pasar a Pro reaparece.
+    await prisma.subscription.create({ data: { userId, plan: 'PRO' } });
+    const pro = await historial();
+    expect(pro.items.map((c) => c.km)).toEqual([45000, 30000]);
+    expect(pro.hiddenByPlan).toBe(0);
+  });
+
+  it('/me/support dice si el plan tiene prioridad', async () => {
+    const { token, userId } = await registrar();
+    const soporte = async () =>
+      (
+        await http()
+          .get('/api/v1/me/support')
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as { email: string | null; priority: boolean };
+
+    expect((await soporte()).priority).toBe(false);
+    await prisma.subscription.create({ data: { userId, plan: 'PRO' } });
+    expect((await soporte()).priority).toBe(true);
+  });
 });

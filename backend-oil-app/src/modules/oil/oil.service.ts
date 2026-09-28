@@ -5,7 +5,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Errors } from '../../common/errors';
 import { PushEventNotifier } from '../notifications/push-event-notifier.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { daysBetween } from './domain/dates';
+import { addMonths, daysBetween } from './domain/dates';
 import { computeOilStatus } from './domain/oil-status.calculator';
 import { conAlertaResuelta, type OilChangeView } from './domain/resolved-alert';
 import { KM_PER_DAY_MAX } from './domain/oil-status';
@@ -308,28 +308,50 @@ export class OilService {
     userId: string,
     vehicleId: string,
     opts: { cursor?: string; limit?: number } = {},
-  ): Promise<{ items: OilChangeView[]; nextCursor: string | null }> {
+    now: Date = new Date(),
+  ): Promise<{
+    items: OilChangeView[];
+    nextCursor: string | null;
+    hiddenByPlan: number;
+  }> {
     await this.getOwnedVehicle(userId, vehicleId);
     // Tope duro: sin esto, un `limit=100000` es una descarga de toda la tabla
     // disfrazada de consulta normal.
     const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
+
+    // La ventana del plan: el gratis ve los últimos N meses. Lo anterior se
+    // oculta de la lista, no se borra —pasando a Pro reaparece— y el medidor
+    // y el ritmo de uso lo siguen usando.
+    const { plan } = await this.plans.planDe(userId, now);
+    const since =
+      plan.historyMonths === null
+        ? undefined
+        : addMonths(now, -plan.historyMonths);
+
     const page = await this.changes.findPage(vehicleId, {
       cursor: opts.cursor,
       limit,
+      since,
     });
 
     // Cada cambio necesita el que lo precedió, que en una lista del más nuevo
     // al más viejo es el de al lado. El del último vive en la página
-    // siguiente: se pide solo si la hay, y es una fila.
-    const despues = page.nextCursor
-      ? await this.anteriorA(vehicleId, page.nextCursor)
-      : null;
+    // siguiente —o fuera de la ventana, oculto—: se pide sin ventana, porque
+    // ocultar un cambio no cambia qué alerta resolvió el que vino después.
+    const ultimo = page.items.at(-1);
+    const despues =
+      ultimo && (page.nextCursor || since)
+        ? await this.anteriorA(vehicleId, ultimo.id)
+        : null;
 
     return {
       items: page.items.map((c, i) =>
         conAlertaResuelta(c, page.items[i + 1] ?? despues),
       ),
       nextCursor: page.nextCursor,
+      hiddenByPlan: since
+        ? await this.changes.countBefore(vehicleId, since)
+        : 0,
     };
   }
 

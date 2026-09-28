@@ -21,7 +21,8 @@
     "db:up": "docker compose up -d",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "plan:set": "ts-node --transpile-only src/cli/plan-set.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

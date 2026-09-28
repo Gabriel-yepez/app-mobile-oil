@@ -58,10 +58,13 @@ export class PrismaOilChangeRepository implements OilChangeRepository {
    */
   async findPage(
     vehicleId: string,
-    opts: { cursor?: string; limit: number },
+    opts: { cursor?: string; limit: number; since?: Date },
   ): Promise<OilChangePage> {
     const rows = await this.prisma.oilChange.findMany({
-      where: { vehicleId },
+      where: {
+        vehicleId,
+        ...(opts.since ? { changedAt: { gte: opts.since } } : {}),
+      },
       orderBy: { changedAt: 'desc' },
       take: opts.limit + 1,
       ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
@@ -75,6 +78,12 @@ export class PrismaOilChangeRepository implements OilChangeRepository {
       items,
       nextCursor: hayMas ? (items.at(-1)?.id ?? null) : null,
     };
+  }
+
+  countBefore(vehicleId: string, before: Date): Promise<number> {
+    return this.prisma.oilChange.count({
+      where: { vehicleId, changedAt: { lt: before } },
+    });
   }
 
   async findById(id: string): Promise<OilChangeRecord | null> {

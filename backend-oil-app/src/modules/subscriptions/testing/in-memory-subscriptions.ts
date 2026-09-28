@@ -1,6 +1,6 @@
 // Dobles de prueba de los dos puertos del módulo.
 import type { PlanUsageRepository } from '../domain/plan-usage.repository';
-import type { SubscriptionRecord } from '../domain/plans';
+import { planEfectivo, type SubscriptionRecord } from '../domain/plans';
 import type { SubscriptionRepository } from '../domain/subscription.repository';
 
 export class InMemorySubscriptionRepository implements SubscriptionRepository {
@@ -27,8 +27,10 @@ export class InMemoryPlanUsageRepository implements PlanUsageRepository {
   }
 }
 
-/** Para los specs que no miran los planes: todo cabe. */
+/** Para los specs que no miran los planes: todo cabe y todo se ve. */
 export const SIN_TOPES = {
   asegurarCupoVehiculo: () => Promise.resolve(),
   asegurarCupoCambio: () => Promise.resolve(),
+  planDe: (_u: string, now = new Date()) =>
+    Promise.resolve(planEfectivo({ plan: 'PRO', expiresAt: null }, now)),
 } as unknown as import('../subscriptions.service').SubscriptionsService;

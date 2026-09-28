@@ -23,6 +23,20 @@ export class PlanResponseDto {
   })
   maxChangesPerMonth!: number | null;
 
+  @ApiProperty({
+    nullable: true,
+    example: 12,
+    description:
+      'Meses de historial visibles. `null` es todo. Lo anterior se oculta, no se borra.',
+  })
+  historyMonths!: number | null;
+
+  @ApiProperty({ description: 'Puede exportar el historial a PDF.' })
+  exportPdf!: boolean;
+
+  @ApiProperty({ description: 'Sus mensajes a soporte se atienden primero.' })
+  prioritySupport!: boolean;
+
   @ApiProperty({ type: [String] }) features!: string[];
 }
 
@@ -61,12 +75,31 @@ export class SubscriptionResponseDto {
   @ApiProperty({ type: UsageDto }) usage!: UsageDto;
 }
 
+export class SupportResponseDto {
+  @ApiProperty({
+    nullable: true,
+    example: 'soporte@ejemplo.com',
+    description:
+      'A dónde escribir. `null` si el servidor no tiene soporte configurado: la app esconde el botón.',
+  })
+  email!: string | null;
+
+  @ApiProperty({
+    description:
+      'Si el plan que rige incluye soporte prioritario. La app marca el asunto con [PRO].',
+  })
+  priority!: boolean;
+}
+
 export const toPlanResponse = (p: Plan): PlanResponseDto => ({
   id: p.id,
   name: p.name,
   priceUsd: p.priceUsd,
   maxVehicles: p.maxVehicles,
   maxChangesPerMonth: p.maxChangesPerMonth,
+  historyMonths: p.historyMonths,
+  exportPdf: p.exportPdf,
+  prioritySupport: p.prioritySupport,
   features: [...p.features],
 });
 

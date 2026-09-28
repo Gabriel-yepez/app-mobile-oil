@@ -21,6 +21,30 @@ describe('catálogo de planes', () => {
   it('lo que lista el plan gratis dice los mismos topes que aplica', () => {
     expect(PLANES.FREE.features).toContain('Hasta 5 vehículos');
     expect(PLANES.FREE.features).toContain('10 cambios de aceite por mes');
+    expect(PLANES.FREE.features).toContain('Historial de los últimos 12 meses');
+  });
+
+  it('el gratis ve 12 meses de historial, sin PDF ni soporte prioritario', () => {
+    expect(PLANES.FREE).toMatchObject({
+      historyMonths: 12,
+      exportPdf: false,
+      prioritySupport: false,
+    });
+  });
+
+  it('el pro ve todo el historial, exporta a PDF y tiene soporte prioritario', () => {
+    expect(PLANES.PRO).toMatchObject({
+      historyMonths: null,
+      exportPdf: true,
+      prioritySupport: true,
+    });
+    expect(PLANES.PRO.features).toEqual(
+      expect.arrayContaining([
+        'Historial completo, sin límite de tiempo',
+        'Exportar el historial a PDF',
+        'Soporte prioritario',
+      ]),
+    );
   });
 });
 

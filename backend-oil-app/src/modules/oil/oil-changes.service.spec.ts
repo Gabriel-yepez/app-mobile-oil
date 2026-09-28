@@ -1,4 +1,9 @@
-import { SIN_TOPES } from '../subscriptions/testing/in-memory-subscriptions';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import {
+  InMemoryPlanUsageRepository,
+  InMemorySubscriptionRepository,
+  SIN_TOPES,
+} from '../subscriptions/testing/in-memory-subscriptions';
 import { OilService } from './oil.service';
 import { OilCycleService } from './oil-cycle.service';
 import { InMemoryVehicleRepository } from './testing/in-memory-vehicle.repository';
@@ -369,5 +374,86 @@ describe('alertas resueltas en el historial', () => {
     const r = await service.updateOilChange('u1', items[0].id, { km: 41_000 });
     // 41.000 sobre el ciclo de 40.200: le quedaba casi todo.
     expect(r.resolvedAlert).toBeNull();
+  });
+});
+
+describe('historial según el plan', () => {
+  const AHORA = new Date('2026-09-26T15:00:00.000Z');
+  let service: OilService;
+  let subs: InMemorySubscriptionRepository;
+  let vehicleId: string;
+
+  beforeEach(async () => {
+    const vehicles = new InMemoryVehicleRepository();
+    const changes = new InMemoryOilChangeRepository();
+    subs = new InMemorySubscriptionRepository();
+    service = new OilService(
+      vehicles,
+      changes,
+      new InMemoryOdometerRepository(),
+      new OilCycleService(vehicles, changes),
+      { avisar: () => {} } as never,
+      new SubscriptionsService(subs, new InMemoryPlanUsageRepository()),
+    );
+    const v = await service.createVehicle('u1', {
+      kind: 'CAR',
+      brand: 'Toyota',
+      model: 'Corolla',
+      year: 2019,
+      plate: 'AB123CD',
+      color: '#111111',
+      kmPerDay: 30,
+    });
+    vehicleId = v.id;
+
+    // Dos de hace más de 12 meses y dos dentro de la ventana.
+    for (const [fecha, km] of [
+      ['2024-06-01T00:00:00Z', 30_000],
+      ['2025-03-01T00:00:00Z', 35_000],
+      ['2025-10-01T00:00:00Z', 40_000],
+      ['2026-05-01T00:00:00Z', 45_000],
+    ] as [string, number][]) {
+      await service.registerOilChange('u1', vehicleId, cambio(km, fecha));
+    }
+  });
+
+  it('el gratis ve solo los últimos 12 meses y sabe cuántos quedaron fuera', async () => {
+    const r = await service.listOilChanges('u1', vehicleId, {}, AHORA);
+    expect(r.items.map((c) => c.km)).toEqual([45_000, 40_000]);
+    expect(r.hiddenByPlan).toBe(2);
+  });
+
+  // Paginando dentro de la ventana, la última página no puede ofrecer otra
+  // que solo traería lo oculto.
+  it('la paginación del gratis termina en el borde de la ventana', async () => {
+    const p1 = await service.listOilChanges(
+      'u1',
+      vehicleId,
+      { limit: 1 },
+      AHORA,
+    );
+    const p2 = await service.listOilChanges(
+      'u1',
+      vehicleId,
+      { limit: 1, cursor: p1.nextCursor! },
+      AHORA,
+    );
+    expect(p2.items.map((c) => c.km)).toEqual([40_000]);
+    expect(p2.nextCursor).toBeNull();
+  });
+
+  // Ocultar no es borrar: la alerta que resolvió el primero visible se sigue
+  // calculando con su predecesor real, aunque ese ya no se muestre.
+  it('lo oculto sigue contando para calcular la alerta resuelta', async () => {
+    const r = await service.listOilChanges('u1', vehicleId, {}, AHORA);
+    // 40.000 sobre el ciclo de 35.000 (7 meses): vencido por tiempo.
+    expect(r.items[1].resolvedAlert).toBe('danger');
+  });
+
+  it('el pro ve todo, sin nada oculto', async () => {
+    subs.filas.set('u1', { plan: 'PRO', expiresAt: null });
+    const r = await service.listOilChanges('u1', vehicleId, {}, AHORA);
+    expect(r.items).toHaveLength(4);
+    expect(r.hiddenByPlan).toBe(0);
   });
 });

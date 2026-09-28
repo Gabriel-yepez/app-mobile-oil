@@ -16,12 +16,24 @@ export type Plan = {
   maxVehicles: number | null;
   /** Cambios de aceite por mes calendario, según la fecha del cambio. */
   maxChangesPerMonth: number | null;
+  /**
+   * Cuántos meses hacia atrás se ven en el historial. `null` es todo. Lo más
+   * viejo se OCULTA, no se borra: si el usuario pasa a Pro, reaparece. Y solo
+   * afecta lo que se lista: el medidor y el ritmo de uso siguen calculándose
+   * con el historial completo.
+   */
+  historyMonths: number | null;
+  /** Exportar el historial a PDF (lo genera la app). */
+  exportPdf: boolean;
+  /** Los mensajes a soporte llegan marcados para atenderse primero. */
+  prioritySupport: boolean;
   /** Lo que se lista en la tarjeta del plan. */
   features: string[];
 };
 
 const MAX_VEHICULOS_GRATIS = 5;
 const MAX_CAMBIOS_GRATIS = 10;
+const MESES_HISTORIAL_GRATIS = 12;
 
 export const PLANES: Record<PlanId, Plan> = {
   FREE: {
@@ -30,11 +42,15 @@ export const PLANES: Record<PlanId, Plan> = {
     priceUsd: 0,
     maxVehicles: MAX_VEHICULOS_GRATIS,
     maxChangesPerMonth: MAX_CAMBIOS_GRATIS,
+    historyMonths: MESES_HISTORIAL_GRATIS,
+    exportPdf: false,
+    prioritySupport: false,
     features: [
       // Salen de las mismas constantes que se aplican: si cambia un tope, la
       // tarjeta no puede seguir prometiendo el viejo.
       `Hasta ${MAX_VEHICULOS_GRATIS} vehículos`,
       `${MAX_CAMBIOS_GRATIS} cambios de aceite por mes`,
+      `Historial de los últimos ${MESES_HISTORIAL_GRATIS} meses`,
       'Recordatorios de próximo cambio',
     ],
   },
@@ -44,9 +60,15 @@ export const PLANES: Record<PlanId, Plan> = {
     priceUsd: 4,
     maxVehicles: null,
     maxChangesPerMonth: null,
+    historyMonths: null,
+    exportPdf: true,
+    prioritySupport: true,
     features: [
       'Vehículos ilimitados',
       'Cambios de aceite ilimitados',
+      'Historial completo, sin límite de tiempo',
+      'Exportar el historial a PDF',
+      'Soporte prioritario',
       'Recordatorios de próximo cambio',
     ],
   },

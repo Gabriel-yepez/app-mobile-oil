@@ -54,4 +54,11 @@ export class OilChangePageDto {
       'Se pasa como `cursor` para pedir la página siguiente. `null` significa que no hay más: sin esto la app pagina para siempre.',
   })
   nextCursor!: string | null;
+
+  @ApiProperty({
+    example: 0,
+    description:
+      'Cambios del vehículo que quedan fuera de la ventana de historial del plan (el gratis ve 12 meses). Están ocultos, no borrados: pasando a Pro reaparecen.',
+  })
+  hiddenByPlan!: number;
 }

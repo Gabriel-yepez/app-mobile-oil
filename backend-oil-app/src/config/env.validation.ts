@@ -4,6 +4,7 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsEmail,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -155,6 +156,14 @@ export class EnvVars {
     { message: 'BCV_RATE_URL debe ser una URL http(s) completa' },
   )
   BCV_RATE_URL: string = 'https://ve.dolarapi.com/v1/dolares/oficial';
+
+  // ── Soporte ────────────────────────────────────────────────────────────
+  // A dónde escriben los usuarios desde "Contactar soporte". Opcional: sin
+  // ella la app esconde el botón, que es mejor que un correo que no llega a
+  // nadie. Los del plan Pro llegan con [PRO] en el asunto.
+  @IsOptional()
+  @IsEmail({}, { message: 'SUPPORT_EMAIL debe ser un correo válido' })
+  SUPPORT_EMAIL?: string;
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvVars {

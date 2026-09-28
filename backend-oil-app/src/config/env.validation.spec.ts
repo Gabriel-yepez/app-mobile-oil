@@ -121,4 +121,25 @@ describe('validateEnv', () => {
       ).toThrow(/BCV_RATE_URL/);
     });
   });
+
+  describe('soporte', () => {
+    // Sin dirección configurada la app esconde el botón: mejor eso que un
+    // correo que no llega a nadie.
+    it('SUPPORT_EMAIL es opcional', () => {
+      expect(validateEnv(valid).SUPPORT_EMAIL).toBeUndefined();
+    });
+
+    it('SUPPORT_EMAIL toma la del entorno', () => {
+      expect(
+        validateEnv({ ...valid, SUPPORT_EMAIL: 'soporte@ejemplo.com' })
+          .SUPPORT_EMAIL,
+      ).toBe('soporte@ejemplo.com');
+    });
+
+    it('falla si SUPPORT_EMAIL no es un correo', () => {
+      expect(() => validateEnv({ ...valid, SUPPORT_EMAIL: 'soporte' })).toThrow(
+        /SUPPORT_EMAIL/,
+      );
+    });
+  });
 });

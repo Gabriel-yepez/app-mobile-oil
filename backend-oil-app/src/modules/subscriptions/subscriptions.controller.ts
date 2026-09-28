@@ -1,6 +1,7 @@
 // Solo HTTP. Los planes y la suscripción del usuario; cambiar de plan espera
 // a los pagos, así que acá no hay ninguna ruta que escriba.
 import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -14,6 +15,7 @@ import { LISTA_PLANES } from './domain/plans';
 import {
   PlanResponseDto,
   SubscriptionResponseDto,
+  SupportResponseDto,
   toPlanResponse,
   toSubscriptionResponse,
 } from './dto/subscription-response.dto';
@@ -24,7 +26,10 @@ import { SubscriptionsService } from './subscriptions.service';
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class SubscriptionsController {
-  constructor(private readonly subs: SubscriptionsService) {}
+  constructor(
+    private readonly subs: SubscriptionsService,
+    private readonly config: ConfigService,
+  ) {}
 
   @ApiOperation({
     summary: 'Catálogo de planes',
@@ -46,5 +51,20 @@ export class SubscriptionsController {
   @Get('me/subscription')
   async mine(@CurrentUser() user: User): Promise<SubscriptionResponseDto> {
     return toSubscriptionResponse(await this.subs.estado(user.id));
+  }
+
+  @ApiOperation({
+    summary: 'Cómo contactar a soporte',
+    description:
+      'La dirección sale de SUPPORT_EMAIL. `priority` dice si el plan que rige incluye soporte prioritario: la app lo marca en el asunto para que se atienda primero.',
+  })
+  @ApiOkResponse({ type: SupportResponseDto })
+  @Get('me/support')
+  async support(@CurrentUser() user: User): Promise<SupportResponseDto> {
+    const { plan } = await this.subs.planDe(user.id);
+    return {
+      email: this.config.get<string>('SUPPORT_EMAIL') ?? null,
+      priority: plan.prioritySupport,
+    };
   }
 }

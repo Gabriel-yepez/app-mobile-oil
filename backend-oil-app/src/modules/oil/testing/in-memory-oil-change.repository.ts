@@ -30,9 +30,12 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
 
   findPage(
     vehicleId: string,
-    opts: { cursor?: string; limit: number },
+    opts: { cursor?: string; limit: number; since?: Date },
   ): Promise<OilChangePage> {
-    const todos = this.ordenados(vehicleId);
+    const since = opts.since;
+    const todos = this.ordenados(vehicleId).filter(
+      (r) => !since || r.changedAt >= since,
+    );
     // El cursor es EXCLUSIVO, igual que en Prisma con skip: 1.
     const desde = opts.cursor
       ? todos.findIndex((r) => r.id === opts.cursor) + 1
@@ -45,6 +48,12 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
       items,
       nextCursor: hayMas ? (items.at(-1)?.id ?? null) : null,
     });
+  }
+
+  countBefore(vehicleId: string, before: Date): Promise<number> {
+    return Promise.resolve(
+      this.ordenados(vehicleId).filter((r) => r.changedAt < before).length,
+    );
   }
 
   findById(id: string): Promise<OilChangeRecord | null> {
