@@ -8,7 +8,7 @@
 //
 //   01 · Tus datos  — nombre, cédula, teléfono
 //   02 · Dónde estás — estado, ciudad, moneda
-//   03 · Acceso      — correo, contraseña, términos
+//   03 · Acceso      — correo, contraseña y su confirmación, términos
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +30,7 @@ import { isEmail } from '../utils/validate';
 import { contrasenaValida } from '../utils/password';
 import { textoDeError } from '../utils/errores';
 import { PasswordRules } from '../components/PasswordRules';
+import { CedulaInput, TipoCedula } from '../components/CedulaInput';
 import { RootScreenProps } from '../navigation/types';
 import type { ApiUser } from '../api/controllers/auth.controller';
 
@@ -68,6 +69,7 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   const [paso, setPaso] = useState(1);
 
   const [fullName, setFullName] = useState('');
+  const [tipoCedula, setTipoCedula] = useState<TipoCedula>('V');
   const [cedula, setCedula] = useState('');
   const [phone, setPhone] = useState('');
   const [state, setState] = useState('');
@@ -75,6 +77,8 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   const [currency, setCurrency] = useState<ApiUser['currency']>('BOTH');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Solo vive en la app: el backend recibe y guarda una única contraseña.
+  const [confirm, setConfirm] = useState('');
   const [showPass, setShowPass] = useState(false);
   // Arranca SIN marcar: darlo por aceptado da por leído algo que el usuario
   // no ha leído.
@@ -95,7 +99,9 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   const faltaEnPaso = (n: number): string | null => {
     if (n === 1) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo.';
-      if (cedula.replace(/\D/g, '').length < 6) return 'Escribe tu cédula.';
+      const digitos = cedula.replace(/\D/g, '').length;
+      if (digitos < 6) return 'Escribe tu cédula.';
+      if (digitos > 9) return 'La cédula tiene demasiados dígitos.';
       if (phone.trim().length < 7) return 'Escribe tu teléfono.';
     }
     if (n === 2) {
@@ -106,6 +112,7 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
       if (!isEmail(email)) return 'Escribe un correo válido.';
       // La leyenda ya marca qué falta; acá basta con no dejar pasar.
       if (!contrasenaValida(password)) return 'La contraseña no cumple los requisitos.';
+      if (password !== confirm) return 'Las contraseñas no coinciden.';
       if (!accepted) return 'Debes aceptar los términos para continuar.';
     }
     return null;
@@ -131,11 +138,12 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
     setError(null);
     setEnviando(true);
     try {
-      // El "V-" es el prefijo visual del campo; se envía junto porque el
-      // backend normaliza igual "V-25.481.073" que "25481073".
+      // La letra se elige aparte y se envía junto al número: el backend
+      // normaliza "J-12.345.678" a "J12345678". La confirmación de la
+      // contraseña no viaja; ya cumplió su función acá.
       await signUp({
         fullName,
-        cedula: `V-${cedula}`,
+        cedula: `${tipoCedula}-${cedula}`,
         email,
         phone,
         state,
@@ -198,14 +206,12 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
                     autoComplete="name"
                   />
                 </Field>
-                <Field label="Cédula">
-                  <Input
-                    value={cedula}
-                    onChangeText={setCedula}
-                    placeholder="25.481.073"
-                    mono
-                    prefix="V-"
-                    keyboardType="number-pad"
+                <Field label="Cédula" hint="Toca la letra para cambiar el tipo: V, E, J o G.">
+                  <CedulaInput
+                    tipo={tipoCedula}
+                    onTipoChange={setTipoCedula}
+                    numero={cedula}
+                    onNumeroChange={setCedula}
                   />
                 </Field>
                 <Field label="Teléfono">
@@ -279,6 +285,21 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
                   />
                 </Field>
                 <PasswordRules password={password} />
+
+                <Field
+                  label="Confirma la contraseña"
+                  // Se avisa solo cuando ya escribió algo: un error rojo sobre un
+                  // campo que ni ha tocado es regañar antes de tiempo.
+                  error={confirm.length > 0 && confirm !== password ? 'Las contraseñas no coinciden' : undefined}
+                >
+                  <Input
+                    value={confirm}
+                    onChangeText={setConfirm}
+                    secureTextEntry={!showPass}
+                    autoComplete="new-password"
+                    invalid={confirm.length > 0 && confirm !== password}
+                  />
+                </Field>
 
                 {/* La casilla va sin `label`: el texto lleva enlaces propios y
                     debe poder tocarse sin marcar los términos. */}

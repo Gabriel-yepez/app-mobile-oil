@@ -124,12 +124,14 @@ export function Field({ label, hint, error, suffix, children }: FieldProps) {
 type InputProps = {
   mono?: boolean;
   prefix?: string;
+  /** Como `right`, pero delante del texto: un selector que va pegado al valor. */
+  left?: ReactNode;
   right?: ReactNode;
   /** Pinta el borde en rojo. El mensaje lo pone el `error` del Field. */
   invalid?: boolean;
 } & TextInputProps;
 
-export function Input({ mono = false, prefix, right, invalid = false, style, ...rest }: InputProps) {
+export function Input({ mono = false, prefix, left, right, invalid = false, style, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
   const c = useAppColors();
   const esquema = useColorScheme();
@@ -145,6 +147,7 @@ export function Input({ mono = false, prefix, right, invalid = false, style, ...
       bc={invalid ? '$danger' : focused ? '$accent' : '$line'}
       transition="quick"
     >
+      {left}
       {prefix ? (
         <Txt font={mono ? 'monoMed' : 'sans'} fos={14} tone="muted">
           {prefix}
