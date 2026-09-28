@@ -8,6 +8,7 @@ import { ApiError } from '../../api/base';
 import type { vehiclesController } from '../../api/controllers/vehicles.controller';
 import type { oilStatusController } from '../../api/controllers/oil-status.controller';
 import type { brandsController } from '../../api/controllers/brands.controller';
+import type { shopsController } from '../../api/controllers/shops.controller';
 import { cabeza, esperaMs, marcarIntento, sacar } from './queue';
 import type { QueueEntry, QueueOp } from './queue';
 
@@ -53,7 +54,8 @@ export type RunnerApi = Partial<
     | 'borrarCambio'
   > &
     Pick<typeof oilStatusController, 'reportOdometer'> &
-    Pick<typeof brandsController, 'crearMarca'>
+    Pick<typeof brandsController, 'crearMarca'> &
+    Pick<typeof shopsController, 'crearTaller'>
 >;
 
 /**
@@ -112,6 +114,9 @@ async function enviar(op: QueueOp, api: RunnerDeps['api']): Promise<void> {
         op.kind,
         op.payload.name,
       );
+      return;
+    case 'CREATE_SHOP':
+      await requerido(api.crearTaller, 'crearTaller')(op.id, op.payload.name);
       return;
   }
 }

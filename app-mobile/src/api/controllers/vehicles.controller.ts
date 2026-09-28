@@ -40,6 +40,8 @@ export type ApiOilChange = {
   oilTag: string;
   oilViscosity: string;
   oilSynthetic: boolean;
+  /** null en los cambios anteriores a que existiera el campo. */
+  oilType: string | null;
   shop: string | null;
   costUsd: number | null;
   /** La alerta que este cambio atendió: el estado del aceite justo antes de

@@ -1,5 +1,5 @@
-// Data mock — espejo de MY_FLEET / VE_OILS / SHOPS_VE del handoff. Las marcas
-// ya no viven acá: son un catálogo del backend (ver src/store/useBrands.ts).
+// Data mock — espejo de MY_FLEET del handoff. Las marcas y los talleres ya no
+// viven acá: son catálogos del backend (ver src/store/useBrands.ts y useShops.ts).
 // Más adelante esto se reemplaza por el backend.
 
 export type VehicleStatus = 'ok' | 'warn' | 'danger';
@@ -43,25 +43,8 @@ export type Profile = {
 // enriquecen. Ver `src/store/useBrands.ts`, que además conserva estas 18 como
 // valor inicial para que una instalación nueva sin señal no abra vacía.
 
-export const VE_OILS = [
-  { brand: 'Pennzoil', tag: 'Platinum', viscosity: '5W-30', synthetic: true },
-  { brand: 'Valvoline', tag: 'MaxLife', viscosity: '10W-40', synthetic: true },
-  { brand: 'Mobil 1', tag: 'ESP', viscosity: '5W-30', synthetic: true },
-  { brand: 'Castrol', tag: 'GTX', viscosity: '20W-50', synthetic: false },
-  { brand: 'Shell Helix', tag: 'HX7', viscosity: '10W-40', synthetic: true },
-  { brand: 'PDV', tag: 'Súper', viscosity: '20W-50', synthetic: false },
-];
-
+// Solo atajos para llenar el campo de viscosidad, que es texto libre.
 export const VISCOSITIES = ['5W-30', '10W-40', '20W-50', '0W-20'];
-
-export const SHOPS_VE = [
-  'Lubricantes El Marqués',
-  'Servicar Las Mercedes',
-  'Tecnicentro Cordero',
-  'Auto Express La Castellana',
-  'Lubricantes Sambil',
-  'Mecánica La Trinidad',
-];
 
 export const MOCK_FLEET: Vehicle[] = [
   {

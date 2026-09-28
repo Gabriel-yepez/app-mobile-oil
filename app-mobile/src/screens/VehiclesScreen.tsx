@@ -4,9 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors } from '../ui';
-import { Card, FilterChip, FilterChips, IconBtn, StatusPill, VehicleThumb } from '../components/primitives';
+import { FilterChip, FilterChips, IconBtn } from '../components/primitives';
 import { Icon } from '../components/Icon';
-import { fmtKm } from '../utils/format';
+import { VehicleCard } from '../components/VehicleCard';
 import { useVehicles } from '../store/useVehicles';
 import { RootStackParamList } from '../navigation/types';
 
@@ -88,67 +88,13 @@ export function VehiclesScreen() {
         ) : null}
 
         {filtered.map((v) => {
-          // El estado lo calcula el backend y viaja con la lista: una sola
-          // definición para toda la app, en vez de una por pantalla.
-          const pct = v.gauge?.pct ?? 0;
-          const status = v.gauge?.status ?? 'ok';
           const rechazo = rechazos[v.id];
-          const accent = status === 'ok' ? c.ok : status === 'warn' ? c.warn : c.danger;
           return (
             <Touchable key={v.id} fade sink transition="quick" onPress={() => navigation.navigate('VehicleDetail', { vehicleId: v.id })}>
-              <Card>
-                <Row gap={14}>
-                  <VehicleThumb kind={v.kind} color={v.color} size={56} />
-                  <Col f={1}>
-                    <Row mb={4} gap="$sm">
-                      <Box br={4} bw={1} bc="$line" px={6} py={2}>
-                        <Txt font="monoMed" fos={10} tone="muted" ls={0.5}>
-                          {v.kind === 'car' ? 'CARRO' : 'MOTO'}
-                        </Txt>
-                      </Box>
-                      {v.gauge ? <StatusPill status={status} /> : null}
-                    </Row>
-                    <Txt font="bold" fos={16} ls={-0.2}>
-                      {v.brand} {v.model}
-                    </Txt>
-                    <Txt font="monoMed" fos={12} tone="muted" mt={1}>
-                      {v.plate} · {v.year}
-                      {v.odometer
-                        ? ` · ${v.odometer.source === 'estimated' ? '~' : ''}${fmtKm(v.odometer.km)} km`
-                        : ''}
-                    </Txt>
-                    {rechazo ? (
-                      <Txt fos={11} tone="danger" mt={2}>
-                        No se pudo guardar: {mensajeDeRechazo(rechazo)}
-                      </Txt>
-                    ) : null}
-                  </Col>
-                  <Icon name="chevR" color={c.muted2} size={22} />
-                </Row>
-
-                {/* mini progress — solo si el vehículo ya tiene un ciclo */}
-                {v.gauge ? (
-                  <Row mt={14} gap={10}>
-                    <Box h={6} f={1} ov="hidden" br={3} bg="$bg2">
-                      <Box
-                        h="100%"
-                        br={3}
-                        bg={accent}
-                        width={`${Math.max(4, Math.min(100, pct))}%`}
-                        transition="gauge"
-                        enterStyle={{ width: '0%' }}
-                      />
-                    </Box>
-                    <Txt font="mono" fos={12} minWidth={88} ta="right">
-                      {fmtKm(v.gauge.kmLeft)} <Txt fos={12} tone="muted">km</Txt>
-                    </Txt>
-                  </Row>
-                ) : (
-                  <Txt fos={12} tone="muted" mt={12}>
-                    Registra el primer cambio para activar el medidor
-                  </Txt>
-                )}
-              </Card>
+              <VehicleCard
+                vehiculo={v}
+                aviso={rechazo ? `No se pudo guardar: ${mensajeDeRechazo(rechazo)}` : undefined}
+              />
             </Touchable>
           );
         })}

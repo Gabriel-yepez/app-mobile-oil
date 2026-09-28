@@ -65,9 +65,13 @@ export class CreateOilChangeDto {
   @Length(1, 40)
   oilBrand!: string;
 
-  @ApiProperty({ example: 'Platinum' })
+  @ApiProperty({
+    example: 'Platinum',
+    description:
+      'Puede ir vacío: el nombre del aceite lo escribe el usuario y a veces es una sola palabra ("Castrol").',
+  })
   @IsString()
-  @Length(1, 40)
+  @Length(0, 40)
   oilTag!: string;
 
   @ApiProperty({ example: '5W-30' })
@@ -78,6 +82,16 @@ export class CreateOilChangeDto {
   @ApiProperty({ example: true })
   @IsBoolean()
   oilSynthetic!: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Sintético',
+    description:
+      'El tipo tal como lo escribió el usuario. Texto libre: no hay catálogo de tipos.',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(1, 30)
+  oilType?: string;
 
   @ApiPropertyOptional({ example: 'Lubricentro El Rápido' })
   @IsOptional()

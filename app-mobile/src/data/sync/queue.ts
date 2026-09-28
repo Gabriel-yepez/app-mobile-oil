@@ -25,7 +25,9 @@ export type QueueOp =
       id: string;
       kind: VehicleKind;
       payload: { name: string };
-    };
+    }
+  // Igual que CREATE_BRAND: un taller no se edita ni se borra desde la app.
+  | { op: 'CREATE_SHOP'; id: string; payload: { name: string } };
 
 export type QueueEntry = {
   op: QueueOp;

@@ -430,6 +430,7 @@ export class OilService {
             tag: ultimo.oilTag,
             viscosity: ultimo.oilViscosity,
             synthetic: ultimo.oilSynthetic,
+            type: ultimo.oilType ?? null,
           }
         : null,
     };

@@ -131,6 +131,10 @@ model OilChange {
   oilTag       String
   oilViscosity String
   oilSynthetic Boolean
+  // Lo que el usuario escribió como tipo ("Sintético", "Semi", "Full
+  // synthetic"...). Texto libre: oilSynthetic se deriva de acá en la app.
+  // Null en los cambios anteriores a que existiera.
+  oilType      String?
 
   shop    String?
   costUsd Decimal? @db.Decimal(10, 2)
@@ -175,6 +179,22 @@ model Brand {
   /// marcas de carro Y de moto, y deben ser filas independientes.
   @@unique([kind, nameKey])
   @@index([kind, name])
+}
+
+/// Talleres y lubricentros: catálogo común que los usuarios enriquecen, igual
+/// que Brand. El cambio de aceite guarda el taller como texto (`OilChange.shop`),
+/// así que esta tabla solo alimenta el selector: borrar una fila no toca el
+/// historial de nadie.
+model Shop {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(60)
+  /// Nombre normalizado. Es lo que decide si dos textos son el mismo taller.
+  nameKey   String   @unique @db.VarChar(60)
+  /// null = semilla. Sin relación a User, por lo mismo que Brand.createdBy.
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([name])
 }
 
 enum DevicePlatform {

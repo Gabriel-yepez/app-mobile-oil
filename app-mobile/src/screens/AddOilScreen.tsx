@@ -1,13 +1,17 @@
 // Registrar cambio de aceite — también es el Paso 3/3 del flujo agregar vehículo
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Col, Row, Scroll, Touchable, Txt, useAppColors, useShadows } from '../ui';
 import { Btn, Card, Field, IconBtn, Input, Select } from '../components/primitives';
 import { StepHeader } from '../components/StepHeader';
 import { Icon } from '../components/Icon';
-import { SHOPS_VE, VE_OILS, VISCOSITIES } from '../data/mock';
-import { fmtFecha, fmtKm, parseFecha } from '../utils/format';
+import { VISCOSITIES } from '../data/mock';
+import { fmtKm } from '../utils/format';
+import { DateField } from '../components/DateField';
+import { useShops, useTalleres } from '../store/useShops';
+import { nombreValido as tallerValido, sugerirParecida } from '../data/talleres/nombre';
 import { useVehicles } from '../store/useVehicles';
 import { useOilStatus } from '../hooks/useOilStatus';
 import { quedaCupoCambio, useSuscripcion } from '../store/suscripcion';
@@ -17,6 +21,13 @@ import { RootScreenProps } from '../navigation/types';
 const INTERVALS = [3000, 5000, 7500, 10000];
 /** El otro eje del ciclo: "5.000 km o 6 meses, lo que ocurra primero". */
 const MESES = [3, 6, 9, 12];
+
+/** El tipo es texto libre, pero el backend guarda además si es sintético.
+ *  "Semi-sintético" y "semi synthetic" no cuentan: no son sintético pleno. */
+const esSintetico = (tipo: string) => {
+  const t = tipo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return /sint|synth/.test(t) && !/semi/.test(t);
+};
 
 export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
   const insets = useSafeAreaInsets();
@@ -36,9 +47,12 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
   // conocida, que es lo que el usuario va a ver hoy en el tablero.
   const baseKm = draft?.km ?? estado?.odometer?.km ?? 0;
 
-  const [oilName, setOilName] = useState('Pennzoil Platinum');
-  const [viscosity, setViscosity] = useState('5W-30');
-  const [oilType, setOilType] = useState('Sintético');
+  // Texto libre: cada quien usa lo que consigue y lo llama como lo conoce.
+  const [oilName, setOilName] = useState('');
+  const [viscosity, setViscosity] = useState('');
+  const [oilType, setOilType] = useState('');
+  const [errorAceite, setErrorAceite] = useState<string | null>(null);
+  const [errorViscosidad, setErrorViscosidad] = useState<string | null>(null);
   const [changeKm, setChangeKm] = useState(String(baseKm));
   const [intervalIdx, setIntervalIdx] = useState(1);
   // Los dos ejes los elige el usuario. Se precargan con lo que ÉL mismo usó
@@ -49,16 +63,85 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
     const i = previo ? MESES.indexOf(previo) : -1;
     return i === -1 ? 1 : i;
   });
-  const [date, setDate] = useState(fmtFecha(new Date().toISOString()));
-  const [errorFecha, setErrorFecha] = useState<string | null>(null);
+  // Medianoche UTC del día del teléfono: es lo que guarda y muestra el backend.
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+  });
   const [cost, setCost] = useState('32.00');
-  const [shop, setShop] = useState(SHOPS_VE[0]);
+  // Opcional: no todo el mundo recuerda o quiere decir dónde lo hizo.
+  const [shop, setShop] = useState('');
+  const talleres = useTalleres();
+  const agregarTaller = useShops((s) => s.agregar);
+
+  // Igual que pedirMarcaNueva en el paso 2: valida, y si se parece a uno que
+  // ya existe pregunta antes de sumar un casi-duplicado al catálogo de todos.
+  const pedirTallerNuevo = (texto: string) => {
+    if (!tallerValido(texto)) {
+      Alert.alert(
+        'Ese nombre no sirve',
+        'Usa letras, números, espacios y signos simples (. , - & # ( )). Máximo 60 caracteres.',
+      );
+      return;
+    }
+
+    const parecido = sugerirParecida(texto, talleres);
+    if (parecido) {
+      Alert.alert(`¿Quisiste decir ${parecido}?`, `Escribiste «${texto}».`, [
+        { text: `Usar ${parecido}`, onPress: () => setShop(parecido) },
+        {
+          text: `Crear «${texto}»`,
+          style: 'destructive',
+          onPress: () => {
+            agregarTaller(texto);
+            setShop(texto);
+          },
+        },
+      ]);
+      return;
+    }
+
+    agregarTaller(texto);
+    setShop(texto);
+  };
+
+  // En un vehículo que ya existe, lo más probable es que repita el aceite del
+  // cambio anterior. El estado llega después del primer render, así que se
+  // precarga cuando aparece y solo si el usuario no empezó a escribir.
+  const aceitePrevio = estado?.oil;
+  useEffect(() => {
+    if (!aceitePrevio) return;
+    setOilName((v) => v || `${aceitePrevio.brand} ${aceitePrevio.tag}`.trim());
+    setViscosity((v) => v || aceitePrevio.viscosity);
+    setOilType((v) => v || (aceitePrevio.type ?? ''));
+  }, [aceitePrevio]);
 
   const interval = INTERVALS[intervalIdx];
+
+  // La pista del intervalo se arrastra o se toca: el valor salta al paso más
+  // cercano a la posición del dedo. El arrastre solo se activa en horizontal,
+  // así un dedo que baja por la pantalla sigue haciendo scroll.
+  const [anchoPista, setAnchoPista] = useState(0);
+  const gestoPista = useMemo(() => {
+    const irA = (x: number) => {
+      if (anchoPista <= 0) return;
+      const pct = Math.min(1, Math.max(0, x / anchoPista));
+      setIntervalIdx(Math.round(pct * (INTERVALS.length - 1)));
+    };
+    const arrastre = Gesture.Pan()
+      .runOnJS(true)
+      .activeOffsetX([-6, 6])
+      .failOffsetY([-12, 12])
+      .onStart((e) => irA(e.x))
+      .onUpdate((e) => irA(e.x));
+    const toque = Gesture.Tap()
+      .runOnJS(true)
+      .onEnd((e) => irA(e.x));
+    return Gesture.Race(arrastre, toque);
+  }, [anchoPista]);
   const meses = MESES[mesesIdx];
   const nextKm = useMemo(() => (parseInt(changeKm, 10) || 0) + interval, [changeKm, interval]);
 
-  const oilOptions = VE_OILS.map((o) => `${o.brand} ${o.tag}`);
   const subtitle = draft
     ? `${draft.brand} ${draft.model} · ${draft.plate}`
     : vehicle
@@ -66,11 +149,13 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
       : '';
 
   const save = () => {
-    const changedAt = parseFecha(date);
-    if (!changedAt) {
-      setErrorFecha('Escríbela como "08 feb 2026".');
-      return;
-    }
+    const nombre = oilName.trim().replace(/\s+/g, ' ');
+    const visc = viscosity.trim();
+    const tipo = oilType.trim();
+    const changedAt = date;
+    if (!nombre) setErrorAceite('Escribe el aceite que usa.');
+    if (!visc) setErrorViscosidad('Escribe la viscosidad.');
+    if (!nombre || !visc) return;
 
     // Antes de encolar: sin esto, el cambio se vería guardado y el servidor
     // lo rechazaría al sincronizar. Solo se conoce el uso del mes en curso;
@@ -88,7 +173,9 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
     }
 
     const km = parseInt(changeKm, 10) || 0;
-    const [brand, ...tagParts] = oilName.split(' ');
+    // El backend lo guarda en dos columnas; se parte en el primer espacio y
+    // el resto puede quedar vacío ("Castrol").
+    const [brand, ...tagParts] = nombre.split(' ');
     const costUsd = parseFloat(cost.replace(',', '.')) || 0;
 
     const cambio = {
@@ -96,11 +183,12 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
       km,
       intervalKm: interval,
       intervalMonths: meses,
-      oilBrand: brand,
-      oilTag: tagParts.join(' '),
-      oilViscosity: viscosity,
-      oilSynthetic: oilType === 'Sintético',
-      shop,
+      oilBrand: brand.slice(0, 40),
+      oilTag: tagParts.join(' ').slice(0, 40),
+      oilViscosity: visc,
+      oilSynthetic: esSintetico(tipo),
+      oilType: tipo || null,
+      shop: shop || null,
       costUsd,
     };
 
@@ -139,7 +227,7 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
         <Scroll bg="$bg3" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 140 }}>
           <Col px="$2xl" pb="$sm" pt="$xl">
             <Txt font="display" fos={26} lh={30} ls={-0.5}>
-              Registrar cambio de aceite
+              {draft ? 'Registre el aceite que usa en su vehículo' : 'Registrar cambio de aceite'}
             </Txt>
             {subtitle ? (
               <Txt fos={14} tone="muted" mt={6}>{subtitle}</Txt>
@@ -149,30 +237,61 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
           <Col gap="$md" px="$lg" pt="$lg">
             {/* Card 1 — Aceite */}
             <Card gap={14}>
-              <Field label="Tipo de aceite">
-                <Select value={oilName} options={oilOptions} onChange={setOilName} />
+              <Field label="Nombre del aceite" error={errorAceite ?? ''}>
+                <Input
+                  value={oilName}
+                  onChangeText={(t) => {
+                    setOilName(t);
+                    setErrorAceite(null);
+                  }}
+                  placeholder="Pennzoil Platinum"
+                  autoCapitalize="words"
+                  maxLength={60}
+                  invalid={!!errorAceite}
+                />
               </Field>
               <Row gap="$md" ai="flex-start">
                 <Box f={1}>
-                  <Field label="Viscosidad">
-                    <Select value={viscosity} options={VISCOSITIES} onChange={setViscosity} />
+                  <Field label="Viscosidad" error={errorViscosidad ?? ''}>
+                    <Input
+                      value={viscosity}
+                      onChangeText={(t) => {
+                        setViscosity(t.toUpperCase());
+                        setErrorViscosidad(null);
+                      }}
+                      placeholder="5W-30"
+                      mono
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      maxLength={20}
+                      invalid={!!errorViscosidad}
+                    />
                   </Field>
                 </Box>
                 <Box f={1}>
-                  <Field label="Tipo">
-                    <Select value={oilType} options={['Sintético', 'Semi-sintético', 'Mineral']} onChange={setOilType} />
+                  <Field label="Tipo" suffix="opcional">
+                    <Input
+                      value={oilType}
+                      onChangeText={setOilType}
+                      placeholder="Sintético"
+                      autoCapitalize="sentences"
+                      maxLength={30}
+                    />
                   </Field>
                 </Box>
               </Row>
 
-              {/* chips de viscosidad */}
+              {/* Atajos de viscosidad: llenan el campo, no lo limitan. */}
               <Row flexWrap="wrap" gap={6}>
                 {VISCOSITIES.map((v) => {
                   const isActive = v === viscosity;
                   return (
                     <Touchable
                       key={v}
-                      onPress={() => setViscosity(v)}
+                      onPress={() => {
+                        setViscosity(v);
+                        setErrorViscosidad(null);
+                      }}
                       fade
                       transition="quick"
                       h={30}
@@ -225,24 +344,33 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                   <Txt font="semi" fos={12} tone="muted">Intervalo</Txt>
                   <Txt font="mono" fos={13}>{fmtKm(interval)} km</Txt>
                 </Row>
-                <Box h={22} jc="center">
-                  <Box h={6} br={3} bg="$bg2">
-                    <Box h="100%" br={3} bg="$accent" width={`${sliderPct}%`} transition="quick" />
-                  </Box>
+                {/* 44 de alto para el dedo; el margen negativo lo deja ocupando
+                    los mismos 22 de antes en el diseño. */}
+                <GestureDetector gesture={gestoPista}>
                   <Box
-                    pos="absolute"
-                    ml={-11}
-                    h={22}
-                    w={22}
-                    br="$pill"
-                    bw={3}
-                    bc="$accent"
-                    bg="$surface"
-                    left={`${sliderPct}%`}
-                    transition="quick"
-                    style={sh.card}
-                  />
-                </Box>
+                    h={44}
+                    my={-11}
+                    jc="center"
+                    onLayout={(e) => setAnchoPista(e.nativeEvent.layout.width)}
+                  >
+                    <Box h={6} br={3} bg="$bg2">
+                      <Box h="100%" br={3} bg="$accent" width={`${sliderPct}%`} transition="quick" />
+                    </Box>
+                    <Box
+                      pos="absolute"
+                      ml={-11}
+                      h={22}
+                      w={22}
+                      br="$pill"
+                      bw={3}
+                      bc="$accent"
+                      bg="$surface"
+                      left={`${sliderPct}%`}
+                      transition="quick"
+                      style={sh.card}
+                    />
+                  </Box>
+                </GestureDetector>
                 <Row mt={6} jc="space-between">
                   {INTERVALS.map((v, i) => (
                     <Touchable key={v} onPress={() => setIntervalIdx(i)} hitSlop={10} fade>
@@ -294,16 +422,8 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
             <Card gap={14}>
               <Row gap="$md" ai="flex-start">
                 <Box f={1}>
-                  <Field label="Fecha" error={errorFecha ?? ''}>
-                    <Input
-                      value={date}
-                      onChangeText={(t) => {
-                        setDate(t);
-                        setErrorFecha(null);
-                      }}
-                      mono
-                      invalid={!!errorFecha}
-                    />
+                  <Field label="Fecha">
+                    <DateField value={date} onChange={setDate} titulo="Fecha del cambio" noFuturo />
                   </Field>
                 </Box>
                 <Box f={1}>
@@ -323,8 +443,16 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
                   </Field>
                 </Box>
               </Row>
-              <Field label="Lubricentro / Taller">
-                <Select value={shop} options={SHOPS_VE} onChange={setShop} />
+              <Field label="Lubricentro / Taller" suffix="opcional">
+                <Select
+                  value={shop}
+                  placeholder="Selecciona el taller"
+                  options={talleres}
+                  onChange={setShop}
+                  searchable
+                  onAddNew={pedirTallerNuevo}
+                  nuevo="un taller nuevo"
+                />
               </Field>
             </Card>
           </Col>
@@ -332,7 +460,7 @@ export function AddOilScreen({ navigation, route }: RootScreenProps<'AddOil'>) {
 
         <Box pos="absolute" b={0} l={0} r={0} bg="$bg" px="$xl" pt="$lg" pb={Math.max(insets.bottom, 24) + 12}>
           <Btn kind="primary" size="lg" icon={<Icon name="check" color="#fff" size={20} />} onPress={save}>
-            Guardar cambio
+            {draft ? 'Guardar vehículo' : 'Guardar cambio'}
           </Btn>
         </Box>
       </Box>

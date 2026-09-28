@@ -17,6 +17,7 @@ import { useStore } from './src/store/useStore';
 import { useSuscripcion } from './src/store/suscripcion';
 import { useVehicles } from './src/store/useVehicles';
 import { useBrands } from './src/store/useBrands';
+import { useShops } from './src/store/useShops';
 import { useColors } from './src/store/useColors';
 import {
   limpiarAvisosLocales,
@@ -91,6 +92,24 @@ export default function App() {
   useEffect(() => {
     void hidratarMarcas();
   }, [hidratarMarcas]);
+
+  // Los talleres siguen el mismo ciclo que las marcas: catálogo común que el
+  // usuario puede ampliar, con su cola.
+  const hidratarTalleres = useShops((s) => s.hidratar);
+  const refrescarTalleres = useShops((s) => s.refresh);
+  const sincronizarTalleres = useShops((s) => s.sincronizar);
+
+  useEffect(() => {
+    void hidratarTalleres();
+  }, [hidratarTalleres]);
+
+  useEffect(() => {
+    if (authStatus !== 'authed') return;
+    // Primero se drena y después se refresca, por lo mismo que las marcas.
+    void sincronizarTalleres()
+      .then(() => refrescarTalleres())
+      .catch(() => {});
+  }, [authStatus, refrescarTalleres, sincronizarTalleres]);
 
   // Los colores son solo lectura: hidratar y refrescar, sin cola que drenar.
   const hidratarColores = useColors((s) => s.hidratar);

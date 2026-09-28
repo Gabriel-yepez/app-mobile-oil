@@ -61,7 +61,11 @@ export class InMemoryOilChangeRepository implements OilChangeRepository {
   }
 
   create(data: NewOilChange & { id?: string }): Promise<OilChangeRecord> {
-    const row: OilChangeRecord = { ...data, id: data.id ?? `oc${++this.seq}` };
+    const row: OilChangeRecord = {
+      ...data,
+      oilType: data.oilType ?? null,
+      id: data.id ?? `oc${++this.seq}`,
+    };
     this.rows.set(row.id, row);
     return Promise.resolve(row);
   }

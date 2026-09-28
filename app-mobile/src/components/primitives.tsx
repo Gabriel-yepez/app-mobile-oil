@@ -4,8 +4,19 @@
 // y oscuro sin ramificar. La excepción es el prop `onDark`: marca los elementos
 // que viven sobre el hero navy, que es oscuro en AMBOS temas.
 // (Antes este prop se llamaba `dark`, lo que se confundía con el modo oscuro.)
-import React, { ReactNode, useState } from 'react';
-import { FlatList, Modal, ScrollView, StyleProp, TextInputProps, ViewStyle } from 'react-native';
+import React, { ReactNode, Ref, useRef, useState } from 'react';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleProp,
+  TextInput,
+  TextInputProps,
+  ViewStyle,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Box, Col, NativeInput, Row, Touchable, Txt, useAppColors, useColorScheme, useShadows } from '../ui';
@@ -129,6 +140,8 @@ type InputProps = {
   right?: ReactNode;
   /** Pinta el borde en rojo. El mensaje lo pone el `error` del Field. */
   invalid?: boolean;
+  /** React 19: llega como prop y viaja en `...rest` hasta el TextInput. */
+  ref?: Ref<TextInput>;
 } & TextInputProps;
 
 export function Input({ mono = false, prefix, left, right, invalid = false, style, ...rest }: InputProps) {
@@ -319,11 +332,15 @@ type SelectProps = {
   /** Campo de búsqueda arriba de la lista. Para catálogos que crecen. */
   searchable?: boolean;
   /**
-   * Habilita la fila "+ Agregar «X»" al final, cuando lo escrito no calza
-   * exacto con ninguna opción. `Select` NO sabe qué es lo que se agrega: la
+   * Habilita el botón "Agregar" fijo al pie de la hoja. Está siempre a la
+   * vista, no solo cuando la búsqueda sale vacía: quien no encuentra su marca
+   * no siempre busca antes. `Select` NO sabe qué es lo que se agrega: la
    * pantalla que lo usa decide qué hacer con el texto.
    */
   onAddNew?: (texto: string) => void;
+  /** Lo que se agrega, con su artículo: "una marca nueva", "un taller nuevo".
+   *  Frase entera y no solo el sustantivo, para no inventar el género. */
+  nuevo?: string;
 };
 
 /**
@@ -338,28 +355,62 @@ type SelectProps = {
 export function HojaModal({
   open,
   onClose,
+  titulo,
+  alta = false,
+  pie,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Encabezado con el título y una X para cerrar. */
+  titulo?: string;
+  /** 80% de la pantalla: para catálogos largos con buscador. Sin esto la
+   *  hoja mide lo que su contenido, hasta el 85%. */
+  alta?: boolean;
+  /** Fijo abajo, fuera del scroll: siempre a la vista. */
+  pie?: ReactNode;
   children: ReactNode;
 }) {
+  const c = useAppColors();
+  const insets = useSafeAreaInsets();
+
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Touchable f={1} jc="flex-end" bg="$scrim" onPress={onClose}>
-        <Touchable
-          onPress={() => {}}
-          maxHeight={420}
-          borderTopLeftRadius="$xl"
-          borderTopRightRadius="$xl"
-          bg="$surface"
-          py="$md"
-          transition="bouncy"
-          enterStyle={{ y: 40, opacity: 0 }}
-        >
-          {children}
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      {/* Con el teclado arriba la hoja se encoge en vez de quedar tapada: el
+          80% se mide sobre lo que el teclado deja libre. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Touchable f={1} jc="flex-end" bg="$scrim" onPress={onClose}>
+          <Touchable
+            onPress={() => {}}
+            {...(alta ? { h: '80%' } : { maxHeight: '85%' })}
+            borderTopLeftRadius="$xl"
+            borderTopRightRadius="$xl"
+            bg="$surface"
+            pt="$sm"
+            pb={pie ? 0 : Math.max(insets.bottom, 12)}
+            transition="bouncy"
+            enterStyle={{ y: 40, opacity: 0 }}
+          >
+            <Box als="center" h={4} w={36} br="$pill" bg="$line" mb="$sm" />
+            {titulo ? (
+              <Row jc="space-between" ai="center" pl="$2xl" pr="$lg" pb="$md">
+                <Txt f={1} font="display" fos={20} ls={-0.3} numberOfLines={1}>
+                  {titulo}
+                </Txt>
+                <IconBtn icon={<Icon name="close" color={c.ink} size={18} />} onPress={onClose} />
+              </Row>
+            ) : null}
+            <Box f={alta ? 1 : undefined} flexShrink={1}>
+              {children}
+            </Box>
+            {pie ? (
+              <Box bc="$line" borderTopWidth={1} px="$xl" pt="$md" pb={Math.max(insets.bottom, 16)}>
+                {pie}
+              </Box>
+            ) : null}
+          </Touchable>
         </Touchable>
-      </Touchable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -371,9 +422,11 @@ export function Select({
   onChange,
   searchable = false,
   onAddNew,
+  nuevo = 'una opción nueva',
 }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const buscador = useRef<TextInput>(null);
   const c = useAppColors();
 
   const escrito = busqueda.trim();
@@ -383,18 +436,45 @@ export function Select({
     ? options.filter((o) => o.toLocaleLowerCase('es').includes(enMinuscula))
     : options;
 
-  // Solo se ofrece agregar si lo escrito no es ya una opción. La comparación
-  // es laxa (sin mayúsculas ni espacios de más) para no ofrecer "Agregar
-  // «toyota»" cuando Toyota está tres filas más arriba.
-  const yaExiste = options.some(
+  // La comparación es laxa (sin mayúsculas ni espacios de más) para no
+  // ofrecer "Agregar «toyota»" cuando Toyota está tres filas más arriba.
+  const yaExiste = options.find(
     (o) => o.trim().toLocaleLowerCase('es') === enMinuscula,
   );
-  const puedeAgregar = Boolean(onAddNew) && escrito.length > 0 && !yaExiste;
 
   const cerrar = () => {
     setBusqueda('');
     setOpen(false);
   };
+
+  // El botón de agregar está siempre; lo que cambia es qué hace. Sin nada
+  // escrito lleva al buscador, que es donde se escribe el nombre nuevo.
+  const agregar = () => {
+    if (!escrito) {
+      buscador.current?.focus();
+      return;
+    }
+    onAddNew?.(escrito);
+    cerrar();
+  };
+
+  const pie = onAddNew ? (
+    yaExiste ? (
+      <Txt fos={13} tone="muted" ta="center" py={14}>
+        «{yaExiste}» ya está en la lista
+      </Txt>
+    ) : (
+      <Btn
+        kind={escrito ? 'accent' : 'soft'}
+        size="lg"
+        icon={<Icon name="plus" color={escrito ? '#fff' : c.accent} size={18} />}
+        textColor={escrito ? undefined : c.accent}
+        onPress={agregar}
+      >
+        {escrito ? `Agregar «${escrito}»` : `Agregar ${nuevo}`}
+      </Btn>
+    )
+  ) : undefined;
 
   return (
     <>
@@ -417,65 +497,76 @@ export function Select({
         <Icon name="chevD" color={c.muted} size={20} />
       </Touchable>
 
-      <HojaModal open={open} onClose={cerrar}>
-            {searchable ? (
-              <Box px="$2xl" pb="$sm">
-                <Input
-                  value={busqueda}
-                  onChangeText={setBusqueda}
-                  placeholder="Buscar"
-                  autoCapitalize="words"
-                />
-              </Box>
-            ) : null}
-
-            <FlatList
-              data={visibles}
-              keyExtractor={(o) => o}
-              keyboardShouldPersistTaps="handled"
-              ListFooterComponent={
-                puedeAgregar ? (
-                  <Touchable
-                    fd="row"
-                    ai="center"
-                    gap="$sm"
-                    px="$2xl"
-                    py={15}
-                    pressStyle={{ bg: '$bg2' }}
-                    onPress={() => {
-                      onAddNew?.(escrito);
-                      cerrar();
-                    }}
-                  >
-                    <Icon name="plus" color={c.accent} size={18} />
-                    <Txt f={1} fos={15} font="semi" tone="accent">
-                      Agregar «{escrito}»
-                    </Txt>
+      <HojaModal
+        open={open}
+        onClose={cerrar}
+        titulo={searchable ? placeholder : undefined}
+        alta={searchable}
+        pie={pie}
+      >
+        {searchable ? (
+          <Box px="$xl" pb="$md">
+            <Input
+              ref={buscador}
+              value={busqueda}
+              onChangeText={setBusqueda}
+              placeholder={onAddNew ? `Busca o escribe ${nuevo}` : 'Buscar'}
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="done"
+              left={<Icon name="search" color={c.muted2} size={18} />}
+              right={
+                busqueda ? (
+                  <Touchable onPress={() => setBusqueda('')} hitSlop={10} fade>
+                    <Icon name="close" color={c.muted2} size={16} />
                   </Touchable>
                 ) : null
               }
-              renderItem={({ item }) => {
-                const selected = item === value;
-                return (
-                  <Touchable
-                    fd="row"
-                    ai="center"
-                    px="$2xl"
-                    py={15}
-                    pressStyle={{ bg: '$bg2' }}
-                    onPress={() => {
-                      onChange?.(item);
-                      cerrar();
-                    }}
-                  >
-                    <Txt f={1} fos={15} font={selected ? 'bold' : 'sans'} tone={selected ? 'accent' : 'ink'}>
-                      {item}
-                    </Txt>
-                    {selected ? <Icon name="check" color={c.accent} size={18} /> : null}
-                  </Touchable>
-                );
-              }}
             />
+          </Box>
+        ) : null}
+
+        <FlatList
+          data={visibles}
+          keyExtractor={(o) => o}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8 }}
+          ListEmptyComponent={
+            escrito ? (
+              <Col ai="center" gap="$xs" py="$2xl" px="$xl">
+                <Txt font="semi" fos={15}>Sin resultados</Txt>
+                <Txt fos={13} tone="muted" ta="center">
+                  No hay nada con «{escrito}».
+                  {onAddNew ? ' Usa el botón de abajo para añadirlo.' : ''}
+                </Txt>
+              </Col>
+            ) : null
+          }
+          renderItem={({ item }) => {
+            const selected = item === value;
+            return (
+              <Touchable
+                fd="row"
+                ai="center"
+                px="$lg"
+                py={14}
+                br="$md"
+                bg={selected ? '$accentSoft' : 'transparent'}
+                pressStyle={{ bg: '$bg2' }}
+                onPress={() => {
+                  onChange?.(item);
+                  cerrar();
+                }}
+              >
+                <Txt f={1} fos={15} font={selected ? 'bold' : 'sans'} tone={selected ? 'accent' : 'ink'}>
+                  {item}
+                </Txt>
+                {selected ? <Icon name="check" color={c.accent} size={18} /> : null}
+              </Touchable>
+            );
+          }}
+        />
       </HojaModal>
     </>
   );

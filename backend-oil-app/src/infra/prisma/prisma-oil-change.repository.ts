@@ -25,6 +25,7 @@ export class PrismaOilChangeRepository implements OilChangeRepository {
       oilTag: row.oilTag,
       oilViscosity: row.oilViscosity,
       oilSynthetic: row.oilSynthetic,
+      oilType: row.oilType,
       shop: row.shop,
       costUsd: row.costUsd === null ? null : Number(row.costUsd),
     };

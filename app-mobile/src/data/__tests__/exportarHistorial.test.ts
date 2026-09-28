@@ -23,6 +23,7 @@ const cambio = (id: string, vehicleId: string, changedAt: string): ApiOilChange 
   oilTag: 'Platinum',
   oilViscosity: '5W-30',
   oilSynthetic: true,
+  oilType: 'Sintético',
   shop: null,
   costUsd: 20,
   resolvedAlert: null,

@@ -11,6 +11,20 @@ import { nombreValido, sugerirParecida } from '../data/marcas/nombre';
 import { ColorSelect } from '../components/ColorSelect';
 import { useColors } from '../store/useColors';
 import { RootScreenProps } from '../navigation/types';
+import { fmtKm } from '../utils/format';
+
+// Sin un ritmo la barra se congelaría entre cambio y cambio: el odómetro
+// solo existe sentado en el auto, así que se proyecta con este aproximado y
+// el backend lo reemplaza por el medido cuando el usuario reporta lecturas.
+// Casi nadie sabe el número exacto, por eso se ofrecen perfiles de uso.
+const PERFILES_USO = [
+  { label: 'Poco', kmMes: 500 },
+  { label: 'Normal', kmMes: 1200 },
+  { label: 'Bastante', kmMes: 2000 },
+  { label: 'Mucho', kmMes: 3000 },
+];
+// 1.200 km/mes: 40 km/día, el uso urbano típico en Venezuela.
+const KM_MES_INICIAL = 1200;
 
 export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'AddVehicleForm'>) {
   const insets = useSafeAreaInsets();
@@ -28,9 +42,10 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
   const [color, setColor] = useState(primerColor);
   const [plate, setPlate] = useState('');
   const [km, setKm] = useState('');
-  // Default de 1.200 km/mes: 40 km/día, el uso urbano típico en Venezuela.
-  const [kmMes, setKmMes] = useState('1200');
-
+  const [kmMes, setKmMes] = useState(String(KM_MES_INICIAL));
+  const kmMesNum = parseInt(kmMes, 10) || 0;
+  // El backend piensa en km/día y lo valida en [1, 500].
+  const kmPorDia = Math.min(500, Math.max(1, Math.round(((kmMesNum || KM_MES_INICIAL) / 30) * 100) / 100));
 
   const pedirMarcaNueva = (texto: string) => {
     if (!nombreValido(texto)) {
@@ -86,6 +101,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   onChange={setBrand}
                   searchable
                   onAddNew={pedirMarcaNueva}
+                  nuevo="una marca nueva"
                 />
               </Field>
               <Field label="Modelo">
@@ -99,7 +115,11 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                 </Box>
                 <Box f={1}>
                   <Field label="Color">
-                    <ColorSelect value={color} onChange={setColor} />
+                    <ColorSelect
+                      value={color}
+                      onChange={setColor}
+                      vehiculo={{ kind, brand, model, plate, year: parseInt(year, 10) || new Date().getFullYear() }}
+                    />
                   </Field>
                 </Box>
               </Row>
@@ -116,19 +136,76 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   right={<Txt font="monoMed" fos={12} tone="muted">km</Txt>}
                 />
               </Field>
-              {/* Sin esto la barra se congelaría entre cambio y cambio: el
-                  odómetro solo existe sentado en el auto, así que se proyecta
-                  con este ritmo y se corrige cuando el usuario lo reporta. */}
-              <Field label="¿Cuánto manejas normalmente?" suffix="km al mes">
-                <Input
-                  value={kmMes}
-                  onChangeText={setKmMes}
-                  placeholder="1200"
-                  mono
-                  keyboardType="number-pad"
-                  right={<Txt font="monoMed" fos={12} tone="muted">km/mes</Txt>}
-                />
-              </Field>
+            </Card>
+          </Box>
+
+          {/* El asesor: el mismo dato de siempre, pero pedido como consejo y
+              no como un campo más. Se nota que es aproximado y para qué sirve. */}
+          <Box px="$xl" pt="$md">
+            <Card gap={14} bc="$accent" bw={1.5}>
+              <Row gap="$md" ai="flex-start">
+                <Box h={40} w={40} br="$pill" ai="center" jc="center" bg="$accentSoft">
+                  <Icon name="spark" color={c.accent} size={20} />
+                </Box>
+                <Col f={1} gap={4}>
+                  <Txt font="bold" fos={11} tone="accent" ls={1.2} caps>
+                    Tu asesor
+                  </Txt>
+                  <Txt font="semi" fos={16} lh={21}>
+                    ¿Cuánto manejas al mes, más o menos?
+                  </Txt>
+                  <Txt fos={13} lh={18} tone="muted">
+                    Con eso calculo cuándo te toca el próximo cambio, aunque no me
+                    reportes el kilometraje. No tiene que ser exacto.
+                  </Txt>
+                </Col>
+              </Row>
+
+              <Row gap="$sm">
+                {PERFILES_USO.map((p) => {
+                  const activo = kmMesNum === p.kmMes;
+                  return (
+                    <Touchable
+                      key={p.label}
+                      f={1}
+                      onPress={() => setKmMes(String(p.kmMes))}
+                      fade
+                      ai="center"
+                      py={8}
+                      br="$md"
+                      bw={1}
+                      bc={activo ? '$accent' : '$line'}
+                      bg={activo ? '$accentSoft' : 'transparent'}
+                    >
+                      <Txt font="semi" fos={12} tone={activo ? 'accent' : 'ink'}>
+                        {p.label}
+                      </Txt>
+                      <Txt font="monoMed" fos={10} tone={activo ? 'accent' : 'muted2'}>
+                        {fmtKm(p.kmMes)}
+                      </Txt>
+                    </Touchable>
+                  );
+                })}
+              </Row>
+
+              <Input
+                value={kmMes}
+                onChangeText={setKmMes}
+                placeholder={String(KM_MES_INICIAL)}
+                mono
+                keyboardType="number-pad"
+                maxLength={5}
+                prefix="≈"
+                right={<Txt font="monoMed" fos={12} tone="muted">km/mes</Txt>}
+              />
+
+              <Row gap="$sm" ai="center" br="$md" bg="$bg2" px="$md" py="$sm">
+                <Icon name="gauge" color={c.muted} size={16} />
+                <Txt f={1} fos={12} lh={17} tone="muted">
+                  Unos <Txt font="monoMed" fos={12}>{fmtKm(Math.round(kmPorDia))}</Txt> km al día. Si luego
+                  me reportas el odómetro, ajusto el cálculo solo.
+                </Txt>
+              </Row>
             </Card>
           </Box>
         </Scroll>
@@ -148,13 +225,7 @@ export function AddVehicleFormScreen({ navigation, route }: RootScreenProps<'Add
                   plate: plate || '—',
                   color,
                   km: parseInt(km, 10) || 0,
-                  // Cuánto maneja, para que la barra baje sola entre cambios.
-                  // Se pregunta en km/mes, que es como la gente sabe cuánto
-                  // maneja; el backend piensa en km/día.
-                  kmPerDay: Math.min(
-                    500,
-                    Math.max(1, Math.round(((parseInt(kmMes, 10) || 1200) / 30) * 100) / 100),
-                  ),
+                  kmPerDay: kmPorDia,
                 },
               })
             }

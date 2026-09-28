@@ -29,6 +29,8 @@ export type NewOilChangeInput = {
   oilTag: string;
   oilViscosity: string;
   oilSynthetic: boolean;
+  /** El tipo tal como lo escribió el usuario. oilSynthetic se deriva de acá. */
+  oilType?: string | null;
   shop?: string | null;
   costUsd?: number | null;
 };

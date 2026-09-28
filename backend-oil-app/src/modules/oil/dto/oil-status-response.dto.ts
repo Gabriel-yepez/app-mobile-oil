@@ -63,6 +63,7 @@ export class OilDto {
   @ApiProperty() tag!: string;
   @ApiProperty() viscosity!: string;
   @ApiProperty() synthetic!: boolean;
+  @ApiProperty({ nullable: true }) type!: string | null;
 }
 
 export class OilStatusResponseDto {

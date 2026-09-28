@@ -11,7 +11,7 @@ import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Barrel from 'lucide-react-native/icons/barrel';
 import Bell from 'lucide-react-native/icons/bell';
 import Calendar from 'lucide-react-native/icons/calendar';
-import Car from 'lucide-react-native/icons/car';
+import CarFront from 'lucide-react-native/icons/car-front';
 import Check from 'lucide-react-native/icons/check';
 import CircleQuestionMark from 'lucide-react-native/icons/circle-question-mark';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
@@ -82,7 +82,7 @@ export type IconName =
   | 'pdf';
 
 export const ICONS: Record<IconName, LucideIcon> = {
-  car: Car,
+  car: CarFront,
   moto: Motorbike,
   drop: Droplet,
   gauge: Gauge,

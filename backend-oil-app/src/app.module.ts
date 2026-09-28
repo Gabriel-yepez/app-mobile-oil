@@ -7,6 +7,7 @@ import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OilModule } from './modules/oil/oil.module';
 import { BrandsModule } from './modules/brands/brands.module';
+import { ShopsModule } from './modules/shops/shops.module';
 import { ColorsModule } from './modules/colors/colors.module';
 import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
@@ -41,6 +42,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     AuthModule,
     OilModule,
     BrandsModule,
+    ShopsModule,
     ColorsModule,
     ExchangeRateModule,
     SubscriptionsModule,

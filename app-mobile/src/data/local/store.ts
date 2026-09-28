@@ -11,6 +11,7 @@ import type { ApiVehicle } from '../../api/controllers/vehicles.controller';
 import type { OilStatusResponse } from '../../api/controllers/oil-status.controller';
 import type { ApiBrand } from '../../api/controllers/brands.controller';
 import type { ApiColor } from '../../api/controllers/colors.controller';
+import type { ApiShop } from '../../api/controllers/shops.controller';
 import type { VehicleKind } from '../types';
 import type { QueueEntry } from '../sync/queue';
 
@@ -20,6 +21,8 @@ const claveEstado = (vehicleId: string) => `ruedalo:estado:${vehicleId}`;
 const CLAVE_MARCAS = 'ruedalo:marcas';
 const CLAVE_COLA_MARCAS = 'ruedalo:cola-marcas';
 const CLAVE_COLORES = 'ruedalo:colores';
+const CLAVE_TALLERES = 'ruedalo:talleres';
+const CLAVE_COLA_TALLERES = 'ruedalo:cola-talleres';
 
 async function leerJson<T>(clave: string, siFalla: T): Promise<T> {
   try {
@@ -100,6 +103,24 @@ export async function guardarColaMarcas(cola: QueueEntry[]): Promise<void> {
 
 export async function leerColaMarcas(): Promise<QueueEntry[]> {
   const c = await leerJson<unknown>(CLAVE_COLA_MARCAS, []);
+  return Array.isArray(c) ? (c as QueueEntry[]) : [];
+}
+
+export async function guardarTalleres(t: ApiShop[]): Promise<void> {
+  await guardarJson(CLAVE_TALLERES, t);
+}
+
+export async function leerTalleres(): Promise<ApiShop[]> {
+  const t = await leerJson<unknown>(CLAVE_TALLERES, []);
+  return Array.isArray(t) ? (t as ApiShop[]) : [];
+}
+
+export async function guardarColaTalleres(cola: QueueEntry[]): Promise<void> {
+  await guardarJson(CLAVE_COLA_TALLERES, cola);
+}
+
+export async function leerColaTalleres(): Promise<QueueEntry[]> {
+  const c = await leerJson<unknown>(CLAVE_COLA_TALLERES, []);
   return Array.isArray(c) ? (c as QueueEntry[]) : [];
 }
 

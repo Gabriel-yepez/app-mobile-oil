@@ -193,6 +193,7 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
                     onChange={(v) => set('brand', v)}
                     searchable
                     onAddNew={pedirMarcaNueva}
+                    nuevo="una marca nueva"
                   />
                 </Field>
 
@@ -224,6 +225,15 @@ export function EditVehicleScreen({ navigation, route }: RootScreenProps<'EditVe
                       <ColorSelect
                         value={form.color}
                         onChange={(hex) => set('color', hex)}
+                        // Con lo que está escrito en el formulario, no con lo
+                        // guardado: la vista previa es de cómo va a quedar.
+                        vehiculo={{
+                          ...vehicle,
+                          brand: form.brand,
+                          model: form.model,
+                          plate: form.plate,
+                          year: parseInt(form.year, 10) || vehicle.year,
+                        }}
                       />
                     </Field>
                   </Box>

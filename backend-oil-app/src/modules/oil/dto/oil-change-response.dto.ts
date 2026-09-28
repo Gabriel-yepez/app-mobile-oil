@@ -32,6 +32,7 @@ export class OilChangeResponseDto {
   @ApiProperty() oilTag!: string;
   @ApiProperty() oilViscosity!: string;
   @ApiProperty() oilSynthetic!: boolean;
+  @ApiProperty({ nullable: true }) oilType!: string | null;
   @ApiProperty({ nullable: true }) shop!: string | null;
   @ApiProperty({ nullable: true }) costUsd!: number | null;
 

@@ -149,6 +149,21 @@ export const Errors = {
       'Agregaste muchas marcas hoy. Intenta de nuevo mañana.',
     ),
 
+  shopNameInvalid: () =>
+    new AppError(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'SHOP_NAME_INVALID',
+      'Ese nombre de taller no es válido. Usa letras, números, espacios y signos simples.',
+    ),
+
+  // Mismo motivo que brandLimitReached: el taller nuevo lo ven todos.
+  shopLimitReached: () =>
+    new AppError(
+      HttpStatus.TOO_MANY_REQUESTS,
+      'SHOP_LIMIT_REACHED',
+      'Agregaste muchos talleres hoy. Intenta de nuevo mañana.',
+    ),
+
   // El proveedor de la tasa no contestó y el servidor todavía no tenía ninguna
   // guardada (recién arrancado). Si ya tenía una, se devuelve esa y no esto.
   exchangeRateUnavailable: () =>

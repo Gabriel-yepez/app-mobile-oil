@@ -37,6 +37,7 @@ export type Oil = {
   tag: string;
   viscosity: string;
   synthetic: boolean;
+  type: string | null;
 };
 
 export type OilStatusResponse = {

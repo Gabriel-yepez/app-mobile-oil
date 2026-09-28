@@ -11,11 +11,16 @@ export type OilChangeRecord = {
   oilTag: string;
   oilViscosity: string;
   oilSynthetic: boolean;
+  /** Texto libre del usuario. Null en los cambios viejos, que no lo tenían. */
+  oilType: string | null;
   shop: string | null;
   costUsd: number | null;
 };
 
-export type NewOilChange = Omit<OilChangeRecord, 'id'>;
+// oilType es opcional al crear: la app vieja todavía no lo manda.
+export type NewOilChange = Omit<OilChangeRecord, 'id' | 'oilType'> & {
+  oilType?: string | null;
+};
 
 export type OilChangePage = {
   items: OilChangeRecord[];
